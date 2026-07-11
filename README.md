@@ -31,16 +31,20 @@ http://localhost:8000/health and PostgreSQL is exposed on host port `5433`.
 To stop the stack, run `docker compose down`. Add `--volumes` only when you
 also want to delete the local database data.
 
-To build and run only the frontend image (the backend must be reachable at the
-URL compiled into the browser bundle):
+The browser only talks to the frontend origin; the Next server proxies
+`/api/*` and `/health` to the backend over the Compose network, so the app
+also works when opened from another device (e.g. `http://<your-lan-ip>:3000`).
+
+To build and run only the frontend image, pass the backend address the proxy
+should target (defaults to `http://backend:8000`, the Compose service):
 
 ```bash
-docker build -t liquidity-frontend ./frontend
+docker build --build-arg API_PROXY_TARGET=http://host.docker.internal:8000 -t liquidity-frontend ./frontend
 docker run --rm -p 3000:3000 liquidity-frontend
 ```
 
-For a backend hosted somewhere other than `http://localhost:8000`, set
-`NEXT_PUBLIC_API_BASE_URL` before building the Compose stack.
+If browsers should instead call a separately exposed backend origin directly,
+set `NEXT_PUBLIC_API_BASE_URL` before building the Compose stack.
 
 ### 1. Database
 

@@ -163,7 +163,7 @@ export default function Home() {
           <div>
             <p className="text-sm font-semibold">Liquidity &amp; Coordination Platform</p>
             <p className="text-xs text-zinc-500">
-              Decision-support demo · <span className="font-mono">{getApiBaseUrl()}</span>
+              Decision-support demo · <span className="font-mono">{getApiBaseUrl() || "same-origin API"}</span>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">

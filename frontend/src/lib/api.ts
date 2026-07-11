@@ -10,8 +10,14 @@
  *    so the UI never leaks the existence of cross-provider records.
  */
 
+/**
+ * Base URL for API calls. Defaults to "" (same-origin), which the Next server
+ * proxies to the backend via the rewrites in next.config.ts — this keeps the
+ * app working from any host/device. Set NEXT_PUBLIC_API_BASE_URL only when the
+ * backend is exposed on a different origin the browser can reach directly.
+ */
 export function getApiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  return process.env.NEXT_PUBLIC_API_BASE_URL || "";
 }
 
 const API = () => `${getApiBaseUrl()}/api/v1`;

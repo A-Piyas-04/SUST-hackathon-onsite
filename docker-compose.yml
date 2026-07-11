@@ -61,10 +61,12 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+        # Compose-internal backend address the Next server proxies API calls to.
+        API_PROXY_TARGET: http://backend:8000
+        # Empty = same-origin: the browser calls the frontend origin and the
+        # Next server proxies to the backend, so the app works from any device.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
     restart: unless-stopped
-    environment:
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
     ports:
       - "3000:3000"
     depends_on:
