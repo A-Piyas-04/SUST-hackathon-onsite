@@ -69,7 +69,7 @@ async def get_dashboard(session: AsyncSession, outlet_id: UUID) -> DashboardResp
     shared_raw = row["shared_cash"] or {}
     shared_cash = SharedCashDashboard(
         balance=_to_decimal(shared_raw.get("balance")),
-        currency=str(shared_raw.get("currency", "BDT")),
+        currency=str(shared_raw.get("currency") or "BDT"),
         observed_at=shared_raw.get("observed_at") or datetime.now(timezone.utc),
         projection=_projection_from_json(shared_raw.get("projection")) or _interim_projection(),
     )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -42,6 +42,11 @@ class GenerationResult:
 def _amount(rng: random.Random, base: float, spread: float = 0.2) -> str:
     value = base * (1 + rng.uniform(-spread, spread))
     return f"{value:.2f}"
+
+
+def _q2(value: Decimal) -> Decimal:
+    """Quantize money to 2 decimal places (feeds reject >2dp as malformed)."""
+    return value.quantize(Decimal("0.01"))
 
 
 def _party_ref(rng: random.Random, provider: ProviderCode, idx: int) -> str:
@@ -87,19 +92,27 @@ def generate_dataset(
             source_observed_at=obs,
             payload={
                 "outlet_id": str(outlet_id),
-                "balance": str(cash_balance),
+                "balance": str(_q2(cash_balance)),
                 "currency": "BDT",
                 "observed_at": obs.isoformat(),
             },
         )
     )
-    fingerprint.append({"type": "cash_balance", "balance": str(cash_balance), "observed_at": obs.isoformat()})
+    fingerprint.append({"type": "cash_balance", "balance": str(_q2(cash_balance)), "observed_at": obs.isoformat()})
     batches.append(cash_batch)
     batch_idx += 1
     event_idx += 1
 
     target_provider = ProviderCode(config.get("target_provider", "bkash"))
     cluster_amount = Decimal(config.get("cluster_amount", "1000.00"))
+    cluster_provider = ProviderCode(config.get("cluster_provider", "bkash"))
+    cluster_count = int(config.get("cluster_count", 6))
+    cluster_step_minutes = int(config.get("cluster_step_minutes", 2))
+    # Scenarios B and C both rely on a near-identical-amount cluster. Scenario C
+    # additionally injects a conflicting balance snapshot so data quality degrades
+    # and the (still-detected) cluster is safely suppressed rather than alerted.
+    scenarios_with_cluster = {ScenarioCode.SCENARIO_B, ScenarioCode.SCENARIO_C}
+    cluster_anchor = event_time(2)
 
     for provider in (ProviderCode.BKASH, ProviderCode.NAGAD, ProviderCode.ROCKET):
         batch = GeneratedBatch(
@@ -108,6 +121,9 @@ def generate_dataset(
             source_generated_at=batch_time(batch_idx),
         )
         batch_idx += 1
+        is_cluster_provider = (
+            scenario_code in scenarios_with_cluster and provider == cluster_provider
+        )
 
         # Opening provider balance snapshot
         bal_obs = event_time(event_idx)
@@ -137,13 +153,22 @@ def generate_dataset(
 
         # Transactions per provider
         per_provider_txns = max(2, txn_count // 3)
+        if is_cluster_provider:
+            per_provider_txns = max(per_provider_txns, cluster_count)
         for t in range(per_provider_txns):
             txn_obs = event_time(event_idx)
             event_idx += 1
 
-            if scenario_code == ScenarioCode.SCENARIO_B and provider == ProviderCode.BKASH and t < 6:
+            if is_cluster_provider and t < cluster_count:
+                # Tight, near-identical cluster within one detection window, from a
+                # small pool of synthetic parties.
                 amount = cluster_amount
                 txn_type = TransactionType.CASH_OUT
+                txn_obs = cluster_anchor + timedelta(minutes=t * cluster_step_minutes)
+                provider_balances[provider] = max(
+                    Decimal("0"), provider_balances[provider] - amount
+                )
+                cash_balance += amount * Decimal("0.3")
             elif scenario_code == ScenarioCode.SCENARIO_A and provider == target_provider:
                 amount = Decimal(_amount(rng, 2500, 0.1))
                 txn_type = TransactionType.CASH_OUT
@@ -160,7 +185,12 @@ def generate_dataset(
                     cash_balance = max(Decimal("0"), cash_balance - amount * Decimal("0.25"))
 
             ref = f"TXN-{provider.value.upper()}-{seed}-{t:03d}"
-            party = _party_ref(rng, provider, t)
+            if is_cluster_provider and t < cluster_count:
+                # Small pool of parties makes the "few accounts, repeated amounts"
+                # pattern explicit while keeping distinct-party evidence meaningful.
+                party = _party_ref(rng, provider, t % 2)
+            else:
+                party = _party_ref(rng, provider, t)
             batch.events.append(
                 GeneratedEvent(
                     event_type=FeedEventType.TRANSACTION,
@@ -214,6 +244,33 @@ def generate_dataset(
                 "observed_at": close_obs.isoformat(),
             }
         )
+
+        # Scenario C: inject a conflicting closing snapshot at the same observed
+        # time with a different balance so data quality is classified conflicting.
+        if scenario_code == ScenarioCode.SCENARIO_C and is_cluster_provider:
+            conflict_balance = provider_balances[provider] + Decimal("5000.00")
+            batch.events.append(
+                GeneratedEvent(
+                    event_type=FeedEventType.PROVIDER_BALANCE,
+                    provider_code=provider,
+                    source_event_ref=f"{provider.value.upper()}-BAL-{seed}-1C",
+                    source_observed_at=close_obs,
+                    payload={
+                        "account_ref": f"ACCT-O1-{provider.value.upper()}",
+                        "balance": str(conflict_balance),
+                        "currency": "BDT",
+                        "observed_at": close_obs.isoformat(),
+                    },
+                )
+            )
+            fingerprint.append(
+                {
+                    "type": "provider_balance",
+                    "provider": provider.value,
+                    "balance": str(conflict_balance),
+                    "observed_at": close_obs.isoformat(),
+                }
+            )
         batches.append(batch)
 
     # Final cash snapshot
@@ -232,13 +289,13 @@ def generate_dataset(
             source_observed_at=final_obs,
             payload={
                 "outlet_id": str(outlet_id),
-                "balance": str(cash_balance),
+                "balance": str(_q2(cash_balance)),
                 "currency": "BDT",
                 "observed_at": final_obs.isoformat(),
             },
         )
     )
-    fingerprint.append({"type": "cash_balance", "balance": str(cash_balance), "observed_at": final_obs.isoformat()})
+    fingerprint.append({"type": "cash_balance", "balance": str(_q2(cash_balance)), "observed_at": final_obs.isoformat()})
     batches.append(cash_final)
 
     return GenerationResult(outlet_id=outlet_id, batches=batches, semantic_fingerprint=fingerprint)

@@ -107,10 +107,10 @@ INSERT INTO simulation_scenarios
   ('5c000000-0000-0000-0000-00000000000b', 'scenario_b',
      'Liquidity Pressure with Unusual Activity',
      'Near-identical repeated amounts alongside falling shared cash.', 2002,
-     '{"expected": "combined_alert"}'::jsonb, 'held_out'),
+     '{"expected": "combined_alert", "cluster_provider": "bkash", "cluster_amount": "1000.00", "cluster_count": 6, "cluster_step_minutes": 2}'::jsonb, 'held_out'),
   ('5c000000-0000-0000-0000-00000000000c', 'scenario_c',
      'Data Inconsistency', 'Delayed/conflicting snapshots lower confidence and suppress alerts.', 2003,
-     '{"expected": "data_quality"}'::jsonb, 'held_out'),
+     '{"expected": "data_quality", "cluster_provider": "bkash", "cluster_amount": "1000.00", "cluster_count": 6, "cluster_step_minutes": 2}'::jsonb, 'held_out'),
   ('5c000000-0000-0000-0000-00000000000d', 'scenario_d',
      'Coordinated Response and Closure', 'An alert is routed and resolved through a case lifecycle.', 2004,
      '{"expected": "case_closure"}'::jsonb, 'demo')

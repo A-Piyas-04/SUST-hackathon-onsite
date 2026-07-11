@@ -18,43 +18,7 @@ def _raise(phase: str, feature: str) -> None:
     raise NotImplementedFeatureError(f"{feature} — implemented in Phase {phase}.")
 
 
-# --- Analytics (Phase 4) ------------------------------------------------------
-@router.get("/outlets/{outlet_id}/liquidity-projections")
-async def liquidity_projections(
-    outlet_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("4", f"Liquidity projections for outlet {outlet_id}")
-
-
-@router.post("/internal/analytics/liquidity/run")
-async def run_liquidity_analytics(
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("4", "Liquidity analytics run")
-
-
-@router.get("/outlets/{outlet_id}/anomaly-flags")
-async def anomaly_flags(
-    outlet_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("4", f"Anomaly flags for outlet {outlet_id}")
-
-
-@router.get("/anomaly-flags/{flag_id}")
-async def anomaly_flag_detail(
-    flag_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("4", f"Anomaly flag {flag_id}")
-
-
-@router.post("/internal/analytics/anomalies/run")
-async def run_anomaly_analytics(
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("4", "Anomaly analytics run")
+# --- Analytics (Phase 4) implemented in app/api/v1/analytics.py ---------------
 
 
 # --- Auth / alerts / cases (Phase 5) ----------------------------------------
