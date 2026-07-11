@@ -1,2 +1,11 @@
 # /ignore node modules
 /node_modules
+
+# SonarQube and coverage artifacts
+.env.sonar
+.scannerwork/
+.sonar/
+coverage.xml
+coverage/
+htmlcov/
+.coverage

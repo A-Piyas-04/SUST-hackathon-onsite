@@ -895,6 +895,57 @@ The backend must enforce authorization even if Supabase RLS is also enabled. RLS
 | Case transition/note | If owner/allowed role | If owner/allowed role | Own provider and allowed transition | Escalated own-provider case | Read only | Controlled |
 | Routing/config/seed | No | No | No | No | No | Admin/service only |
 
+### 15.1 Problem-statement stakeholder mapping
+
+The problem statement names six stakeholder groups. Not every stakeholder should become an application role: some are organizations or indirect beneficiaries. The schema therefore separates **authenticated human roles**, **organizational/provider entities**, **operational outlet entities**, and **non-authenticated synthetic transaction participants**.
+
+| Problem-statement stakeholder | Schema representation | Authentication role(s) | Scope source | How the stakeholder is handled | Explicit restrictions |
+|---|---|---|---|---|---|
+| Multi-provider agent | `outlets`, `outlet_provider_accounts`, `app_users`, `user_access_scopes` | `agent` | Required `outlet_id`; provider scope is not required for the combined own-outlet view | Sees one shared-cash object, three separate provider balances, feed health, projections, visible alerts and assigned cases for the agent's outlet. May acknowledge/respond to a case only when the policy and assignment permit it. | Cannot transfer or convert balances, modify analytical evidence, access another outlet, or gain provider authority merely because all providers appear on one dashboard. |
+| Provider operations / network coordination | `app_users`, `user_access_scopes`, `routing_rules`, `cases`, `case_assignments` | `field_officer`, `area_manager`, `provider_ops` | `provider_id` plus `area_id` where applicable | Implements the operational hierarchy. Field officers handle assigned provider/area outlets; area managers supervise/escalate within provider/area scope; provider operations sees the provider-wide or explicitly scoped queue, contacts agents through approved processes, assigns owners, acknowledges, escalates, notes and resolves cases. | Cannot view another provider's confidential transactions/evidence/cases or execute liquidity movement. Operations may escalate unusual activity but cannot make a fraud determination. |
+| Risk analyst | `app_users`, `user_access_scopes`, `anomaly_flags`, `anomaly_evidence_items`, `case_reviews` | `risk_analyst` | Required `provider_id`; optional area restriction | Reviews escalated own-provider cases, structured anomaly evidence, uncertainty and plausible benign context. Can add a review outcome such as benign operational, requires follow-up, data-quality issue, confirmed unusual or inconclusive. | Cannot access another provider, rewrite source evidence, issue a fraud verdict, block/freeze an account or perform financial action. |
+| Financial service provider | `providers` organization row plus scoped operational users | No single “provider” login; represented through `provider_ops`, `field_officer`, `area_manager`, `risk_analyst` and optionally provider-scoped `management` users | Required `provider_id` on `user_access_scopes` and confidential domain rows | The provider is the tenant/boundary entity. Its authorized human users receive provider-specific dashboards, alerts, cases, evidence and aggregate readiness information according to their role. `provider_id` denormalization and RLS make the boundary enforceable. | One provider cannot control, inspect, settle or infer another provider's confidential data. The provider entity itself does not authenticate or perform actions. |
+| Management | `app_users`, `user_access_scopes`, aggregate/read views and `metric_results` | `management` | Optional provider/area scope; default access is aggregate/read-only | Sees area/provider readiness, recurring alert/case trends, service pressure, validation metrics and aggregate operational status. Provider-scoped management may see that provider's authorized detail; cross-provider management defaults to non-confidential aggregates. | Cannot use aggregate access as a wildcard for raw transactions, evidence or case mutation. Operational case actions require a separate authorized operational role/scope. |
+| Customers | No customer account/profile table; only opaque `synthetic_party_ref` on synthetic transactions | None | None | Customers are indirect beneficiaries of improved service continuity. Synthetic transaction participants supply analytical context only; they do not log in, receive cases or appear as identifiable persons. | No real identity, phone number, account number, credential, customer profile or customer-facing punitive action is stored or exposed. |
+
+### 15.2 Role hierarchy and scope behavior
+
+```text
+Problem stakeholder                 Schema role/entity and scope
+────────────────────────────────────────────────────────────────────────
+Multi-provider agent        →       agent + outlet_id
+Provider operations         →       field_officer + provider_id + area_id
+                              →       area_manager + provider_id + area_id
+                              →       provider_ops + provider_id
+Risk analyst               →       risk_analyst + provider_id (+ area_id)
+Financial service provider →       providers row + its scoped human users
+Management                 →       management + aggregate/provider/area scope
+Customers                  →       no login; opaque synthetic_party_ref only
+```
+
+Rules applied across all stakeholder mappings:
+
+1. `app_users` identifies a demo/authenticated human; `user_access_scopes` grants one or more role/scope assignments.
+2. A person may have multiple assignments, but each request is authorized against the relevant active assignment rather than a union that silently grants unrestricted access.
+3. Provider-scoped roles require a matching `provider_id`; a null provider scope is never interpreted as “all providers.”
+4. Outlet-scoped agents may receive a combined operational view for their own outlet, but provider-confidential raw data and authority remain isolated.
+5. Area hierarchy is resolved through `areas.parent_area_id`; field/area roles see only descendants authorized by policy.
+6. Management receives aggregates by default. Raw evidence or mutation requires an additional explicit provider/operational assignment.
+7. System-generated ingestion, analytics, routing and audit actions use `actor_type = system/routing_engine/analytics_engine`, not a fake stakeholder login.
+8. Customers intentionally have no role because the prototype supports agents and provider teams, not customer account servicing.
+
+### 15.3 Stakeholder-to-workflow example
+
+For a provider-scoped unusual-liquidity event:
+
+1. The **multi-provider agent** sees outlet cash, the affected provider balance, confidence and the advisory alert.
+2. `routing_rules` assigns the case to the relevant **field officer**, **area manager** or **provider operations** role for that provider/area.
+3. The assigned operations user acknowledges, contacts the outlet through an approved external process, adds a note and either resolves or escalates.
+4. A **risk analyst** reviews escalated unusual-activity evidence and records a non-fraud review outcome.
+5. **Management** sees aggregate pressure, handling status and metrics without automatically receiving raw cross-provider evidence.
+6. The **financial service provider** is represented by the provider boundary shared by its authorized users, while **customers** benefit indirectly from improved service continuity and remain non-identifiable.
+7. Every transition is written to `case_status_history` and `audit_events`; no role can move funds or take punitive action.
+
 Suggested RLS predicate for provider-confidential rows: allow when the row's `provider_id` exists in the caller's active `user_access_scopes`, or when the caller is an agent scoped to the same outlet and the endpoint permits agent visibility. Shared-cash rows use outlet/area scope, never a wildcard provider shortcut.
 
 ## 16. Proposed REST API
@@ -1066,6 +1117,7 @@ No aggregate monetary total is returned.
 | Missing/late/conflicting fallback | ingestion history, assessments/issues, suppressed anomaly disposition |
 | Routing, receiver, owner, acknowledgement, escalation, resolution | routing rules, cases, assignments, status history, notes |
 | Provider-boundary RBAC | access scopes, denormalized provider/outlet keys, RLS policy design |
+| Stakeholder and role coverage | §15.1–15.3 maps agent, operations, risk analyst, provider organization, management and customers to roles/entities/scopes |
 | EN + Bangla/Banglish consistency | one structured alert, versioned templates, immutable locale renders |
 | In-app notification | `notifications` |
 | Auditability | append-only source/result/history/audit tables and timeline view |
