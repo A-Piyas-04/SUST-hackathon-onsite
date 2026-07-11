@@ -69,7 +69,7 @@ async def get_dashboard(session: AsyncSession, outlet_id: UUID) -> DashboardResp
     shared_raw = row["shared_cash"] or {}
     shared_cash = SharedCashDashboard(
         balance=_to_decimal(shared_raw.get("balance")),
-        currency=str(shared_raw.get("currency", "BDT")),
+        currency=str(shared_raw.get("currency") or "BDT"),
         observed_at=shared_raw.get("observed_at") or datetime.now(timezone.utc),
         projection=_projection_from_json(shared_raw.get("projection")) or _interim_projection(),
     )
@@ -77,18 +77,21 @@ async def get_dashboard(session: AsyncSession, outlet_id: UUID) -> DashboardResp
     providers: list[ProviderDashboardItem] = []
     for p in row["providers"] or []:
         prov_obj = p.get("provider") or {}
-        feed = p.get("feed_health") or {"status": "fresh", "confidence_modifier": 1.0}
+        feed = p.get("feed_health") or {}
+        # View JSON carries explicit nulls for outlets with no snapshots yet,
+        # so dict.get() defaults never apply — guard each field individually.
+        modifier = feed.get("confidence_modifier")
         providers.append(
             ProviderDashboardItem(
                 provider=ProviderSummary(
-                    code=ProviderCode(prov_obj.get("code", "bkash")),
-                    display_name=prov_obj.get("display_name", ""),
+                    code=ProviderCode(prov_obj.get("code") or "bkash"),
+                    display_name=prov_obj.get("display_name") or "",
                 ),
                 balance=_to_decimal(p.get("balance")),
                 observed_at=p.get("observed_at") or datetime.now(timezone.utc),
                 feed_health=FeedHealthSummary(
-                    status=str(feed.get("status", "fresh")),
-                    confidence_modifier=float(feed.get("confidence_modifier", 1.0)),
+                    status=str(feed.get("status") or "fresh"),
+                    confidence_modifier=float(modifier) if modifier is not None else 1.0,
                 ),
                 projection=_projection_from_json(p.get("projection")) or _interim_projection(),
             )
@@ -117,7 +120,7 @@ def _projection_from_json(data: Any) -> ProjectionSummary | None:
     return ProjectionSummary(
         shortage_at=shortage,
         confidence_score=Decimal(str(score)),
-        confidence_level=str(data.get("confidence_level", "unavailable")),
+        confidence_level=str(data.get("confidence_level") or "unavailable"),
     )
 
 

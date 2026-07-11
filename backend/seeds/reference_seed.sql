@@ -110,10 +110,10 @@ INSERT INTO simulation_scenarios
   ('5c000000-0000-0000-0000-00000000000b', 'scenario_b',
      'Liquidity Pressure with Unusual Activity',
      'Near-identical repeated amounts alongside falling shared cash.', 2002,
-     '{"expected": "combined_alert"}'::jsonb, 'held_out'),
+     '{"expected": "combined_alert", "cluster_provider": "bkash", "cluster_amount": "1000.00", "cluster_count": 6, "cluster_step_minutes": 2}'::jsonb, 'held_out'),
   ('5c000000-0000-0000-0000-00000000000c', 'scenario_c',
      'Data Inconsistency', 'Delayed/conflicting snapshots lower confidence and suppress alerts.', 2003,
-     '{"expected": "data_quality"}'::jsonb, 'held_out'),
+     '{"expected": "data_quality", "cluster_provider": "bkash", "cluster_amount": "1000.00", "cluster_count": 6, "cluster_step_minutes": 2}'::jsonb, 'held_out'),
   ('5c000000-0000-0000-0000-00000000000d', 'scenario_d',
      'Coordinated Response and Closure', 'An alert is routed and resolved through a case lifecycle.', 2004,
      '{"expected": "case_closure"}'::jsonb, 'demo')
@@ -184,7 +184,35 @@ INSERT INTO explanation_templates
      '{evidence_summary}',
      'Confidence is reduced until fresh data arrives.',
      'Treat current figures cautiously and wait for updated feeds.',
-     NULL)
+     NULL),
+  -- Liquidity alert — Bangla
+  ('7e000000-0000-0000-0000-0000000000b3', 'liquidity_default', 'bn', 1, 'liquidity',
+     '{outlet}-এর একটি রিজার্ভ প্রায় {shortage_at} নাগাদ ঘাটতির দিকে যেতে পারে।',
+     '{evidence_summary}',
+     'এই অনুমানে একটি কনফিডেন্স ব্যান্ড রয়েছে; নতুন তথ্যে সময় পরিবর্তিত হতে পারে।',
+     'রিজার্ভটি পর্যালোচনা করুন এবং অনুমোদিত প্রক্রিয়ায় পুনরায় সরবরাহের পরিকল্পনা করুন।',
+     NULL),
+  -- Liquidity alert — Banglish
+  ('7e000000-0000-0000-0000-0000000000b4', 'liquidity_default', 'bn_latn', 1, 'liquidity',
+     '{outlet} er ekti reserve prai {shortage_at} nagad shortage er dike jete pare.',
+     '{evidence_summary}',
+     'Ei estimate e ekti confidence band ache; notun data te timing change hote pare.',
+     'Reserve ti review korun ebong authorized process e replenishment plan korun.',
+     NULL),
+  -- Anomaly alert — Bangla
+  ('7e000000-0000-0000-0000-0000000000b5', 'anomaly_default', 'bn', 1, 'anomaly',
+     '{outlet}-এ {provider}-এর উপর একটি অস্বাভাবিক পুনরাবৃত্ত-পরিমাণের ধরন পর্যালোচনার জন্য চিহ্নিত হয়েছে।',
+     '{evidence_summary}',
+     'চিহ্নিত হওয়া কোনো অন্যায়ের প্রমাণ নয়; এটি নির্দেশ করে যে ধরনটি অস্বাভাবিক।',
+     'যেকোনো সমন্বয়ের আগে তালিকাভুক্ত সিমুলেটেড লেনদেনগুলো পর্যালোচনা করুন।',
+     'এটি স্বাভাবিক উৎসব-চালিত চাহিদার প্রতিফলন হতে পারে।'),
+  -- Anomaly alert — Banglish
+  ('7e000000-0000-0000-0000-0000000000b6', 'anomaly_default', 'bn_latn', 1, 'anomaly',
+     '{outlet} e {provider} er upor ekti unusual repeated-amount pattern review er jonno flag kora hoyeche.',
+     '{evidence_summary}',
+     'Flag howa kono wrongdoing er proof na; eta indicate kore je pattern ta unusual.',
+     'Kono coordination er age listed synthetic transaction gulo review korun.',
+     'Eta normal event-driven demand er reflection hote pare.')
 ON CONFLICT (template_key, locale, version) DO NOTHING;
 
 -- ---------------------------------------------------------------- routing rules
