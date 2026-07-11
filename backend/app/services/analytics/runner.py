@@ -41,8 +41,16 @@ from app.services.analytics import persistence
 from app.services.anomaly.engine import (
     AnomalyInput,
     AnomalyRuleConfig,
+    AnomalyResult,
+    BalanceAnomalyInput,
+    BalanceRuleConfig,
+    BalanceSnapshotRecord,
     TransactionRecord,
+    VelocityAnomalyInput,
+    VelocityRuleConfig,
+    detect_balance_inconsistency,
     detect_near_identical_amounts,
+    detect_velocity_spike,
 )
 from app.services.constants import DEFAULT_OUTLET_ID
 from app.services.liquidity.engine import (
@@ -119,7 +127,8 @@ async def _provider_transactions(
     result = await session.execute(
         text(
             """
-            SELECT transaction_id, synthetic_party_ref, amount, occurred_at
+            SELECT transaction_id, synthetic_party_ref, amount, occurred_at,
+                   transaction_type, status
             FROM transactions
             WHERE simulation_run_id = :run_id AND outlet_provider_account_id = :account_id
             ORDER BY occurred_at
@@ -133,6 +142,8 @@ async def _provider_transactions(
             party_ref=r["synthetic_party_ref"],
             amount=r["amount"],
             occurred_at=r["occurred_at"],
+            transaction_type=r["transaction_type"],
+            status=r["status"],
         )
         for r in result.mappings().all()
     ]
@@ -432,22 +443,119 @@ async def run_liquidity(
 # --------------------------------------------------------------------------- #
 # Anomaly run
 # --------------------------------------------------------------------------- #
-async def _active_rule(session: AsyncSession) -> dict:
+async def _active_rules(session: AsyncSession) -> list[dict]:
     result = await session.execute(
         text(
             """
             SELECT anomaly_rule_id, pattern, configuration
             FROM anomaly_rules
-            WHERE pattern = 'near_identical_amounts' AND is_active
+            WHERE is_active
             ORDER BY created_at
-            LIMIT 1
             """
         )
     )
-    row = result.mappings().first()
-    if row is None:
-        raise AppError("configuration_error", "No active near_identical_amounts rule.", status_code=500)
-    return dict(row)
+    rows = [dict(r) for r in result.mappings().all()]
+    if not rows:
+        raise AppError("configuration_error", "No active anomaly rules.", status_code=500)
+    return rows
+
+
+_PATTERN_TO_ENUM = {
+    "near_identical_amounts": AnomalyPattern.NEAR_IDENTICAL_AMOUNTS,
+    "velocity_spike": AnomalyPattern.VELOCITY_SPIKE,
+    "balance_inconsistency": AnomalyPattern.BALANCE_INCONSISTENCY,
+}
+
+
+def _run_anomaly_detector(
+    pattern: str,
+    *,
+    provider_code: str,
+    transactions: list[TransactionRecord],
+    observations: list[BalanceObservation],
+    quality_status: str,
+    quality_modifier: Decimal,
+    as_of: datetime,
+    configuration: dict,
+) -> AnomalyResult:
+    if pattern == "near_identical_amounts":
+        return detect_near_identical_amounts(
+            AnomalyInput(
+                provider_code=provider_code,
+                transactions=transactions,
+                quality_status=quality_status,
+                quality_modifier=quality_modifier,
+                rule_config=AnomalyRuleConfig.from_dict(configuration),
+            )
+        )
+    if pattern == "velocity_spike":
+        return detect_velocity_spike(
+            VelocityAnomalyInput(
+                provider_code=provider_code,
+                transactions=transactions,
+                quality_status=quality_status,
+                quality_modifier=quality_modifier,
+                as_of=as_of,
+                rule_config=VelocityRuleConfig.from_dict(configuration),
+            )
+        )
+    if pattern == "balance_inconsistency":
+        return detect_balance_inconsistency(
+            BalanceAnomalyInput(
+                provider_code=provider_code,
+                transactions=transactions,
+                observations=[
+                    BalanceSnapshotRecord(
+                        observed_at=o.observed_at,
+                        balance=o.balance,
+                        received_at=o.received_at,
+                    )
+                    for o in observations
+                ],
+                quality_status=quality_status,
+                quality_modifier=quality_modifier,
+                as_of=as_of,
+                rule_config=BalanceRuleConfig.from_dict(configuration),
+            )
+        )
+    raise AppError("configuration_error", f"Unsupported anomaly pattern: {pattern}", status_code=500)
+
+
+def _result_to_flag(
+    result: AnomalyResult,
+    *,
+    outlet_id: UUID,
+    provider_id: UUID,
+    account_id: UUID,
+    assessment_id: UUID,
+    pattern: AnomalyPattern,
+) -> AnomalyFlagOutput:
+    return AnomalyFlagOutput(
+        outlet_id=outlet_id,
+        provider_id=provider_id,
+        outlet_provider_account_id=account_id,
+        data_quality_assessment_id=assessment_id,
+        window_start=result.window_start or datetime.now(timezone.utc),
+        window_end=result.window_end or datetime.now(timezone.utc),
+        pattern=pattern,
+        confidence_score=result.confidence_score,
+        confidence_level=result.confidence_level,
+        disposition=result.disposition,
+        reason_code=result.reason_code,
+        evidence_summary=result.evidence_summary,
+        plausible_benign_explanation=result.plausible_benign_explanation,
+        suppression_reason=result.suppression_reason,
+        evidence_items=[
+            AnomalyEvidenceItem(
+                evidence_type=e.evidence_type,
+                label=e.label,
+                value=e.value,
+                display_order=e.display_order,
+            )
+            for e in result.evidence_items
+        ],
+        transaction_ids=list(result.transaction_ids),
+    )
 
 
 async def run_anomalies(
@@ -457,15 +565,24 @@ async def run_anomalies(
     await _validate_run(session, simulation_run_id)
     window_start, window_end = await _compute_window(session, simulation_run_id, outlet_id)
     as_of = window_end
-    rule = await _active_rule(session)
-    rule_config = AnomalyRuleConfig.from_dict(rule["configuration"])
+    rules = await _active_rules(session)
 
     analytics_run_id = await persistence.create_analytics_run(
         session,
         simulation_run_id=simulation_run_id,
         engine=AnalyticsEngine.ANOMALY,
         engine_version=cfg.ANOMALY_ENGINE_VERSION,
-        configuration={"rule": rule["configuration"], "outlet_id": str(outlet_id)},
+        configuration={
+            "rules": [
+                {
+                    "anomaly_rule_id": str(r["anomaly_rule_id"]),
+                    "pattern": r["pattern"],
+                    "configuration": r["configuration"],
+                }
+                for r in rules
+            ],
+            "outlet_id": str(outlet_id),
+        },
         input_window_start=window_start,
         input_window_end=window_end,
     )
@@ -498,63 +615,51 @@ async def run_anomalies(
                 provider_id=acct["provider_id"],
             ),
         )
-        result = detect_near_identical_amounts(
-            AnomalyInput(
+        for rule in rules:
+            pattern = rule["pattern"]
+            pattern_enum = _PATTERN_TO_ENUM.get(pattern)
+            if pattern_enum is None:
+                continue
+            result = _run_anomaly_detector(
+                pattern,
                 provider_code=code,
                 transactions=txns,
+                observations=obs,
                 quality_status=quality.status.value,
                 quality_modifier=quality.confidence_modifier,
-                rule_config=rule_config,
+                as_of=as_of,
+                configuration=rule["configuration"],
             )
-        )
-        if not result.persist:
-            continue
+            if not result.persist:
+                continue
 
-        flag = AnomalyFlagOutput(
-            outlet_id=outlet_id,
-            provider_id=acct["provider_id"],
-            outlet_provider_account_id=acct["outlet_provider_account_id"],
-            data_quality_assessment_id=assessment_id,
-            window_start=result.window_start,
-            window_end=result.window_end,
-            pattern=AnomalyPattern.NEAR_IDENTICAL_AMOUNTS,
-            confidence_score=result.confidence_score,
-            confidence_level=result.confidence_level,
-            disposition=result.disposition,
-            reason_code=result.reason_code,
-            evidence_summary=result.evidence_summary,
-            plausible_benign_explanation=result.plausible_benign_explanation,
-            suppression_reason=result.suppression_reason,
-            evidence_items=[
-                AnomalyEvidenceItem(
-                    evidence_type=e.evidence_type,
-                    label=e.label,
-                    value=e.value,
-                    display_order=e.display_order,
-                )
-                for e in result.evidence_items
-            ],
-            transaction_ids=list(result.transaction_ids),
-        )
-        flag_id = await persistence.insert_anomaly_flag(
-            session, flag, analytics_run_id=analytics_run_id, anomaly_rule_id=rule["anomaly_rule_id"]
-        )
-        flag.anomaly_flag_id = flag_id
-        flag.analytics_run_id = analytics_run_id
-        flag.anomaly_rule_id = rule["anomaly_rule_id"]
-        flags.append(flag)
-        if result.disposition.value == "suppressed_data_quality":
-            suppressed_count += 1
-        envelope = _anomaly_envelope(
-            flag,
-            window_start=window_start,
-            window_end=window_end,
-            provider_code=code,
-            quality_assessment_ids=(assessment_id,),
-        )
-        cand = envelope_to_alert_candidate(envelope, outlet_id=outlet_id)
-        if cand is not None:
-            candidates.append(cand)
+            flag = _result_to_flag(
+                result,
+                outlet_id=outlet_id,
+                provider_id=acct["provider_id"],
+                account_id=acct["outlet_provider_account_id"],
+                assessment_id=assessment_id,
+                pattern=pattern_enum,
+            )
+            flag_id = await persistence.insert_anomaly_flag(
+                session, flag, analytics_run_id=analytics_run_id, anomaly_rule_id=rule["anomaly_rule_id"]
+            )
+            flag.anomaly_flag_id = flag_id
+            flag.analytics_run_id = analytics_run_id
+            flag.anomaly_rule_id = rule["anomaly_rule_id"]
+            flags.append(flag)
+            if result.disposition.value == "suppressed_data_quality":
+                suppressed_count += 1
+            envelope = _anomaly_envelope(
+                flag,
+                window_start=window_start,
+                window_end=window_end,
+                provider_code=code,
+                quality_assessment_ids=(assessment_id,),
+            )
+            cand = envelope_to_alert_candidate(envelope, outlet_id=outlet_id)
+            if cand is not None:
+                candidates.append(cand)
 
     await persistence.complete_analytics_run(session, analytics_run_id)
     return AnomalyRunResponse(
