@@ -7,128 +7,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from app.contracts.v1.responses import AlertResponse, CaseResponse, DashboardResponse
+from app.contracts.v1.responses import AlertResponse, CaseResponse
 from app.core.auth import UserContext, require_authenticated
 from app.core.errors import NotImplementedFeatureError
 
-router = APIRouter(prefix="/api/v1", tags=["stubs-phase3+"])
+router = APIRouter(prefix="/api/v1", tags=["stubs-phase4+"])
 
 
 def _raise(phase: str, feature: str) -> None:
     raise NotImplementedFeatureError(f"{feature} — implemented in Phase {phase}.")
-
-
-# --- Reference / dashboard (Phase 3) ----------------------------------------
-@router.get("/providers")
-async def list_providers(_user: Annotated[UserContext, Depends(require_authenticated)]):
-    _raise("3", "Provider list")
-
-
-@router.get("/areas")
-async def list_areas(_user: Annotated[UserContext, Depends(require_authenticated)]):
-    _raise("3", "Area list")
-
-
-@router.get("/outlets")
-async def list_outlets(_user: Annotated[UserContext, Depends(require_authenticated)]):
-    _raise("3", "Outlet list")
-
-
-@router.get("/outlets/{outlet_id}")
-async def get_outlet(
-    outlet_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Outlet detail for {outlet_id}")
-
-
-@router.get("/outlets/{outlet_id}/dashboard", response_model=DashboardResponse)
-async def get_dashboard(
-    outlet_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Dashboard for outlet {outlet_id}")
-
-
-@router.get("/outlets/{outlet_id}/transactions")
-async def list_transactions(
-    outlet_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Transactions for outlet {outlet_id}")
-
-
-@router.get("/outlets/{outlet_id}/balances/history")
-async def balance_history(
-    outlet_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Balance history for outlet {outlet_id}")
-
-
-# --- Simulation / ingestion (Phase 3) ---------------------------------------
-@router.get("/simulations/scenarios")
-async def list_scenarios(_user: Annotated[UserContext, Depends(require_authenticated)]):
-    _raise("3", "Simulation scenarios")
-
-
-@router.post("/simulations/runs")
-async def start_simulation(_user: Annotated[UserContext, Depends(require_authenticated)]):
-    _raise("3", "Simulation run start")
-
-
-@router.get("/simulations/runs/{run_id}")
-async def get_simulation_run(
-    run_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Simulation run {run_id}")
-
-
-@router.post("/simulations/runs/{run_id}/reset")
-async def reset_simulation_run(
-    run_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Simulation reset {run_id}")
-
-
-@router.post("/simulations/runs/{run_id}/faults")
-async def create_fault(
-    run_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Fault injection for run {run_id}")
-
-
-@router.patch("/simulations/runs/{run_id}/faults/{fault_id}")
-async def patch_fault(
-    run_id: UUID,
-    fault_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Fault toggle {fault_id} on run {run_id}")
-
-
-@router.post("/ingestion/batches")
-async def ingest_batch(_user: Annotated[UserContext, Depends(require_authenticated)]):
-    _raise("3", "Ingestion batch")
-
-
-@router.get("/outlets/{outlet_id}/data-quality")
-async def current_data_quality(
-    outlet_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Current data quality for outlet {outlet_id}")
-
-
-@router.get("/outlets/{outlet_id}/data-quality/history")
-async def data_quality_history(
-    outlet_id: UUID,
-    _user: Annotated[UserContext, Depends(require_authenticated)],
-):
-    _raise("3", f"Data quality history for outlet {outlet_id}")
 
 
 # --- Analytics (Phase 4) ------------------------------------------------------

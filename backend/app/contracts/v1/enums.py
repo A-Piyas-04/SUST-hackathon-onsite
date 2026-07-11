@@ -134,3 +134,50 @@ class MetricCategory(StrEnum):
     PERFORMANCE = "performance"
     RELIABILITY = "reliability"
     EXPLAINABILITY = "explainability"
+
+
+class FaultType(StrEnum):
+    DELAY = "delay"
+    MISSING_FEED = "missing_feed"
+    MISSING_FIELD = "missing_field"
+    CONFLICTING_BALANCE = "conflicting_balance"
+    MALFORMED_PAYLOAD = "malformed_payload"
+
+
+class SimulationRunStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    RESET = "reset"
+
+
+class NormalizationStatus(StrEnum):
+    PENDING = "pending"
+    NORMALIZED = "normalized"
+    REJECTED = "rejected"
+
+
+class RejectionCode(StrEnum):
+    MALFORMED_PAYLOAD = "malformed_payload"
+    MISSING_FIELD = "missing_field"
+    ACCOUNT_MISMATCH = "account_mismatch"
+    INVALID_AMOUNT = "invalid_amount"
+    INVALID_TIMESTAMP = "invalid_timestamp"
+    DUPLICATE_EVENT = "duplicate_event"
+    UNKNOWN_EVENT_TYPE = "unknown_event_type"
+
+
+class FeedEventType(StrEnum):
+    TRANSACTION = "transaction"
+    PROVIDER_BALANCE = "provider_balance"
+    CASH_BALANCE = "cash_balance"
+    HEARTBEAT = "heartbeat"
+
+
+class ScenarioCode(StrEnum):
+    NORMAL = "normal"
+    SCENARIO_A = "scenario_a"
+    SCENARIO_B = "scenario_b"
+    SCENARIO_C = "scenario_c"
+    SCENARIO_D = "scenario_d"

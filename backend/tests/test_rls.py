@@ -13,57 +13,73 @@ def _seed_snapshots(cur):
     return run
 
 
-def _providers_seen(cur):
-    cur.execute("SELECT DISTINCT provider_id::text FROM provider_balance_snapshots ORDER BY 1")
+def _providers_seen(cur, run_id=None):
+    if run_id:
+        cur.execute(
+            "SELECT DISTINCT provider_id::text FROM provider_balance_snapshots "
+            "WHERE simulation_run_id = %s ORDER BY 1",
+            (run_id,),
+        )
+    else:
+        cur.execute("SELECT DISTINCT provider_id::text FROM provider_balance_snapshots ORDER BY 1")
     return [r[0] for r in cur.fetchall()]
 
 
 def test_bkash_ops_reads_only_bkash(conn):
     with conn.cursor() as setup:
-        _seed_snapshots(setup)
+        run = _seed_snapshots(setup)
     with as_role(conn, BKASH_OPS) as cur:
-        assert _providers_seen(cur) == [BKASH]
+        assert _providers_seen(cur, run) == [BKASH]
 
 
 def test_nagad_ops_cannot_read_rocket_or_bkash(conn):
     with conn.cursor() as setup:
-        _seed_snapshots(setup)
+        run = _seed_snapshots(setup)
     with as_role(conn, NAGAD_OPS) as cur:
-        assert _providers_seen(cur) == [NAGAD]
+        assert _providers_seen(cur, run) == [NAGAD]
 
 
 def test_rocket_ops_sees_nothing_when_no_rocket_rows(conn):
     with conn.cursor() as setup:
-        _seed_snapshots(setup)
+        run = _seed_snapshots(setup)
     with as_role(conn, ROCKET_OPS) as cur:
-        assert _providers_seen(cur) == []
+        assert _providers_seen(cur, run) == []
 
 
 def test_agent_limited_to_own_outlet(conn):
     with conn.cursor() as setup:
-        _seed_snapshots(setup)
+        run = _seed_snapshots(setup)
     # agent1 is scoped to outlet1: sees both providers there, none from outlet2
     with as_role(conn, AGENT1) as cur:
-        cur.execute("SELECT DISTINCT outlet_id::text FROM provider_balance_snapshots")
+        cur.execute(
+            "SELECT DISTINCT outlet_id::text FROM provider_balance_snapshots WHERE simulation_run_id = %s",
+            (run,),
+        )
         outlets = {r[0] for r in cur.fetchall()}
         assert outlets == {OUTLET1}
 
 
 def test_area_manager_limited_to_area(conn):
     with conn.cursor() as setup:
-        _seed_snapshots(setup)
+        run = _seed_snapshots(setup)
     # area_mgr: provider=bKash, area=Market (outlet1). Must not see bKash @ outlet2 (Riverside).
     with as_role(conn, AREA_MGR) as cur:
-        cur.execute("SELECT DISTINCT outlet_id::text FROM provider_balance_snapshots")
+        cur.execute(
+            "SELECT DISTINCT outlet_id::text FROM provider_balance_snapshots WHERE simulation_run_id = %s",
+            (run,),
+        )
         outlets = {r[0] for r in cur.fetchall()}
         assert outlets == {OUTLET1}
 
 
 def test_missing_provider_scope_is_not_a_wildcard(conn):
     with conn.cursor() as setup:
-        _seed_snapshots(setup)
+        run = _seed_snapshots(setup)
     with as_role(conn, MGMT) as cur:
-        cur.execute("SELECT count(*) FROM provider_balance_snapshots")
+        cur.execute(
+            "SELECT count(*) FROM provider_balance_snapshots WHERE simulation_run_id = %s",
+            (run,),
+        )
         assert cur.fetchone()[0] == 0
 
 

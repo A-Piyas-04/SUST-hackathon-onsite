@@ -57,10 +57,10 @@ def _dsn() -> str:
 
 
 def _session_needs_database(session) -> bool:
-    """Only Phase 1 schema/RLS tests require a migrated PostgreSQL instance."""
+    """Schema, app, and phase3 integration tests require a migrated PostgreSQL instance."""
     for item in session.items:
         path = str(item.path).replace("\\", "/")
-        if "/tests/contracts/" in path or "/tests/app/" in path:
+        if "/tests/contracts/" in path:
             continue
         return True
     return False
@@ -72,7 +72,16 @@ def _prepared_db(request):
     if not _session_needs_database(request.session):
         yield
         return
-    env = {**os.environ, "APP_ENV": os.environ.get("APP_ENV", "test")}
+    test_dsn = os.environ.get(
+        "TEST_DATABASE_URL",
+        "postgresql://postgres:postgres@localhost:5433/liquidity_platform",
+    )
+    env = {
+        **os.environ,
+        "APP_ENV": os.environ.get("APP_ENV", "test"),
+        "DIRECT_DATABASE_URL": test_dsn,
+    }
+    env.pop("DATABASE_URL", None)
     for cmd in ("apply", "seed"):
         proc = subprocess.run(
             [sys.executable, str(RUNNER), cmd],

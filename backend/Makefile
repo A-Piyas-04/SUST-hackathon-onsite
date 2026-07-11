@@ -8,10 +8,20 @@ API_HOST ?= 0.0.0.0
 API_PORT ?= 8000
 
 .PHONY: migrate reset seed verify dump status db-up help server test test-contracts openapi
+.PHONY: sim-run sim-status sim-reset sim-fault-add sim-fault-toggle sim-demo
+
+SCENARIO ?= normal
+SEED ?=
+OUTLET_ID ?= 0b000000-0000-0000-0000-000000000001
+RUN_ID ?=
+FAULT_ID ?=
+FAULT_TYPE ?= conflicting_balance
+PROVIDER ?= nagad
 
 help:
 	@echo "Targets: migrate | seed | verify | dump | status | reset | db-up"
 	@echo "          server | test | test-contracts | openapi"
+	@echo "          sim-run | sim-status | sim-reset | sim-fault-add | sim-fault-toggle | sim-demo"
 	@echo "Connections come from backend/.env (copy backend/.env.example)."
 
 migrate:            ## Apply pending migrations (idempotent, checksum-tracked)
@@ -46,3 +56,22 @@ test-contracts:     ## Run contract validation tests only
 
 openapi:            ## Generate docs/openapi/openapi.v1.json from registered routes
 	$(PY) -m app.scripts.generate_openapi
+
+sim-run:            ## Start deterministic simulation run (SCENARIO, SEED, OUTLET_ID)
+	$(PY) -m app.scripts.simulation_cli run --scenario $(SCENARIO) $(if $(SEED),--seed $(SEED),) --outlet-id $(OUTLET_ID)
+
+sim-status:         ## Get simulation run status (RUN_ID required)
+	$(PY) -m app.scripts.simulation_cli status --run-id $(RUN_ID)
+
+sim-reset:          ## Reset and re-run simulation (RUN_ID required)
+	$(PY) -m app.scripts.simulation_cli reset --run-id $(RUN_ID)
+
+sim-fault-add:      ## Add fault to run (RUN_ID, FAULT_TYPE, PROVIDER)
+	$(PY) -m app.scripts.simulation_cli fault add --run-id $(RUN_ID) --type $(FAULT_TYPE) --provider $(PROVIDER)
+
+sim-fault-toggle:   ## Toggle fault (RUN_ID, FAULT_ID, ENABLED=true|false)
+	$(PY) -m app.scripts.simulation_cli fault toggle --run-id $(RUN_ID) --fault-id $(FAULT_ID) --enabled $(ENABLED)
+
+sim-demo:           ## Full demo workflow: migrate, seed, run normal scenario
+	$(MAKE) migrate seed
+	$(PY) -m app.scripts.simulation_cli run --scenario normal --seed 1001 --outlet-id $(OUTLET_ID)

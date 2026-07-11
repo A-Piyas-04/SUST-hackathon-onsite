@@ -81,10 +81,10 @@ def candidate_dsns() -> list[tuple[str, str]]:
             seen.add(dsn)
             out.append((label, dsn))
 
-    add("SUPABASE_DB_PASSWORD(session-pooler)", constructed_pooler_dsn())
     direct = os.environ.get("DIRECT_DATABASE_URL")
     if direct:
         add("DIRECT_DATABASE_URL", clean_dsn(direct))
+    add("SUPABASE_DB_PASSWORD(session-pooler)", constructed_pooler_dsn())
     pooler = os.environ.get("DATABASE_URL")
     if pooler:
         cleaned = clean_dsn(pooler)
@@ -103,12 +103,18 @@ def get_sync_dsn() -> str:
 
 
 def to_async_dsn(sync_dsn: str) -> str:
+    from urllib.parse import urlparse, urlunparse
+
     cleaned = clean_dsn(sync_dsn)
     if cleaned.startswith("postgresql+asyncpg://"):
-        return cleaned
-    if cleaned.startswith("postgresql://"):
-        return cleaned.replace("postgresql://", "postgresql+asyncpg://", 1)
-    raise ValueError("Unsupported database URL scheme.")
+        base = cleaned
+    elif cleaned.startswith("postgresql://"):
+        base = cleaned.replace("postgresql://", "postgresql+asyncpg://", 1)
+    else:
+        raise ValueError("Unsupported database URL scheme.")
+    # asyncpg does not accept libpq query params (e.g. sslmode) as connect kwargs.
+    parsed = urlparse(base)
+    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, "", "", ""))
 
 
 def safe_target(dsn: str) -> str:

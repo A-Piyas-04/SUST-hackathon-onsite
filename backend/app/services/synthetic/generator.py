@@ -1,0 +1,244 @@
+"""Deterministic seeded event generator for one outlet + three providers."""
+
+from __future__ import annotations
+
+import random
+from dataclasses import dataclass, field
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
+from app.contracts.v1.enums import FeedEventType, ProviderCode, ScenarioCode, TransactionStatus, TransactionType
+from app.services.constants import ACCOUNT_IDS, DEFAULT_OUTLET_ID, PROVIDER_IDS
+from app.services.synthetic.clock import batch_time, event_time
+
+
+@dataclass
+class GeneratedEvent:
+    event_type: FeedEventType
+    provider_code: ProviderCode | None
+    source_event_ref: str
+    source_observed_at: datetime
+    payload: dict[str, Any]
+
+
+@dataclass
+class GeneratedBatch:
+    provider_code: ProviderCode
+    source_batch_ref: str
+    source_generated_at: datetime
+    events: list[GeneratedEvent] = field(default_factory=list)
+    is_cash_batch: bool = False
+
+
+@dataclass
+class GenerationResult:
+    outlet_id: UUID
+    batches: list[GeneratedBatch]
+    semantic_fingerprint: list[dict[str, Any]]
+
+
+def _amount(rng: random.Random, base: float, spread: float = 0.2) -> str:
+    value = base * (1 + rng.uniform(-spread, spread))
+    return f"{value:.2f}"
+
+
+def _party_ref(rng: random.Random, provider: ProviderCode, idx: int) -> str:
+    return f"PARTY-{provider.value.upper()}-{idx:04d}"
+
+
+def generate_dataset(
+    *,
+    scenario_code: ScenarioCode,
+    seed: int,
+    config: dict[str, Any],
+    outlet_id: UUID = DEFAULT_OUTLET_ID,
+) -> GenerationResult:
+    rng = random.Random(seed)
+    txn_count = int(config.get("transaction_count", 12))
+    batches: list[GeneratedBatch] = []
+    fingerprint: list[dict[str, Any]] = []
+
+    # Initial balances
+    cash_balance = Decimal(config.get("initial_cash", "85000.00"))
+    provider_balances: dict[ProviderCode, Decimal] = {
+        ProviderCode.BKASH: Decimal(config.get("initial_bkash", "42000.00")),
+        ProviderCode.NAGAD: Decimal(config.get("initial_nagad", "38000.00")),
+        ProviderCode.ROCKET: Decimal(config.get("initial_rocket", "31000.00")),
+    }
+
+    event_idx = 0
+    batch_idx = 0
+
+    # Cash balance batch (carrier provider bkash for batch metadata)
+    cash_batch = GeneratedBatch(
+        provider_code=ProviderCode.BKASH,
+        source_batch_ref=f"CASH-{seed}-B0",
+        source_generated_at=batch_time(batch_idx),
+        is_cash_batch=True,
+    )
+    obs = event_time(event_idx)
+    cash_batch.events.append(
+        GeneratedEvent(
+            event_type=FeedEventType.CASH_BALANCE,
+            provider_code=None,
+            source_event_ref=f"CASH-SNAP-{seed}-0",
+            source_observed_at=obs,
+            payload={
+                "outlet_id": str(outlet_id),
+                "balance": str(cash_balance),
+                "currency": "BDT",
+                "observed_at": obs.isoformat(),
+            },
+        )
+    )
+    fingerprint.append({"type": "cash_balance", "balance": str(cash_balance), "observed_at": obs.isoformat()})
+    batches.append(cash_batch)
+    batch_idx += 1
+    event_idx += 1
+
+    target_provider = ProviderCode(config.get("target_provider", "bkash"))
+    cluster_amount = Decimal(config.get("cluster_amount", "1000.00"))
+
+    for provider in (ProviderCode.BKASH, ProviderCode.NAGAD, ProviderCode.ROCKET):
+        batch = GeneratedBatch(
+            provider_code=provider,
+            source_batch_ref=f"{provider.value.upper()}-{seed}-B{batch_idx}",
+            source_generated_at=batch_time(batch_idx),
+        )
+        batch_idx += 1
+
+        # Opening provider balance snapshot
+        bal_obs = event_time(event_idx)
+        batch.events.append(
+            GeneratedEvent(
+                event_type=FeedEventType.PROVIDER_BALANCE,
+                provider_code=provider,
+                source_event_ref=f"{provider.value.upper()}-BAL-{seed}-0",
+                source_observed_at=bal_obs,
+                payload={
+                    "account_ref": f"ACCT-O1-{provider.value.upper()}",
+                    "balance": str(provider_balances[provider]),
+                    "currency": "BDT",
+                    "observed_at": bal_obs.isoformat(),
+                },
+            )
+        )
+        fingerprint.append(
+            {
+                "type": "provider_balance",
+                "provider": provider.value,
+                "balance": str(provider_balances[provider]),
+                "observed_at": bal_obs.isoformat(),
+            }
+        )
+        event_idx += 1
+
+        # Transactions per provider
+        per_provider_txns = max(2, txn_count // 3)
+        for t in range(per_provider_txns):
+            txn_obs = event_time(event_idx)
+            event_idx += 1
+
+            if scenario_code == ScenarioCode.SCENARIO_B and provider == ProviderCode.BKASH and t < 6:
+                amount = cluster_amount
+                txn_type = TransactionType.CASH_OUT
+            elif scenario_code == ScenarioCode.SCENARIO_A and provider == target_provider:
+                amount = Decimal(_amount(rng, 2500, 0.1))
+                txn_type = TransactionType.CASH_OUT
+                provider_balances[provider] = max(Decimal("0"), provider_balances[provider] - amount)
+                cash_balance += amount * Decimal("0.3")
+            else:
+                amount = Decimal(_amount(rng, 1500 if t % 2 == 0 else 800))
+                txn_type = TransactionType.CASH_IN if t % 2 == 0 else TransactionType.CASH_OUT
+                if txn_type == TransactionType.CASH_OUT:
+                    provider_balances[provider] = max(Decimal("0"), provider_balances[provider] - amount)
+                    cash_balance += amount * Decimal("0.25")
+                else:
+                    provider_balances[provider] += amount
+                    cash_balance = max(Decimal("0"), cash_balance - amount * Decimal("0.25"))
+
+            ref = f"TXN-{provider.value.upper()}-{seed}-{t:03d}"
+            party = _party_ref(rng, provider, t)
+            batch.events.append(
+                GeneratedEvent(
+                    event_type=FeedEventType.TRANSACTION,
+                    provider_code=provider,
+                    source_event_ref=ref,
+                    source_observed_at=txn_obs,
+                    payload={
+                        "txn_ref": ref,
+                        "party_ref": party,
+                        "account_ref": f"ACCT-O1-{provider.value.upper()}",
+                        "txn_type": txn_type.value,
+                        "status": TransactionStatus.COMPLETED.value,
+                        "amount": str(amount),
+                        "currency": "BDT",
+                        "occurred_at": txn_obs.isoformat(),
+                    },
+                )
+            )
+            fingerprint.append(
+                {
+                    "type": "transaction",
+                    "ref": ref,
+                    "provider": provider.value,
+                    "amount": str(amount),
+                    "occurred_at": txn_obs.isoformat(),
+                }
+            )
+
+        # Closing balance snapshot
+        close_obs = event_time(event_idx)
+        event_idx += 1
+        batch.events.append(
+            GeneratedEvent(
+                event_type=FeedEventType.PROVIDER_BALANCE,
+                provider_code=provider,
+                source_event_ref=f"{provider.value.upper()}-BAL-{seed}-1",
+                source_observed_at=close_obs,
+                payload={
+                    "account_ref": f"ACCT-O1-{provider.value.upper()}",
+                    "balance": str(provider_balances[provider]),
+                    "currency": "BDT",
+                    "observed_at": close_obs.isoformat(),
+                },
+            )
+        )
+        fingerprint.append(
+            {
+                "type": "provider_balance",
+                "provider": provider.value,
+                "balance": str(provider_balances[provider]),
+                "observed_at": close_obs.isoformat(),
+            }
+        )
+        batches.append(batch)
+
+    # Final cash snapshot
+    final_obs = event_time(event_idx)
+    cash_final = GeneratedBatch(
+        provider_code=ProviderCode.BKASH,
+        source_batch_ref=f"CASH-{seed}-B{batch_idx}",
+        source_generated_at=batch_time(batch_idx),
+        is_cash_batch=True,
+    )
+    cash_final.events.append(
+        GeneratedEvent(
+            event_type=FeedEventType.CASH_BALANCE,
+            provider_code=None,
+            source_event_ref=f"CASH-SNAP-{seed}-1",
+            source_observed_at=final_obs,
+            payload={
+                "outlet_id": str(outlet_id),
+                "balance": str(cash_balance),
+                "currency": "BDT",
+                "observed_at": final_obs.isoformat(),
+            },
+        )
+    )
+    fingerprint.append({"type": "cash_balance", "balance": str(cash_balance), "observed_at": final_obs.isoformat()})
+    batches.append(cash_final)
+
+    return GenerationResult(outlet_id=outlet_id, batches=batches, semantic_fingerprint=fingerprint)

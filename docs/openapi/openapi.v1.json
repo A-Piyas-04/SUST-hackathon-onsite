@@ -31,7 +31,7 @@
     "/api/v1/providers": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "reference-ledger"
         ],
         "summary": "List Providers",
         "operationId": "list_providers_api_v1_providers_get",
@@ -40,7 +40,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderRef"
+                  },
+                  "type": "array",
+                  "title": "Response List Providers Api V1 Providers Get"
+                }
               }
             }
           }
@@ -55,7 +61,7 @@
     "/api/v1/areas": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "reference-ledger"
         ],
         "summary": "List Areas",
         "operationId": "list_areas_api_v1_areas_get",
@@ -79,7 +85,7 @@
     "/api/v1/outlets": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "reference-ledger"
         ],
         "summary": "List Outlets",
         "operationId": "list_outlets_api_v1_outlets_get",
@@ -88,7 +94,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OutletListItem"
+                  },
+                  "type": "array",
+                  "title": "Response List Outlets Api V1 Outlets Get"
+                }
               }
             }
           }
@@ -103,7 +115,7 @@
     "/api/v1/outlets/{outlet_id}": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "reference-ledger"
         ],
         "summary": "Get Outlet",
         "operationId": "get_outlet_api_v1_outlets__outlet_id__get",
@@ -129,7 +141,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/OutletDetailResponse"
+                }
               }
             }
           },
@@ -149,7 +163,7 @@
     "/api/v1/outlets/{outlet_id}/dashboard": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "reference-ledger"
         ],
         "summary": "Get Dashboard",
         "operationId": "get_dashboard_api_v1_outlets__outlet_id__dashboard_get",
@@ -197,7 +211,7 @@
     "/api/v1/outlets/{outlet_id}/transactions": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "reference-ledger"
         ],
         "summary": "List Transactions",
         "operationId": "list_transactions_api_v1_outlets__outlet_id__transactions_get",
@@ -216,6 +230,34 @@
               "format": "uuid",
               "title": "Outlet Id"
             }
+          },
+          {
+            "name": "provider_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProviderCode"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Code"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
           }
         ],
         "responses": {
@@ -223,7 +265,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionListResponse"
+                }
               }
             }
           },
@@ -243,10 +287,102 @@
     "/api/v1/outlets/{outlet_id}/balances/history": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "reference-ledger"
         ],
         "summary": "Balance History",
         "operationId": "balance_history_api_v1_outlets__outlet_id__balances_history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "outlet_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Outlet Id"
+            }
+          },
+          {
+            "name": "reserve_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ReserveType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reserve Type"
+            }
+          },
+          {
+            "name": "provider_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProviderCode"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Code"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/outlets/{outlet_id}/data-quality": {
+      "get": {
+        "tags": [
+          "reference-ledger"
+        ],
+        "summary": "Current Data Quality",
+        "operationId": "current_data_quality_api_v1_outlets__outlet_id__data_quality_get",
         "security": [
           {
             "HTTPBearer": []
@@ -269,7 +405,57 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DataQualityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/outlets/{outlet_id}/data-quality/history": {
+      "get": {
+        "tags": [
+          "reference-ledger"
+        ],
+        "summary": "Data Quality History",
+        "operationId": "data_quality_history_api_v1_outlets__outlet_id__data_quality_history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "outlet_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Outlet Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataQualityHistoryResponse"
+                }
               }
             }
           },
@@ -289,7 +475,7 @@
     "/api/v1/simulations/scenarios": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "simulation"
         ],
         "summary": "List Scenarios",
         "operationId": "list_scenarios_api_v1_simulations_scenarios_get",
@@ -298,7 +484,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioListResponse"
+                }
               }
             }
           }
@@ -313,16 +501,38 @@
     "/api/v1/simulations/runs": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "simulation"
         ],
         "summary": "Start Simulation",
         "operationId": "start_simulation_api_v1_simulations_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -337,7 +547,7 @@
     "/api/v1/simulations/runs/{run_id}": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "simulation"
         ],
         "summary": "Get Simulation Run",
         "operationId": "get_simulation_run_api_v1_simulations_runs__run_id__get",
@@ -363,7 +573,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RunResponse"
+                }
               }
             }
           },
@@ -383,7 +595,7 @@
     "/api/v1/simulations/runs/{run_id}/reset": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "simulation"
         ],
         "summary": "Reset Simulation Run",
         "operationId": "reset_simulation_run_api_v1_simulations_runs__run_id__reset_post",
@@ -409,7 +621,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RunResponse"
+                }
               }
             }
           },
@@ -429,7 +643,7 @@
     "/api/v1/simulations/runs/{run_id}/faults": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "simulation"
         ],
         "summary": "Create Fault",
         "operationId": "create_fault_api_v1_simulations_runs__run_id__faults_post",
@@ -450,12 +664,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFaultRequest"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/FaultSummary"
+                }
               }
             }
           },
@@ -475,7 +701,7 @@
     "/api/v1/simulations/runs/{run_id}/faults/{fault_id}": {
       "patch": {
         "tags": [
-          "stubs-phase3+"
+          "simulation"
         ],
         "summary": "Patch Fault",
         "operationId": "patch_fault_api_v1_simulations_runs__run_id__faults__fault_id__patch",
@@ -506,12 +732,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchFaultRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/FaultSummary"
+                }
               }
             }
           },
@@ -531,16 +769,38 @@
     "/api/v1/ingestion/batches": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "ingestion"
         ],
-        "summary": "Ingest Batch",
-        "operationId": "ingest_batch_api_v1_ingestion_batches_post",
+        "summary": "Ingest Batch Route",
+        "operationId": "ingest_batch_route_api_v1_ingestion_batches_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/IngestBatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -552,102 +812,10 @@
         ]
       }
     },
-    "/api/v1/outlets/{outlet_id}/data-quality": {
-      "get": {
-        "tags": [
-          "stubs-phase3+"
-        ],
-        "summary": "Current Data Quality",
-        "operationId": "current_data_quality_api_v1_outlets__outlet_id__data_quality_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "outlet_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Outlet Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/outlets/{outlet_id}/data-quality/history": {
-      "get": {
-        "tags": [
-          "stubs-phase3+"
-        ],
-        "summary": "Data Quality History",
-        "operationId": "data_quality_history_api_v1_outlets__outlet_id__data_quality_history_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "outlet_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Outlet Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/outlets/{outlet_id}/liquidity-projections": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Liquidity Projections",
         "operationId": "liquidity_projections_api_v1_outlets__outlet_id__liquidity_projections_get",
@@ -693,7 +861,7 @@
     "/api/v1/internal/analytics/liquidity/run": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Run Liquidity Analytics",
         "operationId": "run_liquidity_analytics_api_v1_internal_analytics_liquidity_run_post",
@@ -717,7 +885,7 @@
     "/api/v1/outlets/{outlet_id}/anomaly-flags": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Anomaly Flags",
         "operationId": "anomaly_flags_api_v1_outlets__outlet_id__anomaly_flags_get",
@@ -763,7 +931,7 @@
     "/api/v1/anomaly-flags/{flag_id}": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Anomaly Flag Detail",
         "operationId": "anomaly_flag_detail_api_v1_anomaly_flags__flag_id__get",
@@ -809,7 +977,7 @@
     "/api/v1/internal/analytics/anomalies/run": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Run Anomaly Analytics",
         "operationId": "run_anomaly_analytics_api_v1_internal_analytics_anomalies_run_post",
@@ -833,7 +1001,7 @@
     "/api/v1/auth/demo-login": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Demo Login",
         "operationId": "demo_login_api_v1_auth_demo_login_post",
@@ -852,7 +1020,7 @@
     "/api/v1/me": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Current User Profile",
         "operationId": "current_user_profile_api_v1_me_get",
@@ -876,7 +1044,7 @@
     "/api/v1/me/preferences": {
       "patch": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Update Preferences",
         "operationId": "update_preferences_api_v1_me_preferences_patch",
@@ -900,7 +1068,7 @@
     "/api/v1/alerts": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "List Alerts",
         "operationId": "list_alerts_api_v1_alerts_get",
@@ -930,7 +1098,7 @@
     "/api/v1/alerts/{alert_id}": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Get Alert",
         "operationId": "get_alert_api_v1_alerts__alert_id__get",
@@ -978,7 +1146,7 @@
     "/api/v1/alerts/{alert_id}/explanations": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Alert Explanations",
         "operationId": "alert_explanations_api_v1_alerts__alert_id__explanations_get",
@@ -1024,7 +1192,7 @@
     "/api/v1/alerts/{alert_id}/cases": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Open Case From Alert",
         "operationId": "open_case_from_alert_api_v1_alerts__alert_id__cases_post",
@@ -1070,7 +1238,7 @@
     "/api/v1/cases": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "List Cases",
         "operationId": "list_cases_api_v1_cases_get",
@@ -1100,7 +1268,7 @@
     "/api/v1/cases/{case_id}": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Get Case",
         "operationId": "get_case_api_v1_cases__case_id__get",
@@ -1148,7 +1316,7 @@
     "/api/v1/cases/{case_id}/timeline": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Case Timeline",
         "operationId": "case_timeline_api_v1_cases__case_id__timeline_get",
@@ -1194,7 +1362,7 @@
     "/api/v1/cases/{case_id}/assignments": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Assign Case",
         "operationId": "assign_case_api_v1_cases__case_id__assignments_post",
@@ -1240,7 +1408,7 @@
     "/api/v1/cases/{case_id}/acknowledge": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Acknowledge Case",
         "operationId": "acknowledge_case_api_v1_cases__case_id__acknowledge_post",
@@ -1286,7 +1454,7 @@
     "/api/v1/cases/{case_id}/escalate": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Escalate Case",
         "operationId": "escalate_case_api_v1_cases__case_id__escalate_post",
@@ -1332,7 +1500,7 @@
     "/api/v1/cases/{case_id}/resolve": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Resolve Case",
         "operationId": "resolve_case_api_v1_cases__case_id__resolve_post",
@@ -1378,7 +1546,7 @@
     "/api/v1/cases/{case_id}/notes": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Add Case Note",
         "operationId": "add_case_note_api_v1_cases__case_id__notes_post",
@@ -1424,7 +1592,7 @@
     "/api/v1/cases/{case_id}/review": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Review Case",
         "operationId": "review_case_api_v1_cases__case_id__review_post",
@@ -1470,7 +1638,7 @@
     "/api/v1/notifications": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "List Notifications",
         "operationId": "list_notifications_api_v1_notifications_get",
@@ -1494,7 +1662,7 @@
     "/api/v1/notifications/{notification_id}/read": {
       "post": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Read Notification",
         "operationId": "read_notification_api_v1_notifications__notification_id__read_post",
@@ -1540,7 +1708,7 @@
     "/api/v1/cases/{case_id}/audit-events": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Case Audit Events",
         "operationId": "case_audit_events_api_v1_cases__case_id__audit_events_get",
@@ -1586,7 +1754,7 @@
     "/api/v1/validation/results": {
       "get": {
         "tags": [
-          "stubs-phase3+"
+          "stubs-phase4+"
         ],
         "summary": "Validation Results",
         "operationId": "validation_results_api_v1_validation_results_get",
@@ -1794,6 +1962,135 @@
         ],
         "title": "AppRole"
       },
+      "AreaRef": {
+        "properties": {
+          "area_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Area Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "area_id",
+          "code",
+          "name"
+        ],
+        "title": "AreaRef"
+      },
+      "BalanceHistoryItem": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "reserve_type": {
+            "$ref": "#/components/schemas/ReserveType"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "balance": {
+            "type": "string",
+            "title": "Balance"
+          },
+          "currency_code": {
+            "type": "string",
+            "title": "Currency Code"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Received At"
+          },
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "is_conflicted": {
+            "type": "boolean",
+            "title": "Is Conflicted",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "reserve_type",
+          "outlet_id",
+          "balance",
+          "currency_code",
+          "observed_at",
+          "received_at",
+          "source_kind"
+        ],
+        "title": "BalanceHistoryItem"
+      },
+      "BalanceHistoryResponse": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "reserve_type": {
+            "$ref": "#/components/schemas/ReserveType"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BalanceHistoryItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "reserve_type",
+          "items"
+        ],
+        "title": "BalanceHistoryResponse"
+      },
       "CaseResponse": {
         "properties": {
           "case_id": {
@@ -1962,6 +2259,94 @@
         ],
         "title": "Confidence"
       },
+      "CreateFaultRequest": {
+        "properties": {
+          "fault_type": {
+            "$ref": "#/components/schemas/FaultType"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "parameters": {
+            "type": "object",
+            "title": "Parameters"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fault_type",
+          "outlet_id"
+        ],
+        "title": "CreateFaultRequest"
+      },
+      "CreateRunRequest": {
+        "properties": {
+          "scenario_code": {
+            "$ref": "#/components/schemas/ScenarioCode"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "config_overrides": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Overrides"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id",
+            "default": "0b000000-0000-0000-0000-000000000001"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario_code"
+        ],
+        "title": "CreateRunRequest"
+      },
       "DashboardResponse": {
         "properties": {
           "outlet": {
@@ -1998,6 +2383,200 @@
         ],
         "title": "DashboardResponse"
       },
+      "DataQualityHistoryResponse": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "phase": {
+            "type": "string",
+            "pattern": "^foundation$",
+            "title": "Phase",
+            "default": "foundation"
+          },
+          "assessments": {
+            "items": {
+              "$ref": "#/components/schemas/DataQualityItem"
+            },
+            "type": "array",
+            "title": "Assessments"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "assessments"
+        ],
+        "title": "DataQualityHistoryResponse"
+      },
+      "DataQualityItem": {
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/ProviderCode"
+          },
+          "assessment": {
+            "$ref": "#/components/schemas/QualityAssessmentInput"
+          },
+          "phase": {
+            "type": "string",
+            "pattern": "^foundation$",
+            "title": "Phase",
+            "default": "foundation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "assessment"
+        ],
+        "title": "DataQualityItem"
+      },
+      "DataQualityResponse": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "phase": {
+            "type": "string",
+            "pattern": "^foundation$",
+            "title": "Phase",
+            "default": "foundation"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": "Pre-Phase-4 interim estimates derived from ingestion metadata."
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/DataQualityItem"
+            },
+            "type": "array",
+            "title": "Providers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "providers"
+        ],
+        "title": "DataQualityResponse"
+      },
+      "FaultSummary": {
+        "properties": {
+          "fault_injection_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Fault Injection Id"
+          },
+          "fault_type": {
+            "$ref": "#/components/schemas/FaultType"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "parameters": {
+            "type": "object",
+            "title": "Parameters"
+          },
+          "is_enabled": {
+            "type": "boolean",
+            "title": "Is Enabled"
+          },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduled At"
+          },
+          "applied_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fault_injection_id",
+          "fault_type",
+          "outlet_id",
+          "parameters",
+          "is_enabled",
+          "scheduled_at"
+        ],
+        "title": "FaultSummary"
+      },
+      "FaultType": {
+        "type": "string",
+        "enum": [
+          "delay",
+          "missing_feed",
+          "missing_field",
+          "conflicting_balance",
+          "malformed_payload"
+        ],
+        "title": "FaultType"
+      },
+      "FeedEventType": {
+        "type": "string",
+        "enum": [
+          "transaction",
+          "provider_balance",
+          "cash_balance",
+          "heartbeat"
+        ],
+        "title": "FeedEventType"
+      },
+      "FeedHealthStatus": {
+        "type": "string",
+        "enum": [
+          "fresh",
+          "stale",
+          "missing",
+          "conflicting"
+        ],
+        "title": "FeedHealthStatus"
+      },
       "FeedHealthSummary": {
         "properties": {
           "status": {
@@ -2032,6 +2611,204 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "IngestBatchRequest": {
+        "properties": {
+          "simulation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Simulation Run Id"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "provider_code": {
+            "$ref": "#/components/schemas/ProviderCode"
+          },
+          "source_batch_ref": {
+            "type": "string",
+            "title": "Source Batch Ref"
+          },
+          "source_generated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Generated At"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/IngestEventInput"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Events"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "simulation_run_id",
+          "outlet_id",
+          "provider_code",
+          "source_batch_ref",
+          "events"
+        ],
+        "title": "IngestBatchRequest"
+      },
+      "IngestBatchResponse": {
+        "properties": {
+          "ingestion_batch_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Ingestion Batch Id"
+          },
+          "simulation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Simulation Run Id"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "provider_code": {
+            "$ref": "#/components/schemas/ProviderCode"
+          },
+          "source_batch_ref": {
+            "type": "string",
+            "title": "Source Batch Ref"
+          },
+          "expected_event_count": {
+            "type": "integer",
+            "title": "Expected Event Count"
+          },
+          "received_event_count": {
+            "type": "integer",
+            "title": "Received Event Count"
+          },
+          "rejected_event_count": {
+            "type": "integer",
+            "title": "Rejected Event Count"
+          },
+          "normalization_status": {
+            "$ref": "#/components/schemas/NormalizationStatus"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/IngestEventSummary"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ingestion_batch_id",
+          "simulation_run_id",
+          "outlet_id",
+          "provider_code",
+          "source_batch_ref",
+          "expected_event_count",
+          "received_event_count",
+          "rejected_event_count",
+          "normalization_status",
+          "events"
+        ],
+        "title": "IngestBatchResponse"
+      },
+      "IngestEventInput": {
+        "properties": {
+          "event_type": {
+            "$ref": "#/components/schemas/FeedEventType"
+          },
+          "source_event_ref": {
+            "type": "string",
+            "title": "Source Event Ref"
+          },
+          "source_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Observed At"
+          },
+          "payload": {
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_type",
+          "source_event_ref",
+          "payload"
+        ],
+        "title": "IngestEventInput"
+      },
+      "IngestEventSummary": {
+        "properties": {
+          "ingestion_event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Ingestion Event Id"
+          },
+          "source_event_ref": {
+            "type": "string",
+            "title": "Source Event Ref"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/FeedEventType"
+          },
+          "normalization_status": {
+            "$ref": "#/components/schemas/NormalizationStatus"
+          },
+          "rejection_code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RejectionCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rejection_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ingestion_event_id",
+          "source_event_ref",
+          "event_type",
+          "normalization_status"
+        ],
+        "title": "IngestEventSummary"
+      },
       "LocaleCode": {
         "type": "string",
         "enum": [
@@ -2040,6 +2817,82 @@
           "bn_latn"
         ],
         "title": "LocaleCode"
+      },
+      "NormalizationStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "normalized",
+          "rejected"
+        ],
+        "title": "NormalizationStatus"
+      },
+      "OutletDetailResponse": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "synthetic_code": {
+            "type": "string",
+            "title": "Synthetic Code"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "area": {
+            "$ref": "#/components/schemas/AreaRef"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderRef"
+            },
+            "type": "array",
+            "title": "Providers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "synthetic_code",
+          "display_name",
+          "area",
+          "providers"
+        ],
+        "title": "OutletDetailResponse"
+      },
+      "OutletListItem": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "synthetic_code": {
+            "type": "string",
+            "title": "Synthetic Code"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "area_name": {
+            "type": "string",
+            "title": "Area Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "synthetic_code",
+          "display_name",
+          "area_name"
+        ],
+        "title": "OutletListItem"
       },
       "OutletSummary": {
         "properties": {
@@ -2065,6 +2918,20 @@
           "area"
         ],
         "title": "OutletSummary"
+      },
+      "PatchFaultRequest": {
+        "properties": {
+          "is_enabled": {
+            "type": "boolean",
+            "title": "Is Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "is_enabled"
+        ],
+        "title": "PatchFaultRequest"
       },
       "ProjectionSummary": {
         "properties": {
@@ -2138,6 +3005,30 @@
         ],
         "title": "ProviderDashboardItem"
       },
+      "ProviderRef": {
+        "properties": {
+          "provider_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Provider Id"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ProviderCode"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider_id",
+          "code",
+          "display_name"
+        ],
+        "title": "ProviderRef"
+      },
       "ProviderSummary": {
         "properties": {
           "code": {
@@ -2155,6 +3046,386 @@
           "display_name"
         ],
         "title": "ProviderSummary"
+      },
+      "QualityAssessmentInput": {
+        "properties": {
+          "data_quality_assessment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Quality Assessment Id"
+          },
+          "simulation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Simulation Run Id"
+          },
+          "ingestion_batch_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingestion Batch Id"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FeedHealthStatus"
+          },
+          "confidence_modifier": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence Modifier"
+          },
+          "sample_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sample Count"
+          },
+          "latest_source_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Source At"
+          },
+          "assessed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Assessed At"
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/QualityIssueInput"
+            },
+            "type": "array",
+            "title": "Issues"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "simulation_run_id",
+          "outlet_id",
+          "status",
+          "confidence_modifier",
+          "sample_count",
+          "assessed_at",
+          "engine_version",
+          "summary"
+        ],
+        "title": "QualityAssessmentInput"
+      },
+      "QualityIssueInput": {
+        "properties": {
+          "issue_type": {
+            "$ref": "#/components/schemas/QualityIssueType"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "field_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Name"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "issue_type",
+          "severity"
+        ],
+        "title": "QualityIssueInput"
+      },
+      "QualityIssueType": {
+        "type": "string",
+        "enum": [
+          "late_arrival",
+          "missing_feed",
+          "missing_field",
+          "conflicting_snapshot",
+          "impossible_transition",
+          "insufficient_samples",
+          "malformed_payload"
+        ],
+        "title": "QualityIssueType"
+      },
+      "RejectionCode": {
+        "type": "string",
+        "enum": [
+          "malformed_payload",
+          "missing_field",
+          "account_mismatch",
+          "invalid_amount",
+          "invalid_timestamp",
+          "duplicate_event",
+          "unknown_event_type"
+        ],
+        "title": "RejectionCode"
+      },
+      "ReserveType": {
+        "type": "string",
+        "enum": [
+          "shared_cash",
+          "provider_e_money"
+        ],
+        "title": "ReserveType"
+      },
+      "RunArtifactCounts": {
+        "properties": {
+          "ingestion_batches": {
+            "type": "integer",
+            "title": "Ingestion Batches",
+            "default": 0
+          },
+          "ingestion_events": {
+            "type": "integer",
+            "title": "Ingestion Events",
+            "default": 0
+          },
+          "transactions": {
+            "type": "integer",
+            "title": "Transactions",
+            "default": 0
+          },
+          "cash_snapshots": {
+            "type": "integer",
+            "title": "Cash Snapshots",
+            "default": 0
+          },
+          "provider_snapshots": {
+            "type": "integer",
+            "title": "Provider Snapshots",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RunArtifactCounts"
+      },
+      "RunResponse": {
+        "properties": {
+          "simulation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Simulation Run Id"
+          },
+          "scenario_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Scenario Id"
+          },
+          "scenario_code": {
+            "$ref": "#/components/schemas/ScenarioCode"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "config_snapshot": {
+            "type": "object",
+            "title": "Config Snapshot"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SimulationRunStatus"
+          },
+          "started_by_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started By User Id"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "error_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Summary"
+          },
+          "faults": {
+            "items": {
+              "$ref": "#/components/schemas/FaultSummary"
+            },
+            "type": "array",
+            "title": "Faults"
+          },
+          "artifacts": {
+            "$ref": "#/components/schemas/RunArtifactCounts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "simulation_run_id",
+          "scenario_id",
+          "scenario_code",
+          "seed",
+          "config_snapshot",
+          "status",
+          "started_at"
+        ],
+        "title": "RunResponse"
+      },
+      "ScenarioCode": {
+        "type": "string",
+        "enum": [
+          "normal",
+          "scenario_a",
+          "scenario_b",
+          "scenario_c",
+          "scenario_d"
+        ],
+        "title": "ScenarioCode"
+      },
+      "ScenarioListResponse": {
+        "properties": {
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioResponse"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenarios"
+        ],
+        "title": "ScenarioListResponse"
+      },
+      "ScenarioResponse": {
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Scenario Id"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ScenarioCode"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "default_seed": {
+            "type": "integer",
+            "title": "Default Seed"
+          },
+          "default_config": {
+            "type": "object",
+            "title": "Default Config"
+          },
+          "validation_split": {
+            "$ref": "#/components/schemas/ValidationSplit"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "code",
+          "name",
+          "description",
+          "default_seed",
+          "default_config",
+          "validation_split",
+          "is_active"
+        ],
+        "title": "ScenarioResponse"
       },
       "Severity": {
         "type": "string",
@@ -2198,6 +3469,125 @@
         ],
         "title": "SharedCashDashboard"
       },
+      "SimulationRunStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "completed",
+          "failed",
+          "reset"
+        ],
+        "title": "SimulationRunStatus"
+      },
+      "TransactionListResponse": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionResponse"
+            },
+            "type": "array",
+            "title": "Transactions"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "transactions",
+          "total"
+        ],
+        "title": "TransactionListResponse"
+      },
+      "TransactionResponse": {
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Transaction Id"
+          },
+          "synthetic_transaction_ref": {
+            "type": "string",
+            "title": "Synthetic Transaction Ref"
+          },
+          "synthetic_party_ref": {
+            "type": "string",
+            "title": "Synthetic Party Ref"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderCode"
+          },
+          "transaction_type": {
+            "$ref": "#/components/schemas/TransactionType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TransactionStatus"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "currency_code": {
+            "type": "string",
+            "title": "Currency Code"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Received At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "synthetic_transaction_ref",
+          "synthetic_party_ref",
+          "provider",
+          "transaction_type",
+          "status",
+          "amount",
+          "currency_code",
+          "occurred_at",
+          "received_at"
+        ],
+        "title": "TransactionResponse"
+      },
+      "TransactionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "completed",
+          "failed",
+          "reversed"
+        ],
+        "title": "TransactionStatus"
+      },
+      "TransactionType": {
+        "type": "string",
+        "enum": [
+          "cash_in",
+          "cash_out",
+          "payment",
+          "refund",
+          "adjustment"
+        ],
+        "title": "TransactionType"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -2230,6 +3620,15 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "ValidationSplit": {
+        "type": "string",
+        "enum": [
+          "tuning",
+          "held_out",
+          "demo"
+        ],
+        "title": "ValidationSplit"
       }
     },
     "securitySchemes": {

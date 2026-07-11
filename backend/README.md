@@ -59,6 +59,26 @@ Prerequisite: `pip install -r requirements.txt`
 
 Fresh setup: `make db-up && make migrate && make seed && make server`
 
+## Phase 3 workflow (synthetic ecosystem + ledger)
+
+| Purpose | Command |
+|---|---|
+| Start simulation run | `make sim-run SCENARIO=normal SEED=1001` |
+| Run status | `make sim-status RUN_ID=<uuid>` |
+| Reset run | `make sim-reset RUN_ID=<uuid>` |
+| Add fault | `make sim-fault-add RUN_ID=<uuid> FAULT_TYPE=conflicting_balance PROVIDER=nagad` |
+| Toggle fault | `make sim-fault-toggle RUN_ID=<uuid> FAULT_ID=<uuid> ENABLED=false` |
+| Demo path | `make sim-demo` |
+
+Example API calls (after `make server`):
+
+```bash
+AUTH="Authorization: Bearer demo:d0000000-0000-0000-0000-000000000a01"
+curl -X POST http://localhost:8000/api/v1/simulations/runs -H "$AUTH" -H "Content-Type: application/json" \
+  -d '{"scenario_code":"normal","seed":1001,"outlet_id":"0b000000-0000-0000-0000-000000000001"}'
+curl http://localhost:8000/api/v1/outlets/0b000000-0000-0000-0000-000000000001/dashboard -H "$AUTH"
+```
+
 ## Phase 2 deliverables
 
 - `GET /health` — liveness + database readiness (no confidential data)
