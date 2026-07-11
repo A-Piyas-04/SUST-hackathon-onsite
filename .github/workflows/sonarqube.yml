@@ -18,6 +18,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    # Ephemeral Postgres for the backend schema/RLS/view suite. The migrations
+    # shim auth.users/auth.uid() and the anon/authenticated/service_role roles
+    # when absent (ADR 0002/0004), so the chain applies on plain PostgreSQL.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -37,10 +55,14 @@ jobs:
       - name: Run backend tests with coverage
         working-directory: backend
         shell: bash
+        env:
+          # Direct 5432 connection to the service container above. No sslmode
+          # (libpq's default `prefer` falls back to plaintext for local PG).
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: |
           test_file="$(find tests -type f -name 'test_*.py' -print -quit 2>/dev/null)"
           if [[ -n "$test_file" ]]; then
-            pytest --cov=app --cov=analytics --cov-report=xml:coverage.xml
+            pytest --cov=app --cov-report=xml:coverage.xml
           else
             echo "No backend tests exist yet; skipping Python coverage generation."
           fi
