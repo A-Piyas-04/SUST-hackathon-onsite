@@ -592,11 +592,9 @@
     width: 8px;
     min-height: 2rem;
     align-self: center;
-    border-left: none;
     border-top: none;
     border-right: 1px solid #b8b0a6;
     border-bottom: none;
-    border-radius: 0;
     border-left: 1px solid #b8b0a6;
     border-radius: 5px 0 0 5px;
     margin: 0;
