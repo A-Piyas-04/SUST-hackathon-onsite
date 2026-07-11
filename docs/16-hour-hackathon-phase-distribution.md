@@ -35,6 +35,8 @@ The plan deliberately favors a **connected liquidity → anomaly → coordinatio
 - Auth & Provider-Boundary Guard — JWT RBAC; Provider A ops cannot open Provider B cases.
 - Monitoring & Observability — structured logs, `/health` + `/metrics` summary.
 
+**Data/API contract:** [`schema.md`](./schema.md) is the implementation baseline. Source observations and analytical outputs are append-only; current dashboard values are derived. Analytical **alerts are immutable evidence records**, while **cases are separate mutable human-workflow records** opened only for important alerts.
+
 **UI views (minimum):**
 - Agent / unified operations dashboard (mobile-responsive).
 - Alert detail and case coordination view.
@@ -150,18 +152,22 @@ This plan assumes **exactly three people working simultaneously**. Each person o
 5. Contract changes go through Member 2 and must preserve the previous fixture until all consumers have moved.
 6. At each phase boundary, commit or tag the named deliverables before dependent work begins.
 
+### Schema readiness rule
+
+`schema.md` is already defined before Hour 0. Phase 2 reviews, trims, and freezes its MVP subset; it does not redesign the data model. Member 2 owns migration/API translation, Member 3 owns analytical semantics and expected values, and Member 1 owns consumer fixtures matching the canonical API objects. Any schema change after Phase 2 requires a short decision record and coordinated fixture version bump.
+
 ## 5. Sixteen-Hour Schedule at a Glance
 
 | Clock | Duration | Phase | Member 1 — Product/UI | Member 2 — Platform/Workflow | Member 3 — Intelligence/Quality |
 |---|---:|---|---|---|---|
 | 00:00-00:45 | 0:45 | 1. Scope lock | Story, screens, wording guardrails | Stack, repo and integration rules | Scenario and metric acceptance criteria |
-| 00:45-02:15 | 1:30 | 2. Contracts | Wireframes and UI fixtures | Schemas, API contract and migrations | Analytics interfaces and scenario specification |
+| 00:45-02:15 | 1:30 | 2. Contracts | Wireframes and schema-aligned UI fixtures | Schema review, API contract and migration scaffolds | Analytics interfaces and scenario specification |
 | 02:15-05:00 | 2:45 | 3. Foundations | Dashboard and case shells | Ingestion, ledger, persistence and APIs | Generator, data-quality engine and tests |
 | 05:00-07:30 | 2:30 | 4. Decision intelligence | Forecast/anomaly UI and localized copy | Alert creation, routing and result persistence | Liquidity and anomaly engines |
 | 07:30-10:00 | 2:30 | 5. Safe response | Case actions, history and notification UI | Lifecycle, audit log and RBAC | Degraded-data behavior and security/quality tests |
 | 10:00-12:00 | 2:00 | 6. Integration freeze | Complete demo UX and responsive polish | Live wiring, startup and integration fixes | End-to-end fixtures, regression and safety suite |
 | 12:00-13:30 | 1:30 | 7. Validation | UX/accessibility QA and evidence capture | Performance, health and reliability instrumentation | Analytics evaluation and failure-mode validation |
-| 13:30-14:30 | 1:00 | 8. Documentation | README usage, screenshots and slide skeleton | Architecture, setup and data/simulation note | Metrics, responsible-design note and limitations |
+| 13:30-14:30 | 1:00 | 8. Documentation | README usage, screenshots and slide skeleton | Architecture and reproducible setup | Data/simulation, metrics, responsible design and limitations |
 | 14:30-15:30 | 1:00 | 9. Rehearsal | Demo lead and presentation timing | Reset/backup operator and architecture Q&A | Evidence/safety presenter and result verification |
 | 15:30-16:00 | 0:30 | 10. Submission | Visual/presentation check | Build, repository and submission check | Data, tests, metrics and secret scan |
 
@@ -174,7 +180,7 @@ Complexity is estimated on a 1–5 scale **within each time block**. Scores meas
 | Phase | Member 1 | Member 2 | Member 3 | Balance rationale |
 |---|---:|---:|---:|---|
 | 1 | 2 | 2 | 2 | Three bounded definition artifacts |
-| 2 | 3 | 4 | 4 | UI fixtures offset the heavier schema/algorithm specifications |
+| 2 | 3 | 4 | 4 | UI fixtures offset API/migration scaffolding and analytics specifications |
 | 3 | 5 | 5 | 5 | Frontend foundation, backend foundation, and data/quality foundation |
 | 4 | 4 | 4 | 5 | Rich intelligence UI, alert platform, and two tested analytical engines |
 | 5 | 4 | 5 | 5 | Workflow UI, secure lifecycle, and degraded-data/adversarial work |
@@ -200,7 +206,7 @@ If a member finishes early, they review another lane or prepare their next-phase
 | Owner | Independent work | Output ID |
 |---|---|---|
 | **Member 1** | Freeze the three primary views, the 3–5 minute Scenarios A–D demo sequence, visible terminology, and `Must/Should/Stretch` UI backlog. | `P1-M1` story and screen map |
-| **Member 2** | Freeze stack (including Supabase), repository conventions, branch/integration policy, module boundaries, environment variables, and prohibited backend actions. | `P1-M2` technical charter |
+| **Member 2** | Freeze stack (including Supabase), repository conventions, branch/integration policy, module boundaries, environment variables, prohibited backend actions, and the process for proposing exceptions to `schema.md`. | `P1-M2` technical charter |
 | **Member 3** | Freeze scenario inputs/expected outcomes, analytical success conditions, minimum validation metrics, and safety assertions for stale/conflicting data and unusual activity. | `P1-M3` acceptance matrix |
 
 **Final 10-minute checkpoint:** compare the three outputs only for contradictions. Member 2 records the agreed interfaces; owners retain their respective implementation areas.
@@ -228,17 +234,17 @@ If a member finishes early, they review another lane or prepare their next-phase
 
 | Owner | Independent work | Inputs | Output ID |
 |---|---|---|---|
-| **Member 1** | Produce low-fidelity dashboard, alert detail and case-flow wireframes. Create UI fixtures for loading/empty/error and `fresh/stale/missing/conflicting` states, plus EN/Bangla/Banglish copy keys. | `P1-M1`; field names requested from `P1-M3` | `P2-M1` wireframes + frontend fixtures |
-| **Member 2** | Define provider-separated entities, OpenAPI/response contracts, routing fields and state transitions. Draft Supabase migrations, `.env.example`, and architecture diagram. | `P1-M2`, `P1-M3` acceptance fields | `P2-M2` schema/API v1 + migration draft |
-| **Member 3** | Specify deterministic Scenarios A–D, fault toggles, thresholds, forecast/anomaly formulas, confidence rules and expected outputs. Export pure-function input/output examples matching API v1. | `P1-M3`; schema names from `P1-M2` | `P2-M3` scenario + analytics contract |
+| **Member 1** | Produce low-fidelity dashboard, alert detail and case-flow wireframes. Create loading/empty/error and `fresh/stale/missing/conflicting` fixtures matching the canonical dashboard and alert objects in `schema.md` §17, plus EN/Bangla/Banglish copy keys. | `P1-M1`; `schema.md` §§12, 17 | `P2-M1` wireframes + schema-aligned frontend fixtures |
+| **Member 2** | Review `schema.md` for MVP scope, record only necessary exceptions, freeze REST API v1, and scaffold the six migration groups from §20. Draft `.env.example`, RLS responsibility boundaries, and the architecture diagram. | `P1-M2`, `P1-M3`; `schema.md` §§13–16, 20 | `P2-M2` reviewed schema + API v1 + migration scaffolds |
+| **Member 3** | Specify deterministic Scenarios A–D, fault toggles, thresholds, forecast/anomaly formulas, confidence rules and expected outputs using the ledger, quality, analytics, and validation shapes in `schema.md`. Export pure-function examples matching API v1. | `P1-M3`; `schema.md` §§7–11, 17 | `P2-M3` scenario + analytics contract |
 
-**Handoff order:** Member 2 publishes the schema skeleton by 01:15. Members 1 and 3 bind their fixtures/examples to it by 01:45. Member 2 freezes API v1 at 02:00 and uses the final 15 minutes for mismatch corrections.
+**Handoff order:** Member 2 publishes any proposed schema exceptions and the API field map by 01:15. Members 1 and 3 bind fixtures/examples to that map by 01:45. Member 2 freezes API v1 and migration filenames at 02:00 and uses the final 15 minutes for mismatch corrections.
 
 ### Deliverables
 
 - Approved low-fidelity screen layout.
-- Shared schema/API contract.
-- Supabase migration draft applied to dev project.
+- Reviewed `schema.md` with an explicit MVP table list and decision log for any exception.
+- Frozen API v1 field map and scaffolded Supabase migration files; database application begins in Phase 3.
 - Synthetic scenario specification with expected outputs.
 - Architecture diagram draft.
 - Forecast, anomaly, and confidence rule definitions.
@@ -247,7 +253,8 @@ If a member finishes early, they review another lane or prepare their next-phase
 
 - Frontend can build against fixtures without waiting for analytics/backend.
 - Analytics can consume the exact transaction and balance schema.
-- Every alert object supports reason, evidence, uncertainty, recipient, owner, next step, status, and timestamps.
+- Every alert object supports reason, evidence, uncertainty, safe next step, sources, and timestamps; its linked case supplies recipient, owner, lifecycle status, notes, and resolution.
+- The team can explain that an alert preserves analytical evidence while a case owns routing and lifecycle state.
 
 ## Phase 3 — Foundation Vertical Slice
 
@@ -258,15 +265,16 @@ If a member finishes early, they review another lane or prepare their next-phase
 
 | Owner | Independent implementation | Prerequisite | Completion handoff |
 |---|---|---|---|
-| **Member 1** | Build the dashboard shell, shared-cash and separate provider cards, data-health states, alert list, alert-detail shell and case shell. Use only `P2-M1` fixtures; start visible-language and requirement-evidence notes. | `P2-M1`, API field names from `P2-M2` | `P3-M1` fixture-driven frontend |
-| **Member 2** | Apply migrations; implement ingestion/normalization, Supabase connection, Ledger & Aggregation, read APIs, seed-import endpoint and a minimal JWT/provider-scope stub. Member 2 persists data but does not generate scenario logic. | `P2-M2` and sample payloads from `P2-M3` | `P3-M2` persisted foundation API |
-| **Member 3** | Implement deterministic synthetic generator, fault injection and Data Quality & Confidence Engine as pure modules. Add labeled forecast/anomaly cases and unit tests for normal, malformed and degraded inputs. | `P2-M3`, entity shapes from `P2-M2` | `P3-M3` generator + quality package |
+| **Member 1** | Build the dashboard shell, shared-cash and separate provider cards, data-health states, alert list, alert-detail shell and separate case shell. Use only `P2-M1` fixtures; start visible-language and requirement-evidence notes. | `P2-M1`, canonical objects/API fields from `P2-M2` | `P3-M1` fixture-driven frontend |
+| **Member 2** | Apply the foundation, simulation/ingestion, ledger, and minimum data-quality migrations from `schema.md` §§6–9.2. Implement Supabase connection, ingestion/normalization, append-only balance/transaction persistence, ledger reads, seed-import endpoint and minimal JWT/access-scope stub. Member 2 persists but does not generate scenarios or analytical results. | `P2-M2` and sample payloads from `P2-M3` | `P3-M2` persisted foundation API |
+| **Member 3** | Implement deterministic synthetic generator, fault injection and Data Quality & Confidence Engine as pure modules. Emit `data_quality_assessments`/issues shapes and add labeled forecast/anomaly cases with unit tests for normal, malformed and degraded inputs. | `P2-M3`, frozen ledger/quality shapes from `P2-M2` | `P3-M3` generator + quality package |
 
 ### Integration checkpoint at Hour 4
 
 - Member 3 hands `P3-M3` payloads to Member 2; Member 2 imports them without copying generator logic.
 - Member 2 exposes one live dashboard response; Member 1 swaps one fixture adapter to the live endpoint without changing the component model.
 - Contract mismatches are fixed by the owner of the producing contract or module.
+- Member 2 verifies append-only observations and confirms the dashboard never returns a blended `total_balance`.
 
 ### Exit gate at Hour 5
 
@@ -285,9 +293,9 @@ If a member finishes early, they review another lane or prepare their next-phase
 
 | Owner | Independent implementation | Prerequisite | Completion handoff |
 |---|---|---|---|
-| **Member 1** | Build forecast cards/bands, contributing-signal view, anomaly evidence panel and combined-alert presentation. Implement EN + Bangla/Banglish template rendering and safe recommended-action copy from structured fixtures. | `P3-M1`; final result shapes from `P2-M3` | `P4-M1` decision-intelligence UI |
-| **Member 2** | Implement alert creation, provider/area routing, case persistence and endpoints that invoke Member 3's engine interfaces. Persist combined liquidity/anomaly results without altering their calculations. | `P3-M2`; callable interfaces from `P3-M3` | `P4-M2` routed-alert API |
-| **Member 3** | Implement separate shared-cash/provider burn-rate forecasts with confidence bands and one near-identical-amount anomaly rule. Cover zero burn, replenishment, minimum samples, provider isolation, threshold edges and benign demand with tests. | `P3-M3`; data access adapter contract from `P3-M2` | `P4-M3` tested analytics engines |
+| **Member 1** | Build forecast cards/bands, contributing-signal view, anomaly evidence panel and combined-alert presentation. Render EN + Bangla/Banglish explanation sections from one structured alert fixture while keeping case ownership/status in the separate case UI. | `P3-M1`; canonical alert/result shapes from `P2-M2`/`P2-M3` | `P4-M1` decision-intelligence UI |
+| **Member 2** | Apply analytics and alert persistence from `schema.md` §§9–10.6. Persist analytics runs/results, immutable alerts with typed source links, explanation render snapshots, routing rules, and initial case creation. Expose endpoints that invoke Member 3's engines without altering calculations. | `P3-M2`; callable interfaces from `P3-M3` | `P4-M2` analytics/alert persistence + routed-case API |
+| **Member 3** | Implement separate shared-cash/provider burn-rate forecasts with quality-assessment links and confidence bands, plus one near-identical-amount anomaly rule with evidence and suppression disposition. Cover zero burn, replenishment, minimum samples, provider isolation, threshold edges and benign demand. | `P3-M3`; data access adapter contract from `P3-M2` | `P4-M3` tested analytics engines |
 
 **Dependency:** `P4-M2` may use the frozen expected outputs from `P2-M3` while `P4-M3` is being implemented. At 06:45, Member 3 replaces the stubs with the real package; Member 2 owns only the adapter. Member 1 switches from fixtures to `P4-M2` after that handoff.
 
@@ -295,7 +303,7 @@ If a member finishes early, they review another lane or prepare their next-phase
 
 - Working Liquidity Forecasting Engine with confidence and contributing signals.
 - Working Anomaly Detection rule with evidence and `plausible_benign_explanation`.
-- Alert & Case Management creating routed cases from engine outputs.
+- Immutable alert records linked to their projection/flag evidence, with routed cases created only for important alerts.
 - EN + at least one Bangla/Banglish explanation from templates.
 - At least one combined liquidity/anomaly alert.
 - Initial analytics evaluation output.
@@ -315,9 +323,9 @@ If a member finishes early, they review another lane or prepare their next-phase
 
 | Owner | Independent implementation | Prerequisite | Completion handoff |
 |---|---|---|---|
-| **Member 1** | Implement case assignment/acknowledgement/escalation/resolution controls, notes, audit timeline and in-app notification UI. Add visible delayed/conflicting advisory states and validate localized situation/evidence/uncertainty/next-step copy. | `P4-M1`; lifecycle contract from `P4-M2` | `P5-M1` response-workflow UI |
-| **Member 2** | Implement legal case transitions, ownership, notes, assignment notifications, append-only audit events and provider-scoped JWT/RBAC enforcement. Reject invalid transitions and cross-provider reads/writes. | `P4-M2`; provider fields from `P3-M2` | `P5-M2` secure workflow backend |
-| **Member 3** | Harden missing/stale/conflicting/insufficient-sample checks. Apply confidence reduction and band widening; suppress new high-confidence anomalies for degraded providers and emit a data-issue advisory. Add state-transition fixtures, leakage tests and Scenario C assertions against Member 2's API. | `P4-M3`; test endpoint from `P4-M2` | `P5-M3` degraded-data engine + adversarial suite |
+| **Member 1** | Implement case assignment/acknowledgement/escalation/resolution controls, notes, audit timeline and in-app notification UI. Add visible delayed/conflicting advisory states and validate localized situation/evidence/uncertainty/next-step copy. Never mutate alert evidence from case actions. | `P4-M1`; lifecycle contract from `P4-M2` | `P5-M1` response-workflow UI |
+| **Member 2** | Complete workflow/security persistence from `schema.md` §§10.7–10.12 and §15: legal case transitions, assignments, notes, notifications, status history, append-only audit events, provider-scoped JWT/RBAC and RLS/grants. Reject invalid transitions, stale versions and cross-provider reads/writes. | `P4-M2`; provider/outlet scopes from `P3-M2` | `P5-M2` secure workflow backend |
+| **Member 3** | Harden missing/stale/conflicting/insufficient-sample checks. Apply confidence reduction and band widening; retain suppressed evaluations, prevent them from creating anomaly alerts, and emit a data-quality advisory. Add lifecycle fixtures, leakage tests and Scenario C assertions against Member 2's API. | `P4-M3`; test endpoint from `P4-M2` | `P5-M3` degraded-data engine + adversarial suite |
 
 **Dependency:** Member 1 builds against the Phase 2 lifecycle fixture while `P5-M2` is underway. `P5-M3` depends on Member 2's Phase 4 test endpoint, not on unfinished Phase 5 RBAC. At 09:15, Member 2 publishes the secured API; Members 1 and 3 run their separate UI and adversarial checks against it.
 
@@ -347,8 +355,8 @@ If a member finishes early, they review another lane or prepare their next-phase
 | Owner | Independent implementation | Prerequisite | Completion handoff |
 |---|---|---|---|
 | **Member 1** | Replace all demo-path fixtures with live adapters; finalize urgency ordering, filters, responsive layout, formatting, uncertainty placement, localization toggle and dashboard → evidence → case navigation. | `P5-M1`, secured endpoints from `P5-M2` | `P6-M1` demo-ready frontend |
-| **Member 2** | Wire all modules in the single deployable app; stabilize API errors, migrations, seed/reset command, Docker/local startup and clean-session authentication. Fix integration defects only in platform-owned code. | `P5-M2`, packages from `P4-M3`/`P5-M3` | `P6-M2` reproducible integrated build |
-| **Member 3** | Create and run an automated A–D end-to-end regression suite, including expected forecasts, anomaly evidence, degraded-data suppression, lifecycle completion, provider isolation and safe-language scan. Fix only analytics/test-owned defects. | `P5-M3`, stable routes from `P5-M2` | `P6-M3` MVP regression report |
+| **Member 2** | Wire all modules in the single deployable app; stabilize standard API errors/idempotency, optimistic case updates, migrations, seed/reset command, Docker/local startup and clean-session authentication. Fix integration defects only in platform-owned code. | `P5-M2`, packages from `P4-M3`/`P5-M3`; `schema.md` §16 | `P6-M2` reproducible integrated build |
+| **Member 3** | Create and run an automated A–D end-to-end regression suite, including expected forecasts, anomaly evidence, degraded-data suppression, alert immutability, lifecycle completion, provider isolation, no blended totals, and safe-language scan. Fix only analytics/test-owned defects. | `P5-M3`, stable routes from `P5-M2`; `schema.md` §13 | `P6-M3` MVP regression report |
 
 **Integration order:** Member 2 publishes a release candidate at 11:00. Member 1 and Member 3 independently validate that same build. Member 2 accepts only reproducible blocking defects until the Hour 12 gate.
 
@@ -395,8 +403,8 @@ Expose results via `/metrics` endpoint or a validation dashboard panel.
 | Owner | Independent validation work | Prerequisite | Evidence ID |
 |---|---|---|---|
 | **Member 1** | Run responsive, accessibility, navigation, localization and safe-wording QA. Measure alert explanation coverage and capture final screenshots from the release candidate. | `P6-M1`, `P6-M2` | `P7-M1` UX/safety evidence |
-| **Member 2** | Add structured request logs, `/health`, latency instrumentation and data-quality event counts. Benchmark average/p95 API latency and verify clean Docker/setup, migrations, auth and audit persistence. | `P6-M2` | `P7-M2` platform/reliability evidence |
-| **Member 3** | Freeze held-out labeled data; measure forecast error/lead time, anomaly precision/recall/false-positive rate and degraded-input handling. Run secret/real-data/unsafe-action scans and publish metric payloads for Member 2's `/metrics` endpoint. | `P6-M3`; metrics ingestion shape from `P6-M2` | `P7-M3` analytics/security evidence |
+| **Member 2** | Apply validation/read-model persistence from `schema.md` §§11–12; add structured logs, `/health`, `/metrics`, latency instrumentation and data-quality event counts. Benchmark average/p95 latency and verify clean setup, migrations, auth and audit persistence. | `P6-M2` | `P7-M2` platform/reliability evidence |
+| **Member 3** | Freeze held-out labeled data; populate ground-truth/metric result shapes and measure forecast error/lead time, anomaly precision/recall/false-positive rate and degraded-input handling. Run secret/real-data/unsafe-action scans and publish metric payloads for Member 2's `/metrics` endpoint. | `P6-M3`; metrics ingestion shape from `P6-M2`; `schema.md` §11 | `P7-M3` analytics/security evidence |
 
 Member 2 only serves Member 3's metric payload; Member 2 does not recalculate it. Member 1 only presents captured evidence; Member 1 does not alter test results.
 
@@ -489,7 +497,7 @@ At 15:45, Member 2 runs the exact demo once using the frozen build while Members
 
 | Deadline | Non-negotiable milestone | If missed |
 |---|---|---|
-| Hour 2:15 | Contracts, scenarios, wireframes, and architecture agreed | Stop UI polish; resolve contracts first |
+| Hour 2:15 | `schema.md` MVP subset reviewed; API, migrations, scenarios, fixtures, and architecture agreed | Stop UI polish; resolve contract/schema exceptions first |
 | Hour 5 | Runnable dashboard with synthetic multi-provider data (3 providers) | Keep all three provider cards; simplify interactions and use local fixtures |
 | Hour 7:30 | Forecast and explainable anomaly work | Simplify to deterministic rate forecast and one rule |
 | Hour 10 | Confidence fallback, anomaly suppression, case lifecycle, RBAC | Drop filters, localization, and all optional views |
