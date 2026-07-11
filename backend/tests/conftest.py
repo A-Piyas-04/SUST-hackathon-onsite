@@ -60,7 +60,7 @@ def _session_needs_database(session) -> bool:
     """Schema, app, and phase3 integration tests require a migrated PostgreSQL instance."""
     for item in session.items:
         path = str(item.path).replace("\\", "/")
-        if "/tests/contracts/" in path:
+        if "/tests/contracts/" in path or "/tests/unit/" in path:
             continue
         return True
     return False
