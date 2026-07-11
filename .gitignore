@@ -15,6 +15,7 @@ env/
 
 # Local verification artifacts
 *.log
+backend/data/ml/confidence_calibration.json
 # SonarQube and coverage artifacts
 .env.sonar
 .scannerwork/

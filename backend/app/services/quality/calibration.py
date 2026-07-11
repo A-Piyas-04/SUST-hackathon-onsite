@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import logging
 import math
-import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -36,27 +35,6 @@ FEATURE_NAMES: tuple[str, ...] = (
 
 _model_cache: ConfidenceCalibrationModel | None = None
 _model_loaded: bool = False
-
-
-def _validated_artifact_path(path: Path | None) -> Path:
-    """Resolve and confine the calibration artifact path before any filesystem
-    access, so an untrusted override (e.g. a stray CLI argument) cannot escape
-    into an arbitrary system location (path traversal).
-
-    The path is accepted only if, after resolution, it stays within a known-safe
-    root: the configured artifact directory (production), the repository tree, or
-    the system temp tree (tests). Anything else — absolute paths escaping to
-    system locations, ``..`` traversal outside these roots — is rejected.
-    """
-    candidate = (path or cfg.CONFIDENCE_CALIBRATION_ARTIFACT_PATH).resolve()
-    allowed_roots = (
-        Path(cfg.CONFIDENCE_CALIBRATION_ARTIFACT_PATH).resolve().parent,
-        Path(__file__).resolve().parents[4],  # repository root (backend/..)
-        Path(tempfile.gettempdir()).resolve(),
-    )
-    if not any(candidate == root or root in candidate.parents for root in allowed_roots):
-        raise ValueError(f"calibration artifact path is outside allowed directories: {candidate}")
-    return candidate
 
 
 def rejection_rate(*, sample_count: int, rejected_event_count: int) -> float:
@@ -119,11 +97,7 @@ class ConfidenceCalibrationModel:
 
     @classmethod
     def try_load(cls, path: Path | None = None) -> ConfidenceCalibrationModel | None:
-        try:
-            artifact_path = _validated_artifact_path(path)
-        except ValueError:
-            logger.warning("confidence_calibration_artifact_rejected path=%s", path)
-            return None
+        artifact_path = path or cfg.CONFIDENCE_CALIBRATION_ARTIFACT_PATH
         if not artifact_path.is_file():
             return None
         try:
@@ -146,7 +120,7 @@ class ConfidenceCalibrationModel:
         return model
 
     def save(self, path: Path | None = None) -> Path:
-        artifact_path = _validated_artifact_path(path)
+        artifact_path = path or cfg.CONFIDENCE_CALIBRATION_ARTIFACT_PATH
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "coefficients": list(self.coefficients),

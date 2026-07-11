@@ -110,7 +110,10 @@ def test_anomaly_flag_detail_round_trips(client, auth_headers, admin_headers, ou
         f"/api/v1/outlets/{outlet_id}/anomaly-flags", headers=auth_headers
     ).json()
     assert listing["flags"]
-    flag_id = listing["flags"][0]["anomaly_flag_id"]
+    flag = next(
+        f for f in listing["flags"] if f["pattern"] == "near_identical_amounts"
+    )
+    flag_id = flag["anomaly_flag_id"]
     detail = client.get(f"/api/v1/anomaly-flags/{flag_id}", headers=auth_headers)
     assert detail.status_code == 200, detail.text
     body = detail.json()

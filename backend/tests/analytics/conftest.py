@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import random
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,6 +12,8 @@ from fastapi.testclient import TestClient
 from app.core.auth import ADMIN, AGENT1, OUTLET1
 from app.core.config import Settings, get_settings
 from app.main import create_app
+from app.services.analytics import config as cfg
+from app.services.quality.calibration import reset_calibration_cache
 
 os.environ.setdefault(
     "TEST_DATABASE_URL",
@@ -20,6 +23,18 @@ os.environ["APP_ENV"] = "test"
 os.environ["DIRECT_DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 os.environ.pop("DATABASE_URL", None)
 os.environ.pop("SUPABASE_DB_PASSWORD", None)
+
+
+@pytest.fixture(autouse=True)
+def _quality_calibration_cold_start_by_default(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, request: pytest.FixtureRequest
+):
+    """Unless a calibration test sets its own artifact, force fixed-formula mode."""
+    reset_calibration_cache()
+    if request.node.path.name == "test_confidence_calibration.py":
+        return
+    missing = tmp_path / "missing-calibration-artifact.json"
+    monkeypatch.setattr(cfg, "CONFIDENCE_CALIBRATION_ARTIFACT_PATH", missing)
 
 
 @pytest.fixture

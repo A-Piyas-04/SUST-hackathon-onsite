@@ -77,6 +77,7 @@ class AnomalyPattern(StrEnum):
     TRANSACTION_SPLITTING = "transaction_splitting"
     CIRCULAR_ACTIVITY = "circular_activity"
     BALANCE_INCONSISTENCY = "balance_inconsistency"
+    BEHAVIORAL_EMBEDDING = "behavioral_embedding"
     TIME_ANOMALY = "time_anomaly"
     FAILURE_RATE = "failure_rate"
 

@@ -8,8 +8,11 @@ behavior is reproducible and auditable rather than hidden in scattered literals.
 from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal
+from pathlib import Path
 
 from app.contracts.v1.enums import ConfidenceLevel
+
+_BACKEND_DIR = Path(__file__).resolve().parents[3]
 
 # --- Engine versions (traceable in persisted outputs) ------------------------
 QUALITY_ENGINE_VERSION = "quality-v1"
@@ -35,6 +38,14 @@ QUALITY_STATUS_MODIFIER = {
 # Floor applied when rejections are present but not total.
 QUALITY_REJECTION_FLOOR = 0.3
 
+# --- Learned confidence calibration (Feature 1) ------------------------------
+# Minimum labeled examples required before switching from the fixed formula.
+CALIBRATION_MIN_LABELED_EXAMPLES = 20
+# Offline-trained logistic regression artifact (non-production demo path).
+CONFIDENCE_CALIBRATION_ARTIFACT_PATH = (
+    _BACKEND_DIR / "data" / "ml" / "confidence_calibration.json"
+)
+
 # --- Liquidity engine defaults -----------------------------------------------
 # Minimum balance observations required to forecast a burn rate.
 LIQUIDITY_MIN_SAMPLES = 2
@@ -55,6 +66,23 @@ ANOMALY_DEFAULT_CONFIG = {
     "amount_tolerance_pct": 2.0,
     "minimum_count": 5,
     "minimum_distinct_parties": 1,
+}
+VELOCITY_SPIKE_DEFAULT_CONFIG = {
+    "window_minutes": 10,
+    "std_dev_threshold": 2.0,
+    "minimum_baseline_windows": 3,
+    "minimum_spike_count": 8,
+}
+BALANCE_INCONSISTENCY_DEFAULT_CONFIG = {
+    "min_discrepancy_amount": 100.0,
+    "min_discrepancy_pct": 0.5,
+    "staleness_soft_minutes": 120,
+}
+BEHAVIORAL_EMBEDDING_DEFAULT_CONFIG = {
+    "k": 3,
+    "distance_threshold": 2.5,
+    "minimum_history_transactions": 10,
+    "window_minutes": 60,
 }
 # Quality modifier at/below which an otherwise-detected pattern is suppressed.
 ANOMALY_SUPPRESSION_MODIFIER = 0.5
