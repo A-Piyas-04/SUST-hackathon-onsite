@@ -147,7 +147,75 @@ Use this checklist to track development progress. Items in *italics* under each 
 
 ---
 
-## H. Final Submission Checklist (from problem statement Section 16)
+## H. System Design Feature List
+
+Features grouped by module from the System Design document. Tags: **[M]** Mandatory, **[R]** Recommended, **[O]** Optional, **[E]** Engineering-depth.
+
+### H.1 Unified Visibility
+
+- [ ] **[M]** Combined agent view: shared cash + each provider's balance, clearly separated (never summed into one blended figure)
+- [ ] **[R]** Filter/prioritize by provider, agent, area, or time
+- [ ] **[E]** Multi-agent overview for Operations/Management
+
+### H.2 Liquidity Intelligence
+
+- [ ] **[M]** Per-provider and shared-cash shortage projection with estimated time window
+- [ ] **[M]** Confidence indicator on every projection
+- [ ] **[R]** Contributing-signal breakdown (why the projection says what it says)
+- [ ] **[O]** What-if simulation (e.g., "what if cash-out demand doubles for the next hour")
+
+### H.3 Anomaly & Risk Detection
+
+- [ ] **[M]** At least one fully implemented anomaly pattern with evidence trail
+- [ ] **[M]** Careful, non-accusatory language throughout ("unusual," "requires review")
+- [ ] **[R]** Evidence + short history attached to each anomaly alert
+- [ ] **[E]** Plausible-benign-explanation field alongside every anomaly flag
+- [ ] **[O]** Second/third anomaly pattern (e.g., transaction splitting, circular activity) if time allows
+- [ ] **[O]** Cross-provider relationship view using simulated identifiers
+
+### H.4 Coordination & Case Management
+
+- [ ] **[M]** For each important alert: assigned receiver, owner, recommended next step, current status
+- [ ] **[R]** Case notes and alert history, provider-boundary-respecting
+- [ ] **[E]** Full case lifecycle (open → acknowledged → escalated → resolved) with timestamps
+- [ ] **[E]** Routing rules aligned to the agent → field officer → area manager → central ops hierarchy
+- [ ] **[O]** Nearby-agent support discovery (e.g., "Agent X 400m away has surplus cash")
+
+### H.5 Data Quality & Trust
+
+- [ ] **[M]** Confidence/fallback state shown when data is missing, late, or conflicting
+- [ ] **[E]** Configurable fault injection for live demo of Scenario C
+- [ ] **[E]** Visible "data health" indicator per provider feed
+
+### H.6 Explainability & Localization
+
+- [ ] **[R]** English explanations for every alert
+- [ ] **[R]** At least one Bengali/Banglish alert with situation, evidence, uncertainty, and next step
+- [ ] **[E]** Consistent multi-language rendering from one structured alert object (no drift between languages)
+
+### H.7 Security, Privacy & Responsible Design
+
+- [ ] **[M]** Synthetic identifiers only; no real credentials or account data anywhere in the system
+- [ ] **[M]** No automatic blocking, accusation, or financial action anywhere in the codebase
+- [ ] **[E]** Role-based access control enforcing provider data boundaries
+- [ ] **[E]** "Responsible-design note" content generated directly from documented guardrails, not written after the fact
+
+### H.8 Observability & Validation
+
+- [ ] **[M]** Analytics/AI meaningfully embedded (liquidity forecasting + anomaly detection, not decorative)
+- [ ] **[E]** `/metrics` endpoint or dashboard panel showing: forecast error on held-out simulated data, shortage detection lead time, anomaly precision/recall against injected test cases, false-positive rate, alert explanation coverage, API latency, and data-quality incident counts
+- [ ] **[E]** Structured audit log covering every ownership change, acknowledgement, escalation, and resolution
+
+### H.9 Presentation-Ready Artifacts
+
+- [ ] **[M]** Architecture diagram (System Design, Section 1)
+- [ ] **[M]** Data & simulation note (how synthetic data/scenarios were generated)
+- [ ] **[M]** Responsible-design note (derived from H.7 guardrails)
+- [ ] **[R]** Short demo video walking through Scenarios A–D
+
+---
+
+## I. Final Submission Checklist (from problem statement Section 16)
 
 - [ ] At least two provider contexts represented distinctly
 - [ ] Shared cash and provider-specific balances demonstrated
