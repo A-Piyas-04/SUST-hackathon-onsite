@@ -115,6 +115,63 @@ _DEMO_USERS: dict[UUID, UserContext] = {
 }
 
 
+# Friendly demo-login keys -> seeded user ids (see reference_seed.sql).
+DEMO_LOGIN_KEYS: dict[str, UUID] = {
+    "agent": AGENT1,
+    "agent1": AGENT1,
+    "agent2": AGENT2,
+    "provider_ops": BKASH_OPS,
+    "bkash_ops": BKASH_OPS,
+    "nagad_ops": NAGAD_OPS,
+    "rocket_ops": ROCKET_OPS,
+    "field_officer": AREA_MGR,
+    "area_manager": AREA_MGR,
+    "area_ops": AREA_MGR,
+    "risk_analyst": RISK_BK,
+    "risk": RISK_BK,
+    "management": MGMT,
+    "admin": ADMIN,
+}
+
+# Provider-scoped ops disambiguation for role-based login.
+_PROVIDER_OPS_BY_CODE: dict[str, UUID] = {
+    "bkash": BKASH_OPS,
+    "nagad": NAGAD_OPS,
+    "rocket": ROCKET_OPS,
+}
+
+
+def resolve_demo_user(
+    *, user_key: str | None = None, role: str | None = None, provider: str | None = None
+) -> UserContext:
+    """Resolve a seeded demo identity for POST /auth/demo-login."""
+    if user_key:
+        uid = DEMO_LOGIN_KEYS.get(user_key.strip().lower())
+        if uid is None:
+            raise UnauthorizedError(f"Unknown demo user_key '{user_key}'.")
+        return _DEMO_USERS[uid]
+    if role:
+        role_l = role.strip().lower()
+        if role_l == "provider_ops" and provider:
+            uid = _PROVIDER_OPS_BY_CODE.get(provider.strip().lower())
+            if uid is None:
+                raise UnauthorizedError(f"Unknown provider '{provider}' for provider_ops.")
+            return _DEMO_USERS[uid]
+        uid = DEMO_LOGIN_KEYS.get(role_l)
+        if uid is None:
+            raise UnauthorizedError(f"No demo identity seeded for role '{role}'.")
+        return _DEMO_USERS[uid]
+    raise UnauthorizedError("Provide user_key or role to obtain a demo identity.")
+
+
+def demo_token_for(user_id: UUID) -> str:
+    return f"demo:{user_id}"
+
+
+def get_demo_user(user_id: UUID) -> UserContext | None:
+    return _DEMO_USERS.get(user_id)
+
+
 class AuthProvider(ABC):
     @abstractmethod
     async def resolve(self, token: str) -> UserContext:

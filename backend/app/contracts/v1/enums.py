@@ -117,6 +117,41 @@ class CaseStatus(StrEnum):
     RESOLVED = "resolved"
 
 
+class AssignmentReason(StrEnum):
+    INITIAL_ROUTE = "initial_route"
+    MANUAL_ASSIGN = "manual_assign"
+    REASSIGN = "reassign"
+    ESCALATION = "escalation"
+
+
+class NotificationChannel(StrEnum):
+    IN_APP = "in_app"
+    WEBHOOK = "webhook"
+    EMAIL_STUB = "email_stub"
+
+
+class NotificationStatus(StrEnum):
+    QUEUED = "queued"
+    DELIVERED = "delivered"
+    READ = "read"
+    FAILED = "failed"
+
+
+class ReviewOutcome(StrEnum):
+    BENIGN_OPERATIONAL = "benign_operational"
+    REQUIRES_FOLLOW_UP = "requires_follow_up"
+    DATA_QUALITY_ISSUE = "data_quality_issue"
+    CONFIRMED_UNUSUAL = "confirmed_unusual"
+    INCONCLUSIVE = "inconclusive"
+
+
+class CaseNoteType(StrEnum):
+    GENERAL = "general"
+    CONTACT_ATTEMPT = "contact_attempt"
+    EVIDENCE = "evidence"
+    RESOLUTION = "resolution"
+
+
 class LocaleCode(StrEnum):
     EN = "en"
     BN = "bn"

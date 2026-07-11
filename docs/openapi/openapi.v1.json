@@ -19,6 +19,7 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": true,
                   "type": "object",
                   "title": "Response Health Health Get"
                 }
@@ -26,6 +27,119 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/auth/demo-login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Demo Login",
+        "operationId": "demo_login_api_v1_auth_demo_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Get Me",
+        "operationId": "get_me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/preferences": {
+      "patch": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Update Preferences",
+        "operationId": "update_preferences_api_v1_me_preferences_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferencesUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrincipalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/providers": {
@@ -815,7 +929,7 @@
     "/api/v1/outlets/{outlet_id}/liquidity-projections": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "analytics"
         ],
         "summary": "Liquidity Projections",
         "operationId": "liquidity_projections_api_v1_outlets__outlet_id__liquidity_projections_get",
@@ -841,7 +955,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/LiquidityProjectionListResponse"
+                }
               }
             }
           },
@@ -861,16 +977,38 @@
     "/api/v1/internal/analytics/liquidity/run": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "analytics"
         ],
         "summary": "Run Liquidity Analytics",
         "operationId": "run_liquidity_analytics_api_v1_internal_analytics_liquidity_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyticsRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/LiquidityRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -885,7 +1023,7 @@
     "/api/v1/outlets/{outlet_id}/anomaly-flags": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "analytics"
         ],
         "summary": "Anomaly Flags",
         "operationId": "anomaly_flags_api_v1_outlets__outlet_id__anomaly_flags_get",
@@ -911,7 +1049,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AnomalyFlagListResponse"
+                }
               }
             }
           },
@@ -931,7 +1071,7 @@
     "/api/v1/anomaly-flags/{flag_id}": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "analytics"
         ],
         "summary": "Anomaly Flag Detail",
         "operationId": "anomaly_flag_detail_api_v1_anomaly_flags__flag_id__get",
@@ -957,7 +1097,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AnomalyFlagOutput"
+                }
               }
             }
           },
@@ -977,83 +1119,38 @@
     "/api/v1/internal/analytics/anomalies/run": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "analytics"
         ],
         "summary": "Run Anomaly Analytics",
         "operationId": "run_anomaly_analytics_api_v1_internal_analytics_anomalies_run_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyticsRunRequest"
               }
             }
-          }
+          },
+          "required": true
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/auth/demo-login": {
-      "post": {
-        "tags": [
-          "stubs-phase4+"
-        ],
-        "summary": "Demo Login",
-        "operationId": "demo_login_api_v1_auth_demo_login_post",
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AnomalyRunResponse"
+                }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/v1/me": {
-      "get": {
-        "tags": [
-          "stubs-phase4+"
-        ],
-        "summary": "Current User Profile",
-        "operationId": "current_user_profile_api_v1_me_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
+          },
+          "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/me/preferences": {
-      "patch": {
-        "tags": [
-          "stubs-phase4+"
-        ],
-        "summary": "Update Preferences",
-        "operationId": "update_preferences_api_v1_me_preferences_patch",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1068,37 +1165,79 @@
     "/api/v1/alerts": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "alerts"
         ],
         "summary": "List Alerts",
         "operationId": "list_alerts_api_v1_alerts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "outlet_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outlet Id"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "active",
+              "title": "State"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AlertResponse"
-                  },
-                  "type": "array",
-                  "title": "Response List Alerts Api V1 Alerts Get"
+                  "$ref": "#/components/schemas/AlertListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/alerts/{alert_id}": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "alerts"
         ],
         "summary": "Get Alert",
         "operationId": "get_alert_api_v1_alerts__alert_id__get",
@@ -1125,7 +1264,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlertResponse"
+                  "$ref": "#/components/schemas/AlertOutput"
                 }
               }
             }
@@ -1146,10 +1285,10 @@
     "/api/v1/alerts/{alert_id}/explanations": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "alerts"
         ],
-        "summary": "Alert Explanations",
-        "operationId": "alert_explanations_api_v1_alerts__alert_id__explanations_get",
+        "summary": "Get Alert Explanations",
+        "operationId": "get_alert_explanations_api_v1_alerts__alert_id__explanations_get",
         "security": [
           {
             "HTTPBearer": []
@@ -1172,7 +1311,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AlertExplanationsResponse"
+                }
               }
             }
           },
@@ -1189,13 +1330,60 @@
         }
       }
     },
+    "/api/v1/internal/alerts/publish": {
+      "post": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Publish Alerts",
+        "description": "Run analytics for a simulation run and publish alertable candidates.\n\nThin internal control so Scenario D is executable through the API only.",
+        "operationId": "publish_alerts_api_v1_internal_alerts_publish_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/alerts/{alert_id}/cases": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
-        "summary": "Open Case From Alert",
-        "operationId": "open_case_from_alert_api_v1_alerts__alert_id__cases_post",
+        "summary": "Open Case",
+        "operationId": "open_case_api_v1_alerts__alert_id__cases_post",
         "security": [
           {
             "HTTPBearer": []
@@ -1213,12 +1401,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenCaseRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOutput"
+                }
               }
             }
           },
@@ -1238,37 +1438,61 @@
     "/api/v1/cases": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
         "summary": "List Cases",
         "operationId": "list_cases_api_v1_cases_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/CaseResponse"
-                  },
-                  "type": "array",
-                  "title": "Response List Cases Api V1 Cases Get"
+                  "$ref": "#/components/schemas/CaseListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/cases/{case_id}": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
         "summary": "Get Case",
         "operationId": "get_case_api_v1_cases__case_id__get",
@@ -1295,7 +1519,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CaseResponse"
+                  "$ref": "#/components/schemas/CaseOutput"
                 }
               }
             }
@@ -1316,10 +1540,10 @@
     "/api/v1/cases/{case_id}/timeline": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
-        "summary": "Case Timeline",
-        "operationId": "case_timeline_api_v1_cases__case_id__timeline_get",
+        "summary": "Get Timeline",
+        "operationId": "get_timeline_api_v1_cases__case_id__timeline_get",
         "security": [
           {
             "HTTPBearer": []
@@ -1342,7 +1566,57 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CaseTimelineResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cases/{case_id}/audit-events": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Get Audit Events",
+        "operationId": "get_audit_events_api_v1_cases__case_id__audit_events_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventsResponse"
+                }
               }
             }
           },
@@ -1362,7 +1636,7 @@
     "/api/v1/cases/{case_id}/assignments": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
         "summary": "Assign Case",
         "operationId": "assign_case_api_v1_cases__case_id__assignments_post",
@@ -1383,12 +1657,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOutput"
+                }
               }
             }
           },
@@ -1408,7 +1694,7 @@
     "/api/v1/cases/{case_id}/acknowledge": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
         "summary": "Acknowledge Case",
         "operationId": "acknowledge_case_api_v1_cases__case_id__acknowledge_post",
@@ -1429,12 +1715,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcknowledgeRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOutput"
+                }
               }
             }
           },
@@ -1454,7 +1752,7 @@
     "/api/v1/cases/{case_id}/escalate": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
         "summary": "Escalate Case",
         "operationId": "escalate_case_api_v1_cases__case_id__escalate_post",
@@ -1475,12 +1773,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EscalateRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOutput"
+                }
               }
             }
           },
@@ -1500,7 +1810,7 @@
     "/api/v1/cases/{case_id}/resolve": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
         "summary": "Resolve Case",
         "operationId": "resolve_case_api_v1_cases__case_id__resolve_post",
@@ -1521,12 +1831,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOutput"
+                }
               }
             }
           },
@@ -1546,10 +1868,10 @@
     "/api/v1/cases/{case_id}/notes": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
-        "summary": "Add Case Note",
-        "operationId": "add_case_note_api_v1_cases__case_id__notes_post",
+        "summary": "Add Note",
+        "operationId": "add_note_api_v1_cases__case_id__notes_post",
         "security": [
           {
             "HTTPBearer": []
@@ -1567,12 +1889,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteRequest"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/NoteOutput"
+                }
               }
             }
           },
@@ -1592,7 +1926,7 @@
     "/api/v1/cases/{case_id}/review": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "cases"
         ],
         "summary": "Review Case",
         "operationId": "review_case_api_v1_cases__case_id__review_post",
@@ -1613,12 +1947,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRequest"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewOutput"
+                }
               }
             }
           },
@@ -1638,7 +1984,7 @@
     "/api/v1/notifications": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "notifications"
         ],
         "summary": "List Notifications",
         "operationId": "list_notifications_api_v1_notifications_get",
@@ -1647,7 +1993,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListResponse"
+                }
               }
             }
           }
@@ -1662,10 +2010,10 @@
     "/api/v1/notifications/{notification_id}/read": {
       "post": {
         "tags": [
-          "stubs-phase4+"
+          "notifications"
         ],
-        "summary": "Read Notification",
-        "operationId": "read_notification_api_v1_notifications__notification_id__read_post",
+        "summary": "Mark Notification Read",
+        "operationId": "mark_notification_read_api_v1_notifications__notification_id__read_post",
         "security": [
           {
             "HTTPBearer": []
@@ -1688,53 +2036,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/NotificationOutput"
                 }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/cases/{case_id}/audit-events": {
-      "get": {
-        "tags": [
-          "stubs-phase4+"
-        ],
-        "summary": "Case Audit Events",
-        "operationId": "case_audit_events_api_v1_cases__case_id__audit_events_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
               }
             }
           },
@@ -1754,7 +2058,7 @@
     "/api/v1/validation/results": {
       "get": {
         "tags": [
-          "stubs-phase4+"
+          "stubs-phase7+"
         ],
         "summary": "Validation Results",
         "operationId": "validation_results_api_v1_validation_results_get",
@@ -1778,107 +2082,103 @@
   },
   "components": {
     "schemas": {
-      "AlertEvidenceRefs": {
+      "AcknowledgeRequest": {
         "properties": {
-          "liquidity_projection_ids": {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array",
-            "title": "Liquidity Projection Ids"
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version"
           },
-          "anomaly_flag_ids": {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array",
-            "title": "Anomaly Flag Ids"
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
           },
-          "summary": {
-            "type": "string",
-            "title": "Summary"
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "summary"
-        ],
-        "title": "AlertEvidenceRefs"
+        "title": "AcknowledgeRequest"
       },
-      "AlertExplanation": {
+      "AlertCandidate": {
         "properties": {
-          "locale": {
-            "$ref": "#/components/schemas/LocaleCode"
-          },
-          "situation": {
-            "type": "string",
-            "title": "Situation"
-          },
-          "evidence": {
-            "type": "string",
-            "title": "Evidence"
-          },
-          "uncertainty": {
-            "type": "string",
-            "title": "Uncertainty"
-          },
-          "next_step": {
-            "type": "string",
-            "title": "Next Step"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "locale",
-          "situation",
-          "evidence",
-          "uncertainty",
-          "next_step"
-        ],
-        "title": "AlertExplanation"
-      },
-      "AlertResponse": {
-        "properties": {
-          "alert_id": {
+          "outlet_id": {
             "type": "string",
             "format": "uuid",
-            "title": "Alert Id"
+            "title": "Outlet Id"
           },
-          "type": {
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "alert_type": {
             "$ref": "#/components/schemas/AlertType"
           },
           "severity": {
             "$ref": "#/components/schemas/Severity"
           },
-          "provider": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ProviderCode"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "outlet_id": {
+          "confidence": {
             "type": "string",
-            "format": "uuid",
-            "title": "Outlet Id"
+            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,2}|(?=[\\d.]{1,7}0*$)\\d{0,2}\\.\\d{0,4}0*$)",
+            "title": "Confidence"
+          },
+          "confidence_level": {
+            "$ref": "#/components/schemas/ConfidenceLevel"
           },
           "detected_at": {
             "type": "string",
             "format": "date-time",
             "title": "Detected At"
           },
-          "confidence": {
-            "$ref": "#/components/schemas/Confidence"
+          "deduplication_key": {
+            "type": "string",
+            "title": "Deduplication Key"
           },
-          "evidence": {
-            "$ref": "#/components/schemas/AlertEvidenceRefs"
+          "requires_case": {
+            "type": "boolean",
+            "title": "Requires Case"
+          },
+          "is_alertable": {
+            "type": "boolean",
+            "title": "Is Alertable"
+          },
+          "evidence_summary": {
+            "type": "string",
+            "title": "Evidence Summary"
+          },
+          "recommended_next_step": {
+            "type": "string",
+            "title": "Recommended Next Step"
           },
           "plausible_benign_explanation": {
             "anyOf": [
@@ -1891,12 +2191,227 @@
             ],
             "title": "Plausible Benign Explanation"
           },
-          "recommended_next_step": {
-            "type": "string",
-            "title": "Recommended Next Step"
+          "source_links": {
+            "$ref": "#/components/schemas/AlertSourceLinks"
           },
-          "explanation": {
-            "$ref": "#/components/schemas/AlertExplanation"
+          "structured_evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            },
+            "type": "array",
+            "title": "Structured Evidence",
+            "default": []
+          },
+          "title_key": {
+            "type": "string",
+            "title": "Title Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "alert_type",
+          "severity",
+          "confidence",
+          "confidence_level",
+          "detected_at",
+          "deduplication_key",
+          "requires_case",
+          "is_alertable",
+          "evidence_summary",
+          "recommended_next_step",
+          "source_links",
+          "title_key"
+        ],
+        "title": "AlertCandidate"
+      },
+      "AlertExplanationOutput": {
+        "properties": {
+          "alert_explanation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Alert Explanation Id"
+          },
+          "alert_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Alert Id"
+          },
+          "locale": {
+            "$ref": "#/components/schemas/LocaleCode"
+          },
+          "situation_text": {
+            "type": "string",
+            "title": "Situation Text"
+          },
+          "evidence_text": {
+            "type": "string",
+            "title": "Evidence Text"
+          },
+          "uncertainty_text": {
+            "type": "string",
+            "title": "Uncertainty Text"
+          },
+          "next_step_text": {
+            "type": "string",
+            "title": "Next Step Text"
+          },
+          "benign_context_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benign Context Text"
+          },
+          "rendered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Rendered At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "alert_explanation_id",
+          "alert_id",
+          "locale",
+          "situation_text",
+          "evidence_text",
+          "uncertainty_text",
+          "next_step_text",
+          "rendered_at"
+        ],
+        "title": "AlertExplanationOutput"
+      },
+      "AlertExplanationsResponse": {
+        "properties": {
+          "alert_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Alert Id"
+          },
+          "explanations": {
+            "items": {
+              "$ref": "#/components/schemas/AlertExplanationOutput"
+            },
+            "type": "array",
+            "title": "Explanations"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "alert_id",
+          "generated_at"
+        ],
+        "title": "AlertExplanationsResponse"
+      },
+      "AlertListResponse": {
+        "properties": {
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/AlertOutput"
+            },
+            "type": "array",
+            "title": "Alerts"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generated_at"
+        ],
+        "title": "AlertListResponse"
+      },
+      "AlertOutput": {
+        "properties": {
+          "alert_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Alert Id"
+          },
+          "simulation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Simulation Run Id"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "alert_type": {
+            "$ref": "#/components/schemas/AlertType"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AlertState"
+          },
+          "deduplication_key": {
+            "type": "string",
+            "title": "Deduplication Key"
+          },
+          "title_key": {
+            "type": "string",
+            "title": "Title Key"
+          },
+          "requires_case": {
+            "type": "boolean",
+            "title": "Requires Case"
+          },
+          "detected_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Detected At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "structured_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Structured Payload"
+          },
+          "source_links": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Source Links"
+          },
+          "has_case": {
+            "type": "boolean",
+            "title": "Has Case",
+            "default": false
           },
           "case_id": {
             "anyOf": [
@@ -1909,26 +2424,76 @@
               }
             ],
             "title": "Case Id"
-          },
-          "state": {
-            "$ref": "#/components/schemas/AlertState",
-            "default": "active"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "alert_id",
-          "type",
-          "severity",
+          "simulation_run_id",
           "outlet_id",
+          "alert_type",
+          "severity",
+          "state",
+          "deduplication_key",
+          "title_key",
+          "requires_case",
           "detected_at",
-          "confidence",
-          "evidence",
-          "recommended_next_step",
-          "explanation"
+          "created_at"
         ],
-        "title": "AlertResponse"
+        "title": "AlertOutput"
+      },
+      "AlertSourceLinks": {
+        "properties": {
+          "analytics_run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytics Run Id"
+          },
+          "liquidity_projection_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Liquidity Projection Id"
+          },
+          "anomaly_flag_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anomaly Flag Id"
+          },
+          "quality_assessment_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Quality Assessment Ids",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AlertSourceLinks"
       },
       "AlertState": {
         "type": "string",
@@ -1948,6 +2513,311 @@
           "data_quality"
         ],
         "title": "AlertType"
+      },
+      "AnalyticsRunRequest": {
+        "properties": {
+          "simulation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Simulation Run Id"
+          },
+          "outlet_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "simulation_run_id"
+        ],
+        "title": "AnalyticsRunRequest"
+      },
+      "AnomalyDisposition": {
+        "type": "string",
+        "enum": [
+          "requires_review",
+          "suppressed_data_quality",
+          "dismissed_benign",
+          "confirmed_unusual",
+          "inconclusive"
+        ],
+        "title": "AnomalyDisposition"
+      },
+      "AnomalyEvidenceItem": {
+        "properties": {
+          "evidence_type": {
+            "type": "string",
+            "title": "Evidence Type"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "title": "Value"
+          },
+          "display_order": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Display Order",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "evidence_type",
+          "label",
+          "value"
+        ],
+        "title": "AnomalyEvidenceItem"
+      },
+      "AnomalyFlagListResponse": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/AnomalyFlagOutput"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "generated_at"
+        ],
+        "title": "AnomalyFlagListResponse"
+      },
+      "AnomalyFlagOutput": {
+        "properties": {
+          "anomaly_flag_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anomaly Flag Id"
+          },
+          "analytics_run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytics Run Id"
+          },
+          "anomaly_rule_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anomaly Rule Id"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "provider_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Provider Id"
+          },
+          "outlet_provider_account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Provider Account Id"
+          },
+          "data_quality_assessment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Data Quality Assessment Id"
+          },
+          "window_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Window End"
+          },
+          "pattern": {
+            "$ref": "#/components/schemas/AnomalyPattern"
+          },
+          "confidence_score": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,2}|(?=[\\d.]{1,7}0*$)\\d{0,2}\\.\\d{0,4}0*$)",
+            "title": "Confidence Score"
+          },
+          "confidence_level": {
+            "$ref": "#/components/schemas/ConfidenceLevel"
+          },
+          "disposition": {
+            "$ref": "#/components/schemas/AnomalyDisposition"
+          },
+          "reason_code": {
+            "type": "string",
+            "title": "Reason Code"
+          },
+          "evidence_summary": {
+            "type": "string",
+            "title": "Evidence Summary"
+          },
+          "plausible_benign_explanation": {
+            "type": "string",
+            "title": "Plausible Benign Explanation"
+          },
+          "suppression_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppression Reason"
+          },
+          "evidence_items": {
+            "items": {
+              "$ref": "#/components/schemas/AnomalyEvidenceItem"
+            },
+            "type": "array",
+            "title": "Evidence Items"
+          },
+          "transaction_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Transaction Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "provider_id",
+          "outlet_provider_account_id",
+          "data_quality_assessment_id",
+          "window_start",
+          "window_end",
+          "pattern",
+          "confidence_score",
+          "confidence_level",
+          "disposition",
+          "reason_code",
+          "evidence_summary",
+          "plausible_benign_explanation"
+        ],
+        "title": "AnomalyFlagOutput"
+      },
+      "AnomalyPattern": {
+        "type": "string",
+        "enum": [
+          "near_identical_amounts",
+          "velocity_spike",
+          "transaction_splitting",
+          "circular_activity",
+          "balance_inconsistency",
+          "time_anomaly",
+          "failure_rate"
+        ],
+        "title": "AnomalyPattern"
+      },
+      "AnomalyRunResponse": {
+        "properties": {
+          "analytics_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Analytics Run Id"
+          },
+          "simulation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Simulation Run Id"
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "input_window_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Input Window Start"
+          },
+          "input_window_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Input Window End"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/AnomalyFlagOutput"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "suppressed_count": {
+            "type": "integer",
+            "title": "Suppressed Count",
+            "default": 0
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/AlertCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "analytics_run_id",
+          "simulation_run_id",
+          "engine_version",
+          "input_window_start",
+          "input_window_end"
+        ],
+        "title": "AnomalyRunResponse"
       },
       "AppRole": {
         "type": "string",
@@ -1986,6 +2856,255 @@
           "name"
         ],
         "title": "AreaRef"
+      },
+      "AssignmentReason": {
+        "type": "string",
+        "enum": [
+          "initial_route",
+          "manual_assign",
+          "reassign",
+          "escalation"
+        ],
+        "title": "AssignmentReason"
+      },
+      "AssignmentRequest": {
+        "properties": {
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "assigned_to_role": {
+            "$ref": "#/components/schemas/AppRole"
+          },
+          "assigned_to_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To User Id"
+          },
+          "assignment_reason": {
+            "$ref": "#/components/schemas/AssignmentReason",
+            "default": "manual_assign"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "assigned_to_role"
+        ],
+        "title": "AssignmentRequest"
+      },
+      "AuditEventOutput": {
+        "properties": {
+          "audit_event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Audit Event Id"
+          },
+          "case_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Id"
+          },
+          "alert_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Id"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "outlet_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Id"
+          },
+          "actor_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor User Id"
+          },
+          "actor_type": {
+            "type": "string",
+            "title": "Actor Type"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "entity_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Type"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "previous_values": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Values"
+          },
+          "new_values": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Values"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "audit_event_id",
+          "actor_type",
+          "action",
+          "occurred_at"
+        ],
+        "title": "AuditEventOutput"
+      },
+      "AuditEventsResponse": {
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Case Id"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventOutput"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case_id",
+          "generated_at"
+        ],
+        "title": "AuditEventsResponse"
       },
       "BalanceHistoryItem": {
         "properties": {
@@ -2091,7 +3210,39 @@
         ],
         "title": "BalanceHistoryResponse"
       },
-      "CaseResponse": {
+      "CaseListResponse": {
+        "properties": {
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/CaseOutput"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generated_at"
+        ],
+        "title": "CaseListResponse"
+      },
+      "CaseNoteType": {
+        "type": "string",
+        "enum": [
+          "general",
+          "contact_attempt",
+          "evidence",
+          "resolution"
+        ],
+        "title": "CaseNoteType"
+      },
+      "CaseOutput": {
         "properties": {
           "case_id": {
             "type": "string",
@@ -2123,6 +3274,18 @@
               }
             ],
             "title": "Provider Id"
+          },
+          "routing_rule_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routing Rule Id"
           },
           "status": {
             "$ref": "#/components/schemas/CaseStatus"
@@ -2200,9 +3363,12 @@
           },
           "version": {
             "type": "integer",
-            "minimum": 1.0,
-            "title": "Version",
-            "default": 1
+            "title": "Version"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
           }
         },
         "additionalProperties": false,
@@ -2215,9 +3381,11 @@
           "status",
           "current_owner_role",
           "recommended_next_step",
-          "opened_at"
+          "opened_at",
+          "version",
+          "updated_at"
         ],
-        "title": "CaseResponse"
+        "title": "CaseOutput"
       },
       "CaseStatus": {
         "type": "string",
@@ -2229,35 +3397,43 @@
         ],
         "title": "CaseStatus"
       },
-      "Confidence": {
+      "CaseTimelineResponse": {
         "properties": {
-          "score": {
+          "case_id": {
             "type": "string",
-            "title": "Score"
+            "format": "uuid",
+            "title": "Case Id"
           },
-          "level": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "generated_at": {
             "type": "string",
-            "title": "Level"
-          },
-          "feed_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Feed Status"
+            "format": "date-time",
+            "title": "Generated At"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "score",
-          "level"
+          "case_id",
+          "generated_at"
         ],
-        "title": "Confidence"
+        "title": "CaseTimelineResponse"
+      },
+      "ConfidenceLevel": {
+        "type": "string",
+        "enum": [
+          "high",
+          "medium",
+          "low",
+          "unavailable"
+        ],
+        "title": "ConfidenceLevel"
       },
       "CreateFaultRequest": {
         "properties": {
@@ -2282,6 +3458,7 @@
             "title": "Provider Id"
           },
           "parameters": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Parameters"
           },
@@ -2325,6 +3502,7 @@
           "config_overrides": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -2469,6 +3647,206 @@
         ],
         "title": "DataQualityResponse"
       },
+      "DemoLoginRequest": {
+        "properties": {
+          "user_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Key"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DemoLoginRequest",
+        "description": "Select a seeded demo identity by friendly key or by role.\n\n``user_key`` (e.g. ``agent``, ``bkash_ops``, ``risk_analyst``) wins when set;\notherwise ``role`` (+ optional ``provider`` to disambiguate provider ops)."
+      },
+      "DemoLoginResponse": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/PrincipalResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "token",
+          "user"
+        ],
+        "title": "DemoLoginResponse"
+      },
+      "EscalateRequest": {
+        "properties": {
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "target_role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "EscalateRequest"
+      },
+      "EvidenceItem": {
+        "properties": {
+          "evidence_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Type"
+          },
+          "signal_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "title": "Value"
+          },
+          "numeric_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numeric Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction"
+          },
+          "display_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Order"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "EvidenceItem"
+      },
       "FaultSummary": {
         "properties": {
           "fault_injection_id": {
@@ -2497,6 +3875,7 @@
             "title": "Provider Id"
           },
           "parameters": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Parameters"
           },
@@ -2747,6 +4126,7 @@
             "title": "Source Observed At"
           },
           "payload": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Payload"
           }
@@ -2809,6 +4189,319 @@
         ],
         "title": "IngestEventSummary"
       },
+      "LiquidityProjectionListResponse": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "projections": {
+            "items": {
+              "$ref": "#/components/schemas/LiquidityProjectionOutput"
+            },
+            "type": "array",
+            "title": "Projections"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "generated_at"
+        ],
+        "title": "LiquidityProjectionListResponse"
+      },
+      "LiquidityProjectionOutput": {
+        "properties": {
+          "liquidity_projection_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Liquidity Projection Id"
+          },
+          "analytics_run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytics Run Id"
+          },
+          "outlet_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Outlet Id"
+          },
+          "reserve_type": {
+            "$ref": "#/components/schemas/ReserveType"
+          },
+          "outlet_provider_account_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Provider Account Id"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "as_of_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of At"
+          },
+          "current_balance": {
+            "type": "string",
+            "title": "Current Balance"
+          },
+          "burn_rate_per_hour": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Burn Rate Per Hour"
+          },
+          "projected_shortage_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projected Shortage At"
+          },
+          "lower_bound_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lower Bound At"
+          },
+          "upper_bound_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper Bound At"
+          },
+          "confidence_score": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,2}|(?=[\\d.]{1,7}0*$)\\d{0,2}\\.\\d{0,4}0*$)",
+            "title": "Confidence Score"
+          },
+          "confidence_level": {
+            "$ref": "#/components/schemas/ConfidenceLevel"
+          },
+          "sample_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sample Count"
+          },
+          "is_actionable": {
+            "type": "boolean",
+            "title": "Is Actionable"
+          },
+          "non_actionable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Non Actionable Reason"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/LiquiditySignal"
+            },
+            "type": "array",
+            "title": "Signals"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "reserve_type",
+          "as_of_at",
+          "current_balance",
+          "burn_rate_per_hour",
+          "confidence_score",
+          "confidence_level",
+          "sample_count",
+          "is_actionable"
+        ],
+        "title": "LiquidityProjectionOutput"
+      },
+      "LiquidityRunResponse": {
+        "properties": {
+          "analytics_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Analytics Run Id"
+          },
+          "simulation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Simulation Run Id"
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "input_window_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Input Window Start"
+          },
+          "input_window_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Input Window End"
+          },
+          "projections": {
+            "items": {
+              "$ref": "#/components/schemas/LiquidityProjectionOutput"
+            },
+            "type": "array",
+            "title": "Projections"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/AlertCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "analytics_run_id",
+          "simulation_run_id",
+          "engine_version",
+          "input_window_start",
+          "input_window_end"
+        ],
+        "title": "LiquidityRunResponse"
+      },
+      "LiquiditySignal": {
+        "properties": {
+          "signal_code": {
+            "type": "string",
+            "title": "Signal Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "numeric_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numeric Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "display_order": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Display Order",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "signal_code",
+          "label"
+        ],
+        "title": "LiquiditySignal"
+      },
       "LocaleCode": {
         "type": "string",
         "enum": [
@@ -2826,6 +4519,216 @@
           "rejected"
         ],
         "title": "NormalizationStatus"
+      },
+      "NoteOutput": {
+        "properties": {
+          "case_note_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Case Note Id"
+          },
+          "case_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Case Id"
+          },
+          "author_user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Author User Id"
+          },
+          "note_text": {
+            "type": "string",
+            "title": "Note Text"
+          },
+          "note_type": {
+            "$ref": "#/components/schemas/CaseNoteType"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case_note_id",
+          "case_id",
+          "author_user_id",
+          "note_text",
+          "note_type",
+          "created_at"
+        ],
+        "title": "NoteOutput"
+      },
+      "NoteRequest": {
+        "properties": {
+          "note_text": {
+            "type": "string",
+            "title": "Note Text"
+          },
+          "note_type": {
+            "$ref": "#/components/schemas/CaseNoteType",
+            "default": "general"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "note_text"
+        ],
+        "title": "NoteRequest"
+      },
+      "NotificationChannel": {
+        "type": "string",
+        "enum": [
+          "in_app",
+          "webhook",
+          "email_stub"
+        ],
+        "title": "NotificationChannel"
+      },
+      "NotificationListResponse": {
+        "properties": {
+          "notifications": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOutput"
+            },
+            "type": "array",
+            "title": "Notifications"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generated_at"
+        ],
+        "title": "NotificationListResponse"
+      },
+      "NotificationOutput": {
+        "properties": {
+          "notification_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Notification Id"
+          },
+          "case_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Case Id"
+          },
+          "recipient_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient User Id"
+          },
+          "recipient_role": {
+            "$ref": "#/components/schemas/AppRole"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/NotificationChannel"
+          },
+          "status": {
+            "$ref": "#/components/schemas/NotificationStatus"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "queued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Queued At"
+          },
+          "delivered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivered At"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "notification_id",
+          "case_id",
+          "recipient_role",
+          "channel",
+          "status",
+          "queued_at"
+        ],
+        "title": "NotificationOutput"
+      },
+      "NotificationStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "delivered",
+          "read",
+          "failed"
+        ],
+        "title": "NotificationStatus"
+      },
+      "OpenCaseRequest": {
+        "properties": {
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OpenCaseRequest"
       },
       "OutletDetailResponse": {
         "properties": {
@@ -2933,6 +4836,57 @@
         ],
         "title": "PatchFaultRequest"
       },
+      "PreferencesUpdate": {
+        "properties": {
+          "preferred_locale": {
+            "$ref": "#/components/schemas/LocaleCode"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "preferred_locale"
+        ],
+        "title": "PreferencesUpdate"
+      },
+      "PrincipalResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "preferred_locale": {
+            "$ref": "#/components/schemas/LocaleCode"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/AppRole"
+            },
+            "type": "array",
+            "title": "Roles"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeOut"
+            },
+            "type": "array",
+            "title": "Scopes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "user_id",
+          "display_name",
+          "preferred_locale"
+        ],
+        "title": "PrincipalResponse"
+      },
       "ProjectionSummary": {
         "properties": {
           "shortage_at": {
@@ -2949,6 +4903,7 @@
           },
           "confidence_score": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,2}|(?=[\\d.]{1,7}0*$)\\d{0,2}\\.\\d{0,4}0*$)",
             "title": "Confidence Score"
           },
           "confidence_level": {
@@ -3046,6 +5001,63 @@
           "display_name"
         ],
         "title": "ProviderSummary"
+      },
+      "PublishRequest": {
+        "properties": {
+          "simulation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Simulation Run Id"
+          },
+          "outlet_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "simulation_run_id"
+        ],
+        "title": "PublishRequest"
+      },
+      "PublishResponse": {
+        "properties": {
+          "published": {
+            "items": {
+              "$ref": "#/components/schemas/AlertOutput"
+            },
+            "type": "array",
+            "title": "Published"
+          },
+          "deduplicated_alert_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Deduplicated Alert Ids"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generated_at"
+        ],
+        "title": "PublishResponse"
       },
       "QualityAssessmentInput": {
         "properties": {
@@ -3178,6 +5190,7 @@
           "evidence": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -3228,6 +5241,157 @@
           "provider_e_money"
         ],
         "title": "ReserveType"
+      },
+      "ResolveRequest": {
+        "properties": {
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "resolution_summary": {
+            "type": "string",
+            "title": "Resolution Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "resolution_summary"
+        ],
+        "title": "ResolveRequest"
+      },
+      "ReviewOutcome": {
+        "type": "string",
+        "enum": [
+          "benign_operational",
+          "requires_follow_up",
+          "data_quality_issue",
+          "confirmed_unusual",
+          "inconclusive"
+        ],
+        "title": "ReviewOutcome"
+      },
+      "ReviewOutput": {
+        "properties": {
+          "case_review_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Case Review Id"
+          },
+          "case_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Case Id"
+          },
+          "reviewed_by_user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reviewed By User Id"
+          },
+          "disposition": {
+            "$ref": "#/components/schemas/ReviewOutcome"
+          },
+          "was_false_positive": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Was False Positive"
+          },
+          "review_summary": {
+            "type": "string",
+            "title": "Review Summary"
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reviewed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case_review_id",
+          "case_id",
+          "reviewed_by_user_id",
+          "disposition",
+          "review_summary",
+          "reviewed_at"
+        ],
+        "title": "ReviewOutput"
+      },
+      "ReviewRequest": {
+        "properties": {
+          "disposition": {
+            "$ref": "#/components/schemas/ReviewOutcome"
+          },
+          "review_summary": {
+            "type": "string",
+            "title": "Review Summary"
+          },
+          "was_false_positive": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Was False Positive"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "disposition",
+          "review_summary"
+        ],
+        "title": "ReviewRequest"
       },
       "RunArtifactCounts": {
         "properties": {
@@ -3281,6 +5445,7 @@
             "title": "Seed"
           },
           "config_snapshot": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Config Snapshot"
           },
@@ -3402,6 +5567,7 @@
             "title": "Default Seed"
           },
           "default_config": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Default Config"
           },
@@ -3426,6 +5592,55 @@
           "is_active"
         ],
         "title": "ScenarioResponse"
+      },
+      "ScopeOut": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/AppRole"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "area_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area Id"
+          },
+          "outlet_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "ScopeOut"
       },
       "Severity": {
         "type": "string",
@@ -3479,6 +5694,49 @@
           "reset"
         ],
         "title": "SimulationRunStatus"
+      },
+      "TimelineEvent": {
+        "properties": {
+          "event_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Event At"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Event Id"
+          },
+          "actor_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor User Id"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_at",
+          "event_type",
+          "event_id"
+        ],
+        "title": "TimelineEvent"
       },
       "TransactionListResponse": {
         "properties": {

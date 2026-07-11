@@ -104,10 +104,12 @@ def test_case_visibility_follows_provider_scope(conn):
         assess = new_assessment(setup, run, OUTLET1, BKASH)
         setup.execute("INSERT INTO alert_quality_assessments (alert_id, data_quality_assessment_id) VALUES (%s,%s)",
                       (alert, assess))
-        new_case(setup, alert, OUTLET1, BKASH)
+        case = new_case(setup, alert, OUTLET1, BKASH)
+    # Scope the assertion to this specific case so it is robust to other
+    # committed cases (Phase 5 workflow tests persist provider-scoped cases).
     with as_role(conn, BKASH_OPS) as cur:
-        cur.execute("SELECT count(*) FROM cases")
+        cur.execute("SELECT count(*) FROM cases WHERE case_id = %s", (case,))
         assert cur.fetchone()[0] == 1
     with as_role(conn, NAGAD_OPS) as cur:
-        cur.execute("SELECT count(*) FROM cases")
+        cur.execute("SELECT count(*) FROM cases WHERE case_id = %s", (case,))
         assert cur.fetchone()[0] == 0
