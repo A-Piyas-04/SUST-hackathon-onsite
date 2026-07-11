@@ -24,7 +24,7 @@ from app.db.transaction import transaction
 from app.services.ingestion.fault_effects import apply_faults_to_batches
 from app.services.ingestion.pipeline import ingest_generated_batches, load_active_faults
 from app.services.ledger.writer import count_ledger_rows
-from app.services.simulation import fault_service, reset as reset_service
+from app.services.simulation import fault_service
 from app.services.synthetic import catalog
 from app.services.synthetic.generator import generate_dataset
 
