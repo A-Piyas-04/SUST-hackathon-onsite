@@ -102,8 +102,11 @@ INSERT INTO simulation_scenarios
      'Normal Operation', 'Baseline synthetic traffic with healthy feeds.', 1001,
      '{"expected": "no_alerts"}'::jsonb, 'demo'),
   ('5c000000-0000-0000-0000-00000000000a', 'scenario_a',
-     'Hidden Provider Shortage', 'A provider e-money balance depletes toward a shortage.', 2001,
-     '{"expected": "liquidity_alert"}'::jsonb, 'held_out'),
+     'Hidden Shared-Cash Shortage',
+     'Heavy bKash cash-out demand depletes shared physical cash while bKash e-money rises.',
+     2001,
+     '{"expected": "liquidity_alert", "target_provider": "bkash", "pressure_reserve": "shared_cash"}'::jsonb,
+     'held_out'),
   ('5c000000-0000-0000-0000-00000000000b', 'scenario_b',
      'Liquidity Pressure with Unusual Activity',
      'Near-identical repeated amounts alongside falling shared cash.', 2002,
@@ -115,6 +118,16 @@ INSERT INTO simulation_scenarios
      'Coordinated Response and Closure', 'An alert is routed and resolved through a case lifecycle.', 2004,
      '{"expected": "case_closure"}'::jsonb, 'demo')
 ON CONFLICT (code) DO NOTHING;
+
+-- Correct stale Scenario A metadata created before transaction directions were
+-- aligned with real agent cash movement. This keeps existing seeded databases
+-- semantically consistent without modifying an applied migration.
+UPDATE simulation_scenarios
+SET name = 'Hidden Shared-Cash Shortage',
+    description = 'Heavy bKash cash-out demand depletes shared physical cash while bKash e-money rises.',
+    default_config = '{"expected": "liquidity_alert", "target_provider": "bkash", "pressure_reserve": "shared_cash"}'::jsonb,
+    updated_at = now()
+WHERE code = 'scenario_a';
 
 -- ------------------------------------------------- active anomaly rule (MVP)
 INSERT INTO anomaly_rules

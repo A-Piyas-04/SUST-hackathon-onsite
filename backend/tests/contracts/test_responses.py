@@ -1,4 +1,5 @@
 from app.contracts.v1.anomaly import AnomalyFlagOutput
+from app.contracts.v1.enums import ReserveType
 from app.contracts.v1.liquidity import LiquidityProjectionOutput
 from app.contracts.v1.responses import AlertResponse, CaseResponse, DashboardResponse
 from app.contracts.v1.validation import ValidationMetricPayload
@@ -6,7 +7,10 @@ from tests.contracts.conftest import load_fixture
 
 
 def test_liquidity_projection_positive():
-    LiquidityProjectionOutput.model_validate(load_fixture("liquidity_projection.json"))
+    projection = LiquidityProjectionOutput.model_validate(load_fixture("liquidity_projection.json"))
+    assert projection.reserve_type == ReserveType.SHARED_CASH
+    assert projection.provider_id is None
+    assert projection.outlet_provider_account_id is None
 
 
 def test_anomaly_flag_positive():
