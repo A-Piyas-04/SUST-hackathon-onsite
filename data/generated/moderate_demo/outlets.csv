@@ -1,0 +1,6 @@
+outlet_id,synthetic_code,display_name,area_id,currency_code,latitude,longitude,is_synthetic,is_active,created_at,updated_at
+c79304d5-6c6d-50df-92b0-6ba3b8ad7e19,OUTLET-SYN-001,Mirpur Digital Service Point,86105d1d-16fa-5510-9685-c88e367e7289,BDT,,,true,true,2026-06-25T00:00:00Z,2026-06-25T00:00:00Z
+950f7040-0e32-5657-a005-8111a74aa5e3,OUTLET-SYN-002,Dhanmondi Commerce Point,57376d75-7f46-5450-a6c8-4492c6dfb871,BDT,,,true,true,2026-06-25T00:00:00Z,2026-06-25T00:00:00Z
+c51a52aa-b76e-533e-9500-252f523656b1,OUTLET-SYN-003,Chattogram Market Service,0d1f37c9-0fe7-5432-988f-ab8e3c23e8ff,BDT,,,true,true,2026-06-25T00:00:00Z,2026-06-25T00:00:00Z
+f1d6239c-8728-515e-9497-5d06cecab6c4,OUTLET-SYN-004,Sylhet Online Payment Point,eefe71ea-9906-52f5-bac6-eb66baf32f91,BDT,,,true,true,2026-06-25T00:00:00Z,2026-06-25T00:00:00Z
+5cc8ed11-22c7-5245-97e5-6b5d6f55a055,OUTLET-SYN-005,Uttara Synthetic Commerce Hub,86105d1d-16fa-5510-9685-c88e367e7289,BDT,,,true,true,2026-06-25T00:00:00Z,2026-06-25T00:00:00Z

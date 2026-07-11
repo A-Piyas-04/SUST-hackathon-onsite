@@ -27,9 +27,9 @@ def main():
           with path.open(encoding='utf-8',newline='') as f: rows=list(csv.DictReader(f))
           if not rows: continue
           cols=list(rows[0]); values=[[None if r[c]=='' else r[c] for c in cols] for r in rows]
-          query=sql.SQL('INSERT INTO {} ({}) VALUES %s ON CONFLICT DO NOTHING').format(sql.Identifier(table),sql.SQL(',').join(map(sql.Identifier,cols)))
-          execute_values(cur,query.as_string(conn),values,page_size=500)
-          before=cur.rowcount
+          query=sql.SQL('INSERT INTO {} ({}) VALUES %s ON CONFLICT DO NOTHING RETURNING 1').format(sql.Identifier(table),sql.SQL(',').join(map(sql.Identifier,cols)))
+          returned=execute_values(cur,query.as_string(conn),values,page_size=500,fetch=True)
+          before=len(returned)
           inserted[table]=before; skipped[table]=len(rows)-before
           print(f'{table}: inserted={before} skipped={len(rows)-before}')
         cur.execute('SET CONSTRAINTS ALL IMMEDIATE')

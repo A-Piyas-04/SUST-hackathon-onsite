@@ -1,0 +1,111 @@
+{
+  "generator_version": "1.0.0",
+  "schema_version": "007",
+  "master_seed": 2026071201,
+  "scenario_seeds": {
+    "normal": [
+      20261001,
+      20261002
+    ],
+    "scenario_a": [
+      20262001,
+      20262002
+    ],
+    "scenario_b": [
+      20263001,
+      20263002
+    ],
+    "scenario_c": [
+      20264001,
+      20264002
+    ],
+    "scenario_d": [
+      20265001,
+      20265002
+    ]
+  },
+  "date_range": {
+    "start": "2026-06-26T00:00:00Z",
+    "end": "2026-07-05T00:00:00Z"
+  },
+  "generated_at": "2026-07-12T00:00:00Z",
+  "database_compatibility_target": "PostgreSQL migrations 001-007",
+  "row_counts": {
+    "areas": 4,
+    "outlets": 5,
+    "outlet_provider_accounts": 15,
+    "simulation_runs": 10,
+    "fault_injections": 10,
+    "ingestion_batches": 135,
+    "ingestion_events": 3645,
+    "transactions": 3645,
+    "cash_balance_snapshots": 900,
+    "provider_balance_snapshots": 2701,
+    "data_quality_assessments": 40,
+    "data_quality_issues": 18,
+    "analytics_runs": 12,
+    "liquidity_projections": 60,
+    "liquidity_signals": 60,
+    "liquidity_projection_quality_assessments": 60,
+    "anomaly_flags": 24,
+    "anomaly_evidence_items": 24,
+    "anomaly_flag_transactions": 144,
+    "alerts": 24,
+    "alert_liquidity_projections": 12,
+    "alert_explanations": 32,
+    "alert_anomaly_flags": 12,
+    "alert_quality_assessments": 6,
+    "cases": 15,
+    "case_assignments": 15,
+    "case_status_history": 42,
+    "case_notes": 30,
+    "notifications": 15,
+    "audit_events": 57,
+    "case_reviews": 6,
+    "validation_runs": 2,
+    "ground_truth_labels": 60,
+    "metric_results": 16
+  },
+  "file_hashes": {
+    "areas.csv": "ce89d8255be06fbe4722b70f729748b18779d9454cd6e9ec9827c0a3def39077",
+    "outlets.csv": "a8c0e5aed2fed2546c504d7ceeafdf4e1beeabacb06489aa9c7ef12c8469c896",
+    "outlet_provider_accounts.csv": "196ad9382d719da160910c56b44530f6908ad02261e52911a861b3d1b38017fb",
+    "simulation_runs.csv": "6ccc0c5604e5b70447875a35428a8647a0c816175720fabe276e735670454c48",
+    "fault_injections.csv": "3b48b5e4163399fa432b43c1934504b79a90345522c95a6c4ac6f744f0eee43a",
+    "ingestion_batches.csv": "3d03027e2398877b9ea6b040ea24f7fe3605caea3751eb8ca99a0107a11f2f4b",
+    "ingestion_events.csv": "4f17740b2dbc0ed3495a68c08879e711736aaa77d1f3d405d1a5fe9069ce1ae8",
+    "transactions.csv": "69b2c428213f69cd017ae7574567c53ee7b3e744903584d1dceec9aa29af01a3",
+    "cash_balance_snapshots.csv": "dae8e925f9f7cf21f352e03908965817bc41950d47f442a064fe2893eb28a88d",
+    "provider_balance_snapshots.csv": "96e418b79935ac8552866c6e167c6a1a63d64b8cfc8f32fa34214336953466c9",
+    "data_quality_assessments.csv": "e1f2cccea200bc5cd962b6774f1ac88e1ae4650edeed30f7d52aa1f8407a1b1f",
+    "data_quality_issues.csv": "304c3ba71f7759da98a325a910168fd05d5e149874d412d851bc6ea3e1ba080a",
+    "analytics_runs.csv": "51c2ac1fa862d15599494a78adfdb48c49f9979b3cebfc1929e8f416f5f7ad95",
+    "liquidity_projections.csv": "e40119bcbfb30af4691d463fd3fce812074aa5d1a1b91ccbc0f017c9aed38778",
+    "liquidity_signals.csv": "da344355d3427c7d9f60ee50af83da28ae879281893c70511cc58e5852d576f6",
+    "liquidity_projection_quality_assessments.csv": "f1b9527f5f94d55195819a54ef00254b3462c428a393def509b41a7cc5c875f1",
+    "anomaly_flags.csv": "61960d7e7aa712d66baefcbe6ea3db184b142fbd38e6c44f74eeb3817f664727",
+    "anomaly_evidence_items.csv": "a113f1ee7e978ebb7a65f504694085be7ce6b3c07aff5d07e3e586a35ead47f1",
+    "anomaly_flag_transactions.csv": "8c4bd3d80ee7c0a11e99b31733dac8f738fa82ba6a34ddffd1ca4cf78d803d63",
+    "alerts.csv": "323abc249ef062e4b0a9958e886aecd12d6308f15a283dd3222971780f749174",
+    "alert_liquidity_projections.csv": "d9da71a67529ee668380bf7cecc9717af0fc48c2e7b9569f993039b2e2d7d35b",
+    "alert_explanations.csv": "43fb5f38b4bf7ac2c4aa0b97baf09c35a3d4ab3e5ef310351e4f0fe55df4ed29",
+    "alert_anomaly_flags.csv": "7b5091b5f82a9c5acb1b6017036bc1fcf1ed47cd0190df64fed0e2decd433b93",
+    "alert_quality_assessments.csv": "9dcae9963d63e4bfbbfc88f4c144847f2b64dd6a85a69c08e5f4d558a889301a",
+    "cases.csv": "d9bcce2b13765929f4cb3c637771ac5e1bf4e2c76da3a88fb4802830d84409b0",
+    "case_assignments.csv": "8961950b854dcfd03986e5d26a903cedf408d64e0a370fa10c9f0ff584bde66c",
+    "case_status_history.csv": "756e60d11abee875b7cc92ff111f5b4e74bbb1a5fd957588bb31a229d70ce91a",
+    "case_notes.csv": "170513dff2b945e2be9dbd0980bd746f511a261ac5d8b2f5fe630d16a487f6a8",
+    "notifications.csv": "494271538f0e40d4b95e113f3969134b6057e5efd0bd8bdcad48fabb764dccc2",
+    "audit_events.csv": "2d5bd554a971e7365722367491e94fd44067451cf08eeb44800598394f6164f5",
+    "case_reviews.csv": "44bfce72f3ee62469207ccc93061f479ba7070d7ce7db42458d974bca5133771",
+    "validation_runs.csv": "17402b221b0e01a699c843b0684c05d29aae88d75e7c7998db6971ff0caea75d",
+    "ground_truth_labels.csv": "0fd635341471d53986114d114a7c2d319e573feb2236602c87600c7539479816",
+    "metric_results.csv": "2f3c18db220e0fc7f148942cbaea71e07a6fd072f6a8c1f5009f817f20a4a612"
+  },
+  "assumptions": [
+    "All records are synthetic",
+    "Provider proportions are simulation assumptions, not market share",
+    "Asia/Dhaka activity is stored in UTC",
+    "No financial action is represented"
+  ]
+}

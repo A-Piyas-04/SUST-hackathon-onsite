@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Area, AreaChart, Line, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 export function ConfidenceConeChart({
@@ -13,7 +14,9 @@ export function ConfidenceConeChart({
   lowerBound?: string | null;
   upperBound?: string | null;
 }) {
-  const now = Date.now();
+  // Capture the projection base time once at mount (kept out of render for the
+  // React purity rule; the cone projects forward from a fixed anchor).
+  const [now] = useState(() => Date.now());
   const points = Array.from({ length: 12 }, (_, i) => {
     const t = now + i * 15 * 60_000;
     const drift = balance - (i * balance * 0.02);

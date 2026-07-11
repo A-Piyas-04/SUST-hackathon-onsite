@@ -73,7 +73,7 @@ export function HeroSection() {
 
           <p className="mx-auto mt-5 max-w-md text-base md:text-lg lg:mx-0" style={{ color: "var(--text-body)" }}>
             Decision-support for multi-provider agents — liquidity shortages, unusual activity, and case coordination.
-            No fraud verdicts. No wallet merging.
+            No wrongdoing verdicts. No wallet merging.
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3 lg:items-start">

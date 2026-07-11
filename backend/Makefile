@@ -9,7 +9,7 @@ API_PORT ?= 8000
 
 .PHONY: migrate reset seed verify dump status db-up help server test test-contracts openapi
 .PHONY: sim-run sim-status sim-reset sim-fault-add sim-fault-toggle sim-demo bootstrap-demo
-.PHONY: validate safety-scan
+.PHONY: validate safety-scan moderate-generate moderate-validate moderate-dry-run moderate-apply
 
 SCENARIO ?= normal
 SEED ?=
@@ -63,6 +63,18 @@ validate:           ## Run held-out validation harness; persist metrics + write 
 
 safety-scan:        ## Run secrets/unsafe-endpoint/prohibited-language scans; write evidence
 	$(PY) -m app.scripts.safety_scan
+
+moderate-generate:  ## Generate deterministic standalone moderate-demo artifacts
+	$(PY) -m app.scripts.generate_moderate_dataset
+
+moderate-validate:  ## Validate moderate-demo artifacts without database writes
+	$(PY) -m app.scripts.validate_moderate_dataset
+
+moderate-dry-run:   ## Transactionally test the moderate-demo loader, then roll back
+	$(PY) -m app.scripts.load_moderate_dataset
+
+moderate-apply:     ## Explicit development-only moderate-demo commit
+	$(PY) -m app.scripts.load_moderate_dataset --apply --confirm-development
 
 sim-run:            ## Start deterministic simulation run (SCENARIO, SEED, OUTLET_ID)
 	$(PY) -m app.scripts.simulation_cli run --scenario $(SCENARIO) $(if $(SEED),--seed $(SEED),) --outlet-id $(OUTLET_ID)

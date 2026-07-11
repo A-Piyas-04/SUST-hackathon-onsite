@@ -11,7 +11,7 @@ const SCENARIOS = [
     code: "B",
     tag: "Anomaly",
     title: "Pressure + unusual activity",
-    desc: "Liquidity pressure coincides with near-identical cash-outs — flagged for review, not fraud.",
+    desc: "Liquidity pressure coincides with near-identical cash-outs — flagged for review, not a determination of wrongdoing.",
   },
   {
     code: "C",
