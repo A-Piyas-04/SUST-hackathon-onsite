@@ -16,8 +16,9 @@ Authoritative data contract: [`docs/schema.md`](docs/schema.md).
 
 ### Docker (whole project)
 
-Build and start PostgreSQL, apply migrations and demo seeds, then run the API
-and frontend:
+Build and start PostgreSQL, apply migrations and reference seeds, then bootstrap
+deterministic demo data (normal + scenarios A/B/C: analytics, published alerts,
+and a routed case), and run the API and frontend:
 
 ```bash
 docker compose up --build -d

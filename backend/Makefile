@@ -8,7 +8,7 @@ API_HOST ?= 0.0.0.0
 API_PORT ?= 8000
 
 .PHONY: migrate reset seed verify dump status db-up help server test test-contracts openapi
-.PHONY: sim-run sim-status sim-reset sim-fault-add sim-fault-toggle sim-demo
+.PHONY: sim-run sim-status sim-reset sim-fault-add sim-fault-toggle sim-demo bootstrap-demo
 .PHONY: validate safety-scan
 
 SCENARIO ?= normal
@@ -22,7 +22,7 @@ PROVIDER ?= nagad
 help:
 	@echo "Targets: migrate | seed | verify | dump | status | reset | db-up"
 	@echo "          server | test | test-contracts | openapi"
-	@echo "          sim-run | sim-status | sim-reset | sim-fault-add | sim-fault-toggle | sim-demo"
+	@echo "          sim-run | sim-status | sim-reset | sim-fault-add | sim-fault-toggle | sim-demo | bootstrap-demo"
 	@echo "Connections come from backend/.env (copy backend/.env.example)."
 
 migrate:            ## Apply pending migrations (idempotent, checksum-tracked)
@@ -79,6 +79,8 @@ sim-fault-add:      ## Add fault to run (RUN_ID, FAULT_TYPE, PROVIDER)
 sim-fault-toggle:   ## Toggle fault (RUN_ID, FAULT_ID, ENABLED=true|false)
 	$(PY) -m app.scripts.simulation_cli fault toggle --run-id $(RUN_ID) --fault-id $(FAULT_ID) --enabled $(ENABLED)
 
-sim-demo:           ## Full demo workflow: migrate, seed, run normal scenario
-	$(MAKE) migrate seed
-	$(PY) -m app.scripts.simulation_cli run --scenario normal --seed 1001 --outlet-id $(OUTLET_ID)
+sim-demo:           ## Full demo workflow: migrate, seed, bootstrap dashboard data
+	$(MAKE) migrate seed bootstrap-demo
+
+bootstrap-demo:     ## Run normal scenario + liquidity analytics (idempotent)
+	$(PY) -m app.scripts.bootstrap_demo --outlet-id $(OUTLET_ID)

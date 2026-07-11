@@ -29,7 +29,12 @@ services:
     build:
       context: ./backend
     environment: *backend-environment
-    command: ["sh", "-c", "python migrations/run_migrations.py apply && python migrations/run_migrations.py seed"]
+    command:
+      [
+        "sh",
+        "-c",
+        "python migrations/run_migrations.py apply && python migrations/run_migrations.py seed && python -m app.scripts.bootstrap_demo",
+      ]
     depends_on:
       postgres:
         condition: service_healthy
