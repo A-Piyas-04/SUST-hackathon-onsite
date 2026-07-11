@@ -159,30 +159,49 @@ def generate_dataset(
             txn_obs = event_time(event_idx)
             event_idx += 1
 
+            # Directional balance effect (double-entry, 1:1):
+            #   cash_out — the agent pays physical cash to a customer who sent
+            #     e-money to the agent's provider account: shared cash DECREASES,
+            #     provider e-money INCREASES.
+            #   cash_in  — the agent takes physical cash from a customer and sends
+            #     e-money back to the customer's wallet: shared cash INCREASES,
+            #     provider e-money DECREASES.
             if is_cluster_provider and t < cluster_count:
                 # Tight, near-identical cluster within one detection window, from a
                 # small pool of synthetic parties.
                 amount = cluster_amount
                 txn_type = TransactionType.CASH_OUT
                 txn_obs = cluster_anchor + timedelta(minutes=t * cluster_step_minutes)
-                provider_balances[provider] = max(
-                    Decimal("0"), provider_balances[provider] - amount
-                )
-                cash_balance += amount * Decimal("0.3")
+                cash_balance = max(Decimal("0"), cash_balance - amount)
+                provider_balances[provider] += amount
             elif scenario_code == ScenarioCode.SCENARIO_A and provider == target_provider:
+                # Concentrated cash-out demand drains shared physical cash while
+                # this provider's e-money rises — the hidden pressure Scenario A
+                # demonstrates (the combined view still looks healthy).
                 amount = Decimal(_amount(rng, 2500, 0.1))
                 txn_type = TransactionType.CASH_OUT
-                provider_balances[provider] = max(Decimal("0"), provider_balances[provider] - amount)
-                cash_balance += amount * Decimal("0.3")
+                cash_balance = max(Decimal("0"), cash_balance - amount)
+                provider_balances[provider] += amount
             else:
-                amount = Decimal(_amount(rng, 1500 if t % 2 == 0 else 800))
-                txn_type = TransactionType.CASH_IN if t % 2 == 0 else TransactionType.CASH_OUT
-                if txn_type == TransactionType.CASH_OUT:
-                    provider_balances[provider] = max(Decimal("0"), provider_balances[provider] - amount)
-                    cash_balance += amount * Decimal("0.25")
-                else:
+                # Ordinary alternating retail flow on non-target providers. Under
+                # the corrected direction cash-out RAISES provider e-money, so the
+                # cash-out leg is the larger, leading one to keep these providers'
+                # e-money healthy — only the designated provider (Scenario A) or
+                # the amount cluster (Scenario B/C) is meant to be under pressure.
+                # The shared cash drawer still nets outflow, matching cash-out
+                # demand.
+                if t % 2 == 0:
+                    amount = Decimal(_amount(rng, 1500))
+                    txn_type = TransactionType.CASH_OUT
+                    cash_balance = max(Decimal("0"), cash_balance - amount)
                     provider_balances[provider] += amount
-                    cash_balance = max(Decimal("0"), cash_balance - amount * Decimal("0.25"))
+                else:
+                    amount = Decimal(_amount(rng, 800))
+                    txn_type = TransactionType.CASH_IN
+                    cash_balance += amount
+                    provider_balances[provider] = max(
+                        Decimal("0"), provider_balances[provider] - amount
+                    )
 
             ref = f"TXN-{provider.value.upper()}-{seed}-{t:03d}"
             if is_cluster_provider and t < cluster_count:

@@ -34,9 +34,6 @@ def test_scenario_a_identifies_reserve_shortage(client, auth_headers, outlet_id)
     run_id = start_run(client, auth_headers, "scenario_a")
     result = _run_liquidity(client, auth_headers, run_id, outlet_id)
 
-    reserves = {
-        (p["reserve_type"], p.get("provider_id")): p for p in result["projections"]
-    }
     # Shared cash is present and separated from provider reserves.
     shared = [p for p in result["projections"] if p["reserve_type"] == "shared_cash"]
     providers = [p for p in result["projections"] if p["reserve_type"] == "provider_e_money"]
@@ -44,12 +41,25 @@ def test_scenario_a_identifies_reserve_shortage(client, auth_headers, outlet_id)
     assert len(providers) == 3
     assert len({p["provider_id"] for p in providers}) == 3  # provider isolation
 
-    shortages = [p for p in providers if p["projected_shortage_at"] is not None]
-    assert shortages, "expected at least one provider shortage projection"
-    for p in shortages:
-        assert Decimal(p["burn_rate_per_hour"]) > 0
-        assert p["is_actionable"] is True
-        assert p["confidence_level"] in {"low", "medium", "high"}
+    # Concentrated cash-out demand on the target provider drains SHARED PHYSICAL
+    # CASH (the agent hands out cash), not that provider's e-money — which in fact
+    # RISES as customers send e-money in. This is the "hidden" pressure Scenario A
+    # illustrates: the combined view looks healthy while the cash drawer depletes,
+    # matching the Bangla alert in Problem_Statement.md §11 ("নগদ টাকা শেষ").
+    cash = shared[0]
+    assert cash["projected_shortage_at"] is not None, "shared cash should deplete under cash-out"
+    assert Decimal(cash["burn_rate_per_hour"]) > 0
+    assert cash["is_actionable"] is True
+    assert cash["confidence_level"] in {"low", "medium", "high"}
+
+    # The target provider's e-money must NOT be depleting under cash-out pressure;
+    # cash-out increases its e-money balance, so no shortage is projected for it.
+    bkash = next(
+        p for p in providers if p["provider_id"] == "11111111-1111-1111-1111-111111111111"
+    )
+    assert bkash["projected_shortage_at"] is None
+    assert Decimal(bkash["burn_rate_per_hour"]) <= 0
+
     # A liquidity candidate is produced through the seam.
     assert result["candidates"], "expected a liquidity alert candidate"
     assert all(c["is_alertable"] for c in result["candidates"])

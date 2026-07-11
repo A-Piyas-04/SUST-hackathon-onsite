@@ -16,8 +16,8 @@
   "non_actionable_reason": null,
   "signals": [
     {
-      "signal_code": "recent_cashout_velocity",
-      "label": "Net outflow rate over window",
+      "signal_code": "burn_rate_per_hour",
+      "label": "Recent outflow (burn) rate",
       "numeric_value": "3000.0000",
       "unit": "currency_per_hour",
       "direction": "increases_pressure",
