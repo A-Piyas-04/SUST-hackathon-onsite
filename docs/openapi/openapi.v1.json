@@ -19,7 +19,6 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
                   "type": "object",
                   "title": "Response Health Health Get"
                 }
@@ -2149,7 +2148,6 @@
           },
           "confidence": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,2}|(?=[\\d.]{1,7}0*$)\\d{0,2}\\.\\d{0,4}0*$)",
             "title": "Confidence"
           },
           "confidence_level": {
@@ -2399,12 +2397,10 @@
             "title": "Created At"
           },
           "structured_payload": {
-            "additionalProperties": true,
             "type": "object",
             "title": "Structured Payload"
           },
           "source_links": {
-            "additionalProperties": true,
             "type": "object",
             "title": "Source Links"
           },
@@ -2682,7 +2678,6 @@
           },
           "confidence_score": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,2}|(?=[\\d.]{1,7}0*$)\\d{0,2}\\.\\d{0,4}0*$)",
             "title": "Confidence Score"
           },
           "confidence_level": {
@@ -3030,7 +3025,6 @@
           "previous_values": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -3042,7 +3036,6 @@
           "new_values": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -3458,7 +3451,6 @@
             "title": "Provider Id"
           },
           "parameters": {
-            "additionalProperties": true,
             "type": "object",
             "title": "Parameters"
           },
@@ -3502,7 +3494,6 @@
           "config_overrides": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -3797,8 +3788,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -3875,7 +3865,6 @@
             "title": "Provider Id"
           },
           "parameters": {
-            "additionalProperties": true,
             "type": "object",
             "title": "Parameters"
           },
@@ -4126,7 +4115,6 @@
             "title": "Source Observed At"
           },
           "payload": {
-            "additionalProperties": true,
             "type": "object",
             "title": "Payload"
           }
@@ -4286,7 +4274,6 @@
           },
           "burn_rate_per_hour": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Burn Rate Per Hour"
           },
           "projected_shortage_at": {
@@ -4327,7 +4314,6 @@
           },
           "confidence_score": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,2}|(?=[\\d.]{1,7}0*$)\\d{0,2}\\.\\d{0,4}0*$)",
             "title": "Confidence Score"
           },
           "confidence_level": {
@@ -4441,8 +4427,7 @@
           "numeric_value": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "number"
@@ -4478,7 +4463,6 @@
           "details": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -4656,7 +4640,6 @@
             "$ref": "#/components/schemas/NotificationStatus"
           },
           "payload": {
-            "additionalProperties": true,
             "type": "object",
             "title": "Payload"
           },
@@ -4903,7 +4886,6 @@
           },
           "confidence_score": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,2}|(?=[\\d.]{1,7}0*$)\\d{0,2}\\.\\d{0,4}0*$)",
             "title": "Confidence Score"
           },
           "confidence_level": {
@@ -5190,7 +5172,6 @@
           "evidence": {
             "anyOf": [
               {
-                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -5445,7 +5426,6 @@
             "title": "Seed"
           },
           "config_snapshot": {
-            "additionalProperties": true,
             "type": "object",
             "title": "Config Snapshot"
           },
@@ -5567,7 +5547,6 @@
             "title": "Default Seed"
           },
           "default_config": {
-            "additionalProperties": true,
             "type": "object",
             "title": "Default Config"
           },
@@ -5724,7 +5703,6 @@
             "title": "Actor User Id"
           },
           "detail": {
-            "additionalProperties": true,
             "type": "object",
             "title": "Detail"
           }
