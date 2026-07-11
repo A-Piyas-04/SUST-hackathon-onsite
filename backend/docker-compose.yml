@@ -1,0 +1,20 @@
+# Local Postgres for development/validation only.
+# Production/demo persistence target is Supabase Postgres (see .env.example) —
+# this container exists so migrations and the server can be proven to boot
+# without requiring real Supabase credentials during Phase 1.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: liquidity_platform_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: liquidity_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - liquidity_platform_pgdata:/var/lib/postgresql/data
+
+volumes:
+  liquidity_platform_pgdata:
