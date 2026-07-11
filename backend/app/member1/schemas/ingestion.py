@@ -49,7 +49,7 @@ class FeedHealthOut(ApiModel):
     outlet_id: UUID
     provider_id: UUID
     status: str
-    confidence_modifier: str
+    confidence_modifier: float
     sample_count: int
     latest_source_at: datetime | None = None
     assessed_at: datetime

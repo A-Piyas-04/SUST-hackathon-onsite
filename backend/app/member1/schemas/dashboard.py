@@ -10,14 +10,17 @@ from app.member1.schemas.common import ApiModel
 
 
 class ProjectionOut(ApiModel):
+    """confidence_score is a plain JSON number (schema.md Section 17) —
+    only money fields are decimal strings."""
+
     shortage_at: datetime | None = None
-    confidence_score: str | None = None
+    confidence_score: float | None = None
     confidence_level: str | None = None
 
 
 class FeedHealthOut(ApiModel):
     status: str
-    confidence_modifier: str | None = None
+    confidence_modifier: float | None = None
 
 
 class SharedCashOut(ApiModel):

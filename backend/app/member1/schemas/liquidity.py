@@ -19,7 +19,7 @@ class LiquidityProjectionOut(ApiModel):
     projected_shortage_at: datetime | None = None
     lower_bound_at: datetime | None = None
     upper_bound_at: datetime | None = None
-    confidence_score: str
+    confidence_score: float
     confidence_level: str
     sample_count: int
     is_actionable: bool

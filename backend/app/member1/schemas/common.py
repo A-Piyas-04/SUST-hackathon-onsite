@@ -32,6 +32,16 @@ def _serialize_money(value: Decimal | None) -> str | None:
     return format(value, "f")
 
 
+def decimal_to_str(value: Decimal | float | int | None) -> str | None:
+    """Public helper used by services to render every DB numeric field as a
+    decimal string before it reaches a response schema (never a float)."""
+    if value is None:
+        return None
+    if isinstance(value, Decimal):
+        return format(value, "f")
+    return format(Decimal(str(value)), "f")
+
+
 class MoneyMixin(BaseModel):
     """Mixin adding a `@field_serializer` that renders every `Decimal` field
     as a plain decimal string (never scientific notation, never a float)."""

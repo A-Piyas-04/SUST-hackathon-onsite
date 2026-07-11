@@ -18,7 +18,7 @@ class AnomalyFlagOut(ApiModel):
     outlet_provider_account_id: UUID
     window_start: datetime
     window_end: datetime
-    confidence_score: str
+    confidence_score: float
     confidence_level: str
     disposition: str
     reason_code: str | None = None

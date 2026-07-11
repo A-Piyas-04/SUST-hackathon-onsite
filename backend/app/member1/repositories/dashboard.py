@@ -11,7 +11,12 @@ from app.member1.repositories.db import fetch_all, fetch_one
 async def get_outlet_dashboard_row(session: AsyncSession, outlet_id: UUID) -> dict | None:
     return await fetch_one(
         session,
-        "SELECT * FROM v_outlet_dashboard WHERE outlet_id = :outlet_id",
+        """
+        SELECT d.*, a.name AS area_name
+        FROM v_outlet_dashboard d
+        LEFT JOIN areas a ON a.area_id = d.area_id
+        WHERE d.outlet_id = :outlet_id
+        """,
         {"outlet_id": str(outlet_id)},
     )
 
