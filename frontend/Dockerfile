@@ -8,7 +8,12 @@ RUN npm ci
 FROM node:22-alpine AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+# Backend address the Next server proxies /api and /health to (compose-internal).
+ARG API_PROXY_TARGET=http://backend:8000
+ENV API_PROXY_TARGET=${API_PROXY_TARGET}
+# Browser-facing API origin; empty = same-origin (proxied). Only set when the
+# backend is exposed to browsers on its own origin.
+ARG NEXT_PUBLIC_API_BASE_URL=
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
