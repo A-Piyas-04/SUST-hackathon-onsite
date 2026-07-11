@@ -1,0 +1,22 @@
+{
+  "candidate_version": "1",
+  "alert_type": "data_quality",
+  "outlet_id": "outlet_001",
+  "provider_id": "prov_bkash",
+  "severity": "info",
+  "source_result_ids": [
+    {"result_type": "data_quality_assessment", "source_result_id": "dq_assess_001"}
+  ],
+  "detected_at": "2026-07-11T08:08:00Z",
+  "deduplication_key": "data_quality:prov_bkash:outlet_001:2026-07-11T08:05",
+  "structured_variables": {
+    "situation": "A minor feed delay was observed and is advisory only.",
+    "evidence_summary": "The bKash feed arrived later than the freshness threshold for one window.",
+    "confidence_level": "low",
+    "uncertainty_statement": "No case is required; this is an advisory data-quality note.",
+    "latest_source_at": "2026-07-11T07:50:00Z"
+  },
+  "plausible_benign_explanation": null,
+  "requires_case": false,
+  "recommended_next_step": "No action is required; the data source should be checked if delays persist."
+}

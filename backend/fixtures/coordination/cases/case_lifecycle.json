@@ -1,0 +1,65 @@
+{
+  "_comment": "Synthetic, provider-scoped case + workflow-event contract fixtures. Contract shapes only — no persisted transitions in Phase 1. Amounts/refs are synthetic.",
+  "open_case": {
+    "case_id": "case_001", "case_number": "CASE-2026-0001", "alert_id": "alert_001",
+    "outlet_id": "outlet_001", "provider_id": "prov_bkash", "status": "open",
+    "current_owner_role": "provider_ops", "current_owner_user_id": "user_ops_bkash",
+    "recommended_next_step": "Review the listed synthetic transactions before coordinating operational support.",
+    "opened_at": "2026-07-11T08:07:00Z", "version": 1
+  },
+  "acknowledged_case": {
+    "case_id": "case_001", "status": "acknowledged", "version": 2,
+    "acknowledged_at": "2026-07-11T08:10:00Z"
+  },
+  "escalated_case": {
+    "case_id": "case_001", "status": "escalated", "version": 3,
+    "escalated_at": "2026-07-11T08:20:00Z", "current_owner_role": "risk_analyst"
+  },
+  "resolved_case": {
+    "case_id": "case_001", "status": "resolved", "version": 4,
+    "resolved_at": "2026-07-11T08:40:00Z",
+    "resolution_summary": "Reviewed transactions; consistent with normal pre-Eid demand. Advisory only, human review recommended for recurrence."
+  },
+  "assignment_event": {
+    "case_assignment_id": "asg_001", "case_id": "case_001", "assigned_to_role": "provider_ops",
+    "assigned_to_user_id": "user_ops_bkash", "assigned_by_user_id": null, "reason": "initial_route",
+    "assigned_at": "2026-07-11T08:07:00Z"
+  },
+  "acknowledgement_event": {
+    "case_status_history_id": "csh_002", "case_id": "case_001", "from_status": "open",
+    "to_status": "acknowledged", "changed_by_user_id": "user_ops_bkash", "changed_at": "2026-07-11T08:10:00Z"
+  },
+  "escalation_event": {
+    "case_status_history_id": "csh_003", "case_id": "case_001", "from_status": "acknowledged",
+    "to_status": "escalated", "changed_by_user_id": "user_ops_bkash",
+    "reason": "Requires risk-analyst review of the near-identical amount cluster.", "changed_at": "2026-07-11T08:20:00Z"
+  },
+  "note_event": {
+    "case_note_id": "note_001", "case_id": "case_001", "author_user_id": "user_ops_bkash",
+    "note_text": "Contacted the outlet through the authorized process; awaiting confirmation.",
+    "note_type": "contact_attempt", "created_at": "2026-07-11T08:15:00Z"
+  },
+  "review_event": {
+    "case_review_id": "rev_001", "case_id": "case_001", "reviewed_by_user_id": "user_risk_bkash",
+    "disposition": "benign_operational", "was_false_positive": true,
+    "review_summary": "Pattern consistent with ordinary event-driven demand; no further action required.",
+    "reviewed_at": "2026-07-11T08:38:00Z"
+  },
+  "resolution_event": {
+    "case_status_history_id": "csh_004", "case_id": "case_001", "from_status": "escalated",
+    "to_status": "resolved", "changed_by_user_id": "user_risk_bkash", "changed_at": "2026-07-11T08:40:00Z"
+  },
+  "notification_event": {
+    "notification_id": "ntf_001", "case_id": "case_001", "recipient_user_id": "user_ops_bkash",
+    "recipient_role": "provider_ops", "channel": "in_app", "status": "queued",
+    "payload": {"case_id": "case_001", "title": "New case requires review", "summary": "Possible liquidity pressure with unusual activity at your outlet."},
+    "queued_at": "2026-07-11T08:07:01Z"
+  },
+  "audit_event": {
+    "audit_event_id": "aud_001", "case_id": "case_001", "alert_id": "alert_001",
+    "provider_id": "prov_bkash", "outlet_id": "outlet_001", "actor_user_id": null,
+    "actor_type": "routing_engine", "action": "case.created", "entity_type": "case", "entity_id": "case_001",
+    "previous_values": {}, "new_values": {"status": "open", "current_owner_role": "provider_ops"},
+    "request_id": "req_seed_0001", "occurred_at": "2026-07-11T08:07:00Z"
+  }
+}

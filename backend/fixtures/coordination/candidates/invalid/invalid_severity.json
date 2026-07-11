@@ -1,0 +1,15 @@
+{
+  "_expected_rejections": ["INVALID_SEVERITY"],
+  "candidate_version": "1",
+  "alert_type": "liquidity",
+  "outlet_id": "outlet_001",
+  "provider_id": "prov_bkash",
+  "severity": "urgent",
+  "source_result_ids": [{"result_type": "liquidity_projection", "source_result_id": "liq_proj_001"}],
+  "detected_at": "2026-07-11T08:01:00Z",
+  "deduplication_key": "liquidity:prov_bkash:outlet_001:2026-07-11T08:00",
+  "structured_variables": {"evidence_summary": "Projected shortfall within 2 hours."},
+  "plausible_benign_explanation": null,
+  "requires_case": true,
+  "recommended_next_step": "Review the recent transactions."
+}

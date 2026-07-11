@@ -1,0 +1,24 @@
+{
+  "_comment": "Synthetic Member-1 reference world for Member 2 tests. All identifiers are opaque synthetic strings — no real providers/outlets/accounts/phone numbers. Tests build an InMemoryReferenceLookup from this. PROVISIONAL: pending Member 1's real lookup contract.",
+  "providers": {
+    "prov_bkash": {"provider_id": "prov_bkash", "code": "bkash", "is_active": true},
+    "prov_nagad": {"provider_id": "prov_nagad", "code": "nagad", "is_active": true},
+    "prov_rocket": {"provider_id": "prov_rocket", "code": "rocket", "is_active": true}
+  },
+  "outlets": {
+    "outlet_001": {"outlet_id": "outlet_001", "area_id": "area_market", "is_active": true},
+    "outlet_002": {"outlet_id": "outlet_002", "area_id": "area_riverside", "is_active": true}
+  },
+  "accounts": {
+    "acct_bkash_001": {"outlet_provider_account_id": "acct_bkash_001", "outlet_id": "outlet_001", "provider_id": "prov_bkash", "is_active": true},
+    "acct_nagad_001": {"outlet_provider_account_id": "acct_nagad_001", "outlet_id": "outlet_001", "provider_id": "prov_nagad", "is_active": true}
+  },
+  "sources": {
+    "liq_proj_001":       {"source_result_id": "liq_proj_001",       "result_type": "liquidity_projection",      "outlet_id": "outlet_001", "provider_id": "prov_bkash", "is_alertable": true,  "is_suppressed": false},
+    "liq_proj_shared":    {"source_result_id": "liq_proj_shared",    "result_type": "liquidity_projection",      "outlet_id": "outlet_001", "provider_id": null,         "is_alertable": true,  "is_suppressed": false},
+    "liq_proj_nagad":     {"source_result_id": "liq_proj_nagad",     "result_type": "liquidity_projection",      "outlet_id": "outlet_001", "provider_id": "prov_nagad", "is_alertable": true,  "is_suppressed": false},
+    "anom_flag_001":      {"source_result_id": "anom_flag_001",      "result_type": "anomaly_flag",              "outlet_id": "outlet_001", "provider_id": "prov_bkash", "is_alertable": true,  "is_suppressed": false},
+    "anom_flag_suppressed": {"source_result_id": "anom_flag_suppressed", "result_type": "anomaly_flag",         "outlet_id": "outlet_001", "provider_id": "prov_bkash", "is_alertable": false, "is_suppressed": true},
+    "dq_assess_001":      {"source_result_id": "dq_assess_001",      "result_type": "data_quality_assessment",   "outlet_id": "outlet_001", "provider_id": "prov_bkash", "is_alertable": true,  "is_suppressed": false}
+  }
+}

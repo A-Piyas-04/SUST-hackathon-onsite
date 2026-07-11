@@ -1,0 +1,22 @@
+{
+  "candidate_version": "1",
+  "alert_type": "liquidity",
+  "outlet_id": "outlet_001",
+  "provider_id": null,
+  "severity": "high",
+  "source_result_ids": [
+    {"result_type": "liquidity_projection", "source_result_id": "liq_proj_shared"}
+  ],
+  "detected_at": "2026-07-11T08:03:00Z",
+  "deduplication_key": "liquidity:shared_cash:outlet_001:2026-07-11T08:00",
+  "structured_variables": {
+    "situation": "Possible shared-cash pressure requires review.",
+    "evidence_summary": "Shared physical cash is projected to run short within about 90 minutes at the recent withdrawal rate.",
+    "confidence_level": "medium",
+    "uncertainty_statement": "The estimate may shift with normal demand changes.",
+    "latest_source_at": "2026-07-11T08:00:00Z"
+  },
+  "plausible_benign_explanation": null,
+  "requires_case": true,
+  "recommended_next_step": "Review the shared-cash withdrawals and coordinate a cash top-up through the authorized process."
+}

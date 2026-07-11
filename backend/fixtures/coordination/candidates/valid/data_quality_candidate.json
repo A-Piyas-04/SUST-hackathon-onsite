@@ -1,0 +1,22 @@
+{
+  "candidate_version": "1",
+  "alert_type": "data_quality",
+  "outlet_id": "outlet_001",
+  "provider_id": "prov_bkash",
+  "severity": "low",
+  "source_result_ids": [
+    {"result_type": "data_quality_assessment", "source_result_id": "dq_assess_001"}
+  ],
+  "detected_at": "2026-07-11T08:02:00Z",
+  "deduplication_key": "data_quality:prov_bkash:outlet_001:2026-07-11T08:00",
+  "structured_variables": {
+    "situation": "A potential data inconsistency should be checked.",
+    "evidence_summary": "The bKash feed produced two conflicting balance snapshots at the same claimed observation time.",
+    "confidence_level": "low",
+    "uncertainty_statement": "Forecast confidence is reduced until the feed is reconciled.",
+    "latest_source_at": "2026-07-11T07:55:00Z"
+  },
+  "plausible_benign_explanation": null,
+  "requires_case": false,
+  "recommended_next_step": "The data source should be checked; treat forecasts for this provider as lower confidence until reconciled."
+}

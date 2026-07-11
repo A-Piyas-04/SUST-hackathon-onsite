@@ -1,1 +1,4 @@
 -- Reserved for Member 2. Do not implement here.
+-- Phase-1 scaffold lives (unapplied) at migrations/member_2_workflow/002_security.sql.
+-- Promoted into this slot in Phase 4. Kept as a single-line no-op placeholder
+-- so run_migrations.py stays runnable during Phase 1.

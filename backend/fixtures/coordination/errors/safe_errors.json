@@ -1,0 +1,24 @@
+{
+  "_comment": "Canonical safe error bodies. A missing record and a forbidden cross-provider lookup MUST be byte-identical (except request_id) so existence is never disclosed.",
+  "not_found_missing": {
+    "error": {"code": "NOT_FOUND", "message": "The requested resource was not found.", "request_id": "req_example_0001", "details": {}}
+  },
+  "not_found_cross_provider": {
+    "error": {"code": "NOT_FOUND", "message": "The requested resource was not found.", "request_id": "req_example_0002", "details": {}}
+  },
+  "version_conflict": {
+    "error": {"code": "VERSION_CONFLICT", "message": "The case was modified by someone else. Re-read and retry.", "request_id": "req_example_0003", "details": {"expected_version": 4}}
+  },
+  "idempotency_key_required": {
+    "error": {"code": "IDEMPOTENCY_KEY_REQUIRED", "message": "Idempotency-Key header is required for this operation.", "request_id": "req_example_0004", "details": {"required": "Idempotency-Key"}}
+  },
+  "illegal_transition": {
+    "error": {"code": "ILLEGAL_TRANSITION", "message": "That case transition is not allowed from the current status.", "request_id": "req_example_0005", "details": {"allowed_transitions": ["acknowledge", "escalate"]}}
+  },
+  "unsafe_content": {
+    "error": {"code": "UNSAFE_CONTENT", "message": "Content contains prohibited fraud-verdict or financial-action language.", "request_id": "req_example_0006", "details": {"field": "note_text", "reason": "fraud_verdict"}}
+  },
+  "not_implemented": {
+    "error": {"code": "NOT_IMPLEMENTED", "message": "Case resolve is not implemented in this phase (P1-M2 scaffolding).", "request_id": "req_example_0007", "details": {}}
+  }
+}

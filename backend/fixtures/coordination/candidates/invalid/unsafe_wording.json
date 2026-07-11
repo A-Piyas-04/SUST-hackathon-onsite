@@ -1,0 +1,15 @@
+{
+  "_expected_rejections": ["UNSAFE_STRUCTURED_VARIABLE"],
+  "candidate_version": "1",
+  "alert_type": "anomaly",
+  "outlet_id": "outlet_001",
+  "provider_id": "prov_bkash",
+  "severity": "medium",
+  "source_result_ids": [{"result_type": "anomaly_flag", "source_result_id": "anom_flag_001"}],
+  "detected_at": "2026-07-11T08:05:00Z",
+  "deduplication_key": "anomaly:prov_bkash:outlet_001:2026-07-11T08:00",
+  "structured_variables": {"evidence_summary": "Confirmed fraud by the agent; this is a fraudster."},
+  "plausible_benign_explanation": "May reflect normal event-driven demand.",
+  "requires_case": true,
+  "recommended_next_step": "Review the listed synthetic transactions."
+}

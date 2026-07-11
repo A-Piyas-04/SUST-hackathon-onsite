@@ -1,0 +1,22 @@
+{
+  "candidate_version": "1",
+  "alert_type": "liquidity",
+  "outlet_id": "outlet_001",
+  "provider_id": "prov_nagad",
+  "severity": "medium",
+  "source_result_ids": [
+    {"result_type": "liquidity_projection", "source_result_id": "liq_proj_nagad"}
+  ],
+  "detected_at": "2026-07-11T08:07:00Z",
+  "deduplication_key": "liquidity:prov_nagad:outlet_001:2026-07-11T08:00",
+  "structured_variables": {
+    "situation": "Possible liquidity pressure on Nagad requires review.",
+    "evidence_summary": "Nagad e-money burn rate has increased over the last recent window.",
+    "confidence_level": "medium",
+    "uncertainty_statement": "The estimate may shift with normal demand changes.",
+    "latest_source_at": "2026-07-11T08:06:00Z"
+  },
+  "plausible_benign_explanation": null,
+  "requires_case": true,
+  "recommended_next_step": "Review the recent Nagad transactions and coordinate operational support through the authorized process."
+}

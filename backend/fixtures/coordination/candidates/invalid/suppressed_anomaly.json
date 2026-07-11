@@ -1,0 +1,15 @@
+{
+  "_expected_rejections": ["SUPPRESSED_ANOMALY", "SOURCE_RESULT_NOT_ALERTABLE"],
+  "candidate_version": "1",
+  "alert_type": "anomaly",
+  "outlet_id": "outlet_001",
+  "provider_id": "prov_bkash",
+  "severity": "medium",
+  "source_result_ids": [{"result_type": "anomaly_flag", "source_result_id": "anom_flag_suppressed"}],
+  "detected_at": "2026-07-11T08:05:00Z",
+  "deduplication_key": "anomaly:prov_bkash:outlet_001:2026-07-11T08:00",
+  "structured_variables": {"evidence_summary": "Repeated near-identical amounts observed."},
+  "plausible_benign_explanation": "May reflect normal event-driven demand.",
+  "requires_case": true,
+  "recommended_next_step": "Review the listed synthetic transactions."
+}

@@ -1,0 +1,23 @@
+{
+  "candidate_version": "1",
+  "alert_type": "combined",
+  "outlet_id": "outlet_001",
+  "provider_id": "prov_bkash",
+  "severity": "high",
+  "source_result_ids": [
+    {"result_type": "liquidity_projection", "source_result_id": "liq_proj_001"},
+    {"result_type": "anomaly_flag", "source_result_id": "anom_flag_001"}
+  ],
+  "detected_at": "2026-07-11T08:06:00Z",
+  "deduplication_key": "combined:prov_bkash:outlet_001:2026-07-11T08:00",
+  "structured_variables": {
+    "situation": "Possible liquidity pressure with unusual activity requires review.",
+    "evidence_summary": "Five near-identical cash-outs occurred while shared cash was falling quickly.",
+    "confidence_level": "medium",
+    "uncertainty_statement": "The pattern may be caused by normal event-driven demand.",
+    "latest_source_at": "2026-07-11T08:05:00Z"
+  },
+  "plausible_benign_explanation": "This may reflect normal pre-Eid demand.",
+  "requires_case": true,
+  "recommended_next_step": "Review the transactions before coordinating operational support through the authorized process."
+}
