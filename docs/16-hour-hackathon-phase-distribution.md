@@ -131,39 +131,60 @@ Suggested analytics:
 
 ## 4. Role Allocation
 
-For a four-person team, use these parallel lanes aligned to System Design modules:
+This plan assumes **exactly three people working simultaneously**. Each person owns a different implementation surface so two people never edit or implement the same feature. Collaboration happens through versioned contracts and explicit handoffs, not shared ownership.
 
-| Lane | Primary responsibility |
-|---|---|
-| Product/UX and presentation | Requirements, wireframes (Agent / Ops / Risk views), alert wording, demo story (Scenarios A–D), slides, responsible-design note |
-| Frontend | Role-based dashboards, forecast cards, data-health indicators, alert evidence, filters, case workflow UI, localization toggle |
-| Backend/data | Supabase project + SQL migrations, Ingestion & normalization, Ledger & Aggregation, schemas, synthetic generator with fault injection, APIs, case/audit persistence, Auth & Provider-Boundary Guard |
-| Analytics/QA | Data Quality & Confidence Engine, Liquidity + Anomaly engines, Explainability templates, test scenarios, `/metrics`, validation evidence |
+| Member | Permanent lane | Owns | Does not own |
+|---|---|---|---|
+| **Member 1 — Product/UI** | Product decisions, frontend, localization, demo and presentation | Screen flows, React components, UI state, alert wording/templates, accessibility, screenshots and slides | Database, API implementation, analytical formulas |
+| **Member 2 — Platform/Workflow** | Backend, persistence, security and integration | Supabase migrations, ingestion, ledger, APIs, case lifecycle, audit log, JWT/RBAC, startup/deployment | Frontend components, forecast/anomaly algorithms |
+| **Member 3 — Intelligence/Quality** | Analytics, data quality, synthetic data, testing and metrics | Scenario generator, confidence engine, liquidity forecast, anomaly detection, automated tests, evaluation and `/metrics` calculations | UI layout, database/API ownership |
 
-For fewer people:
+**Member 2 is the integration owner** and owns shared schema/API versions and the runnable main branch. Member 1 approves user-visible semantics; Member 3 approves analytics fields and expected outputs. A downstream task may depend on another member's earlier deliverable, but no member waits idle: every phase gives all three members independent work based on already frozen inputs or fixtures.
 
-- **Three people:** combine Product/UX with Frontend.
-- **Two people:** one owns UI/demo; one owns data/backend/analytics. Both test and document.
-- **Solo:** follow the phases sequentially, use one application process and a **Supabase** project (free tier) for Postgres, and omit all stretch work.
+### Non-overlap rules
 
-Assign one integration owner. That person controls shared schemas, approves interface changes, keeps the main branch runnable, and calls each phase gate.
+1. A task has exactly one owner. Reviewers may comment but do not co-implement it.
+2. Member 1 consumes APIs and analytics through fixtures/contracts; Member 1 does not patch backend logic to unblock the UI.
+3. Member 2 exposes and persists analytical results; Member 2 does not reimplement Member 3's formulas.
+4. Member 3 supplies pure functions, expected outputs, and tests; Member 3 does not wire UI components or database routes.
+5. Contract changes go through Member 2 and must preserve the previous fixture until all consumers have moved.
+6. At each phase boundary, commit or tag the named deliverables before dependent work begins.
 
 ## 5. Sixteen-Hour Schedule at a Glance
 
-| Clock | Duration | Phase | Required result |
-|---|---:|---|---|
-| 00:00-00:45 | 0:45 | 1. Alignment and scope lock | Demo story, roles, stack, MVP and safety boundaries agreed |
-| 00:45-02:15 | 1:30 | 2. UX, architecture, and data contracts | Screen map, schemas, API/state contracts, synthetic scenarios |
-| 02:15-05:00 | 2:45 | 3. Foundation vertical slice | Data flows into a runnable unified dashboard |
-| 05:00-07:30 | 2:30 | 4. Liquidity and anomaly analytics | Forecasts and explainable alerts work on controlled scenarios |
-| 07:30-10:00 | 2:30 | 5. Confidence and coordinated response | Bad-data fallback and end-to-end case workflow work |
-| 10:00-12:00 | 2:00 | 6. UX integration and MVP freeze | Complete demo path works without manual data edits |
-| 12:00-13:30 | 1:30 | 7. Validation, reliability, and safety QA | Three or more metrics and failure evidence captured |
-| 13:30-14:30 | 1:00 | 8. Submission documentation | Repository and all required notes/diagram complete |
-| 14:30-15:30 | 1:00 | 9. Presentation and rehearsal | Timed story-driven demo rehearsed with backup |
-| 15:30-16:00 | 0:30 | 10. Final buffer and submission | Only critical fixes; final checklist and submission |
+| Clock | Duration | Phase | Member 1 — Product/UI | Member 2 — Platform/Workflow | Member 3 — Intelligence/Quality |
+|---|---:|---|---|---|---|
+| 00:00-00:45 | 0:45 | 1. Scope lock | Story, screens, wording guardrails | Stack, repo and integration rules | Scenario and metric acceptance criteria |
+| 00:45-02:15 | 1:30 | 2. Contracts | Wireframes and UI fixtures | Schemas, API contract and migrations | Analytics interfaces and scenario specification |
+| 02:15-05:00 | 2:45 | 3. Foundations | Dashboard and case shells | Ingestion, ledger, persistence and APIs | Generator, data-quality engine and tests |
+| 05:00-07:30 | 2:30 | 4. Decision intelligence | Forecast/anomaly UI and localized copy | Alert creation, routing and result persistence | Liquidity and anomaly engines |
+| 07:30-10:00 | 2:30 | 5. Safe response | Case actions, history and notification UI | Lifecycle, audit log and RBAC | Degraded-data behavior and security/quality tests |
+| 10:00-12:00 | 2:00 | 6. Integration freeze | Complete demo UX and responsive polish | Live wiring, startup and integration fixes | End-to-end fixtures, regression and safety suite |
+| 12:00-13:30 | 1:30 | 7. Validation | UX/accessibility QA and evidence capture | Performance, health and reliability instrumentation | Analytics evaluation and failure-mode validation |
+| 13:30-14:30 | 1:00 | 8. Documentation | README usage, screenshots and slide skeleton | Architecture, setup and data/simulation note | Metrics, responsible-design note and limitations |
+| 14:30-15:30 | 1:00 | 9. Rehearsal | Demo lead and presentation timing | Reset/backup operator and architecture Q&A | Evidence/safety presenter and result verification |
+| 15:30-16:00 | 0:30 | 10. Submission | Visual/presentation check | Build, repository and submission check | Data, tests, metrics and secret scan |
 
 Total: **16 hours**.
+
+### Workload balance check
+
+Complexity is estimated on a 1–5 scale **within each time block**. Scores measure implementation effort, not business importance. No member differs by more than one point from another member in the same phase.
+
+| Phase | Member 1 | Member 2 | Member 3 | Balance rationale |
+|---|---:|---:|---:|---|
+| 1 | 2 | 2 | 2 | Three bounded definition artifacts |
+| 2 | 3 | 4 | 4 | UI fixtures offset the heavier schema/algorithm specifications |
+| 3 | 5 | 5 | 5 | Frontend foundation, backend foundation, and data/quality foundation |
+| 4 | 4 | 4 | 5 | Rich intelligence UI, alert platform, and two tested analytical engines |
+| 5 | 4 | 5 | 5 | Workflow UI, secure lifecycle, and degraded-data/adversarial work |
+| 6 | 4 | 5 | 4 | UI integration, deployable integration, and full regression |
+| 7 | 3 | 4 | 4 | UX evidence, platform evidence, and analytics evidence |
+| 8 | 3 | 3 | 3 | Three separate documentation packages |
+| 9 | 3 | 3 | 3 | Demo, technical fallback, and evidence presentation |
+| 10 | 1 | 1 | 1 | Three bounded final checks |
+
+If a member finishes early, they review another lane or prepare their next-phase fixture; they do not take over another member's implementation. If a task exceeds its estimate, cut its `Should/Stretch` portion before moving ownership.
 
 ---
 
@@ -176,20 +197,13 @@ Total: **16 hours**.
 
 ### Actions
 
-1. Read the mandatory requirements, guardrails, deliverables, demonstration scenarios, and scoring weights together.
-2. Select the main story (Scenarios A–D from problem statement §11):
-   - An outlet has shared cash and **three separate** provider balances (bKash, Nagad, Rocket).
-   - bKash cash-outs accelerate, creating a projected shared-cash shortage (Scenario A).
-   - Several near-identical transactions are flagged as unusual with evidence and a plausible-benign explanation (Scenario B).
-   - A provider feed later becomes stale/conflicting; confidence drops and anomaly flags are suppressed for that provider (Scenario C).
-   - The alert is routed per hierarchy (agent → field officer → provider ops), assigned, acknowledged, escalated, and resolved (Scenario D).
-3. Define the primary views from System Design §1:
-   - Agent view (web, mobile-responsive).
-   - Operations / Coordinator view.
-   - Alert detail and case coordination view (Risk/Compliance as stretch if time permits).
-4. Freeze the technology stack (including **Supabase** for PostgreSQL), repository conventions, owners, and integration method.
-5. Write the exact three-to-five-minute demo sequence before implementation begins.
-6. Copy the mandatory submission checklist into the issue board and assign every item.
+| Owner | Independent work | Output ID |
+|---|---|---|
+| **Member 1** | Freeze the three primary views, the 3–5 minute Scenarios A–D demo sequence, visible terminology, and `Must/Should/Stretch` UI backlog. | `P1-M1` story and screen map |
+| **Member 2** | Freeze stack (including Supabase), repository conventions, branch/integration policy, module boundaries, environment variables, and prohibited backend actions. | `P1-M2` technical charter |
+| **Member 3** | Freeze scenario inputs/expected outcomes, analytical success conditions, minimum validation metrics, and safety assertions for stale/conflicting data and unusual activity. | `P1-M3` acceptance matrix |
+
+**Final 10-minute checkpoint:** compare the three outputs only for contradictions. Member 2 records the agreed interfaces; owners retain their respective implementation areas.
 
 ### Deliverables
 
@@ -212,35 +226,13 @@ Total: **16 hours**.
 
 ### Actions
 
-1. Sketch the dashboard:
-   - Shared-cash card (never blended with provider totals).
-   - Separate bKash, Nagad, and Rocket balance cards.
-   - Per-provider **data health** indicator (`fresh` / `stale` / `missing` / `conflicting`).
-   - Estimated time-to-shortage and confidence on each card.
-   - Transaction/liquidity trend.
-   - Prioritized alerts.
-   - Clear provider colors and labels without implying wallet interoperability.
-2. Sketch the alert detail:
-   - Situation and severity.
-   - Why it was flagged (contributing signals).
-   - Evidence and uncertainty.
-   - `plausible_benign_explanation` field.
-   - EN explanation + Bangla/Banglish template toggle (same underlying alert object).
-   - Recipient, owner, recommended safe next step, status, notes, and history.
-3. Define minimum entities (System Design §4):
-   - `Agent/Outlet`, `ProviderBalance`, `Transaction`, `LiquidityProjection`, `AnomalyFlag`, `Case/Alert`, `AuditEvent`.
-4. Define provider-separated schemas and response contracts. Include timestamps, synthetic identifiers, data source, feed_status, and provider scope on relevant records.
-5. Define controlled scenarios with **fault injection** toggles:
-   - Normal operation.
-   - Scenario A — Hidden provider shortage.
-   - Scenario B — Liquidity pressure plus repeated-amount activity.
-   - Scenario C — Stale/conflicting provider data (confidence degradation + anomaly suppression).
-   - Scenario D — Coordinated alert closure through full lifecycle.
-6. Define routing rules: alert type + provider + area → stakeholder (agent, field officer, provider ops, risk analyst) per Section 5 hierarchy.
-7. Define thresholds and fault-injection config in a configuration file rather than scattering constants through code.
-8. Create the initial architecture diagram matching System Design §1 (modular monolith, all §2 components labeled).
-9. Create a **Supabase** project; add `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (backend only), and `DATABASE_URL` to `.env.example` — never commit real values.
-10. Draft initial SQL migrations (or Supabase migration files) for core tables: agents, provider balances, transactions, cases, audit events.
+| Owner | Independent work | Inputs | Output ID |
+|---|---|---|---|
+| **Member 1** | Produce low-fidelity dashboard, alert detail and case-flow wireframes. Create UI fixtures for loading/empty/error and `fresh/stale/missing/conflicting` states, plus EN/Bangla/Banglish copy keys. | `P1-M1`; field names requested from `P1-M3` | `P2-M1` wireframes + frontend fixtures |
+| **Member 2** | Define provider-separated entities, OpenAPI/response contracts, routing fields and state transitions. Draft Supabase migrations, `.env.example`, and architecture diagram. | `P1-M2`, `P1-M3` acceptance fields | `P2-M2` schema/API v1 + migration draft |
+| **Member 3** | Specify deterministic Scenarios A–D, fault toggles, thresholds, forecast/anomaly formulas, confidence rules and expected outputs. Export pure-function input/output examples matching API v1. | `P1-M3`; schema names from `P1-M2` | `P2-M3` scenario + analytics contract |
+
+**Handoff order:** Member 2 publishes the schema skeleton by 01:15. Members 1 and 3 bind their fixtures/examples to it by 01:45. Member 2 freezes API v1 at 02:00 and uses the final 15 minutes for mismatch corrections.
 
 ### Deliverables
 
@@ -262,40 +254,19 @@ Total: **16 hours**.
 **Time:** 02:15-05:00  
 **Goal:** Produce the first runnable end-to-end system early.
 
-### Parallel work
+### Simultaneous assignments
 
-**Backend/data lane**
-
-1. Implement schemas and the **Provider Feed Ingestion & Normalization** module.
-2. Apply SQL migrations to **Supabase**; connect backend via `DATABASE_URL` or Supabase client.
-3. Generate three providers (bKash, Nagad, Rocket), shared cash, timestamped balance snapshots, transactions, feed health, and case states; seed into Supabase.
-4. Implement **Ledger & Aggregation Service** — shared cash + per-provider balances; no cross-provider transfer endpoints.
-5. Add deterministic seeds and **configurable fault injection** (late arrival, missing fields, conflicting snapshots).
-6. Stub **Auth & Provider-Boundary Guard** (JWT RBAC roles at minimum).
-7. Expose fixtures through REST API (or GraphQL if team prefers).
-
-**Frontend lane**
-
-1. Build the dashboard shell and provider-separated balance cards.
-2. Add loading, empty, error, and stale-data states from the beginning.
-3. Build the alert list and alert-detail/case shell using fixtures.
-
-**Analytics/QA lane**
-
-1. Implement **Data Quality & Confidence Engine** — tag feeds `fresh` / `stale` / `missing` / `conflicting`; emit confidence modifier.
-2. Write unit tests for normal, malformed, and fault-injected samples.
-3. Prepare labeled synthetic cases for forecast and anomaly evaluation.
-
-**Product/documentation lane**
-
-1. Start README setup instructions and assumptions.
-2. Review all visible wording for advisory language.
-3. Maintain requirement-to-evidence mapping.
+| Owner | Independent implementation | Prerequisite | Completion handoff |
+|---|---|---|---|
+| **Member 1** | Build the dashboard shell, shared-cash and separate provider cards, data-health states, alert list, alert-detail shell and case shell. Use only `P2-M1` fixtures; start visible-language and requirement-evidence notes. | `P2-M1`, API field names from `P2-M2` | `P3-M1` fixture-driven frontend |
+| **Member 2** | Apply migrations; implement ingestion/normalization, Supabase connection, Ledger & Aggregation, read APIs, seed-import endpoint and a minimal JWT/provider-scope stub. Member 2 persists data but does not generate scenario logic. | `P2-M2` and sample payloads from `P2-M3` | `P3-M2` persisted foundation API |
+| **Member 3** | Implement deterministic synthetic generator, fault injection and Data Quality & Confidence Engine as pure modules. Add labeled forecast/anomaly cases and unit tests for normal, malformed and degraded inputs. | `P2-M3`, entity shapes from `P2-M2` | `P3-M3` generator + quality package |
 
 ### Integration checkpoint at Hour 4
 
-- Merge schemas, fixtures, and the first dashboard view.
-- Resolve contract mismatches immediately; do not defer them.
+- Member 3 hands `P3-M3` payloads to Member 2; Member 2 imports them without copying generator logic.
+- Member 2 exposes one live dashboard response; Member 1 swaps one fixture adapter to the live endpoint without changing the component model.
+- Contract mismatches are fixed by the owner of the producing contract or module.
 
 ### Exit gate at Hour 5
 
@@ -312,26 +283,13 @@ Total: **16 hours**.
 
 ### Actions
 
-1. Implement **Liquidity Forecasting Engine** — separate burn rates and shortage estimates for:
-   - Shared physical cash.
-   - bKash, Nagad, and Rocket e-money (each isolated).
-2. Pull Data Quality confidence modifier into every projection; widen band when degraded.
-3. Prevent invalid forecasts:
-   - Never divide by zero.
-   - Do not predict shortage for flat or replenishing balances.
-   - Do not silently mix providers.
-   - Make the forecast window and minimum sample count configurable.
-4. Implement **Anomaly Detection Engine** — one fully-built rule (near-identical repeated amounts within a short window):
-   - Define time window, amount tolerance, minimum count, and optional velocity threshold.
-   - Return structured evidence + `plausible_benign_explanation`, not merely a Boolean flag.
-5. Wire outputs into **Alert & Case Management Service** — create cases with routing rules when thresholds cross.
-6. Connect liquidity and unusual activity in one alert when both affect the same provider/outlet/time window.
-7. Implement **Explainability & Localization Service** — EN templates; add Bangla/Banglish template for at least one alert type.
-8. Generate explanations such as:
-   - `Shared cash may run short in approximately 2h 10m if the recent cash-out rate continues.`
-   - `Requires review: 5 cash-outs of ~1,000 BDT from 3 accounts in 12 minutes; may reflect Eid demand.`
-9. Display safe recommendations such as contacting the outlet, verifying feed health, reviewing transactions, or escalating through the provider's authorized process.
-10. Add tests for threshold boundaries, no-depletion conditions, injected anomalies, and normal high-demand periods.
+| Owner | Independent implementation | Prerequisite | Completion handoff |
+|---|---|---|---|
+| **Member 1** | Build forecast cards/bands, contributing-signal view, anomaly evidence panel and combined-alert presentation. Implement EN + Bangla/Banglish template rendering and safe recommended-action copy from structured fixtures. | `P3-M1`; final result shapes from `P2-M3` | `P4-M1` decision-intelligence UI |
+| **Member 2** | Implement alert creation, provider/area routing, case persistence and endpoints that invoke Member 3's engine interfaces. Persist combined liquidity/anomaly results without altering their calculations. | `P3-M2`; callable interfaces from `P3-M3` | `P4-M2` routed-alert API |
+| **Member 3** | Implement separate shared-cash/provider burn-rate forecasts with confidence bands and one near-identical-amount anomaly rule. Cover zero burn, replenishment, minimum samples, provider isolation, threshold edges and benign demand with tests. | `P3-M3`; data access adapter contract from `P3-M2` | `P4-M3` tested analytics engines |
+
+**Dependency:** `P4-M2` may use the frozen expected outputs from `P2-M3` while `P4-M3` is being implemented. At 06:45, Member 3 replaces the stubs with the real package; Member 2 owns only the adapter. Member 1 switches from fixtures to `P4-M2` after that handoff.
 
 ### Deliverables
 
@@ -355,27 +313,13 @@ Total: **16 hours**.
 
 ### Actions
 
-1. Harden **Data Quality & Confidence Engine** feed-health checks:
-   - Missing feed or required fields.
-   - Timestamp older than the configured freshness threshold.
-   - Conflicting balance values or impossible transitions.
-   - Insufficient samples for forecasting.
-2. Map feed health to safe output behavior (Scenario C path):
-   - Lower confidence / widen projection band.
-   - Show the affected provider, data timestamp, and visible "data delayed" UI state.
-   - **Suppress** new high-confidence anomaly flags for the affected provider; surface data-issue advisory instead.
-   - Recommend checking the source rather than making a financial recommendation.
-3. Implement full **Alert & Case Management** lifecycle:
-   - Alert created and routed via rule engine (type + provider + area → stakeholder).
-   - Owner assigned.
-   - Acknowledgement recorded.
-   - Note or evidence added.
-   - Escalation to risk/review or operational follow-up when appropriate.
-   - Resolution status and resolution note recorded.
-4. Implement **Coordination / Notification Layer** — in-app notification to assigned stakeholder (primary demo channel).
-5. Write every action to append-only **AuditEvent** log with actor, timestamp, previous state, new state, and provider scope.
-6. Enforce **Auth & Provider-Boundary Guard** — Provider A ops cannot open Provider B cases; test cross-provider leakage.
-7. Validate Bangla/Banglish template wording (situation, evidence, uncertainty, safe next step).
+| Owner | Independent implementation | Prerequisite | Completion handoff |
+|---|---|---|---|
+| **Member 1** | Implement case assignment/acknowledgement/escalation/resolution controls, notes, audit timeline and in-app notification UI. Add visible delayed/conflicting advisory states and validate localized situation/evidence/uncertainty/next-step copy. | `P4-M1`; lifecycle contract from `P4-M2` | `P5-M1` response-workflow UI |
+| **Member 2** | Implement legal case transitions, ownership, notes, assignment notifications, append-only audit events and provider-scoped JWT/RBAC enforcement. Reject invalid transitions and cross-provider reads/writes. | `P4-M2`; provider fields from `P3-M2` | `P5-M2` secure workflow backend |
+| **Member 3** | Harden missing/stale/conflicting/insufficient-sample checks. Apply confidence reduction and band widening; suppress new high-confidence anomalies for degraded providers and emit a data-issue advisory. Add state-transition fixtures, leakage tests and Scenario C assertions against Member 2's API. | `P4-M3`; test endpoint from `P4-M2` | `P5-M3` degraded-data engine + adversarial suite |
+
+**Dependency:** Member 1 builds against the Phase 2 lifecycle fixture while `P5-M2` is underway. `P5-M3` depends on Member 2's Phase 4 test endpoint, not on unfinished Phase 5 RBAC. At 09:15, Member 2 publishes the secured API; Members 1 and 3 run their separate UI and adversarial checks against it.
 
 ### Deliverables
 
@@ -400,16 +344,13 @@ Total: **16 hours**.
 
 ### Actions
 
-1. Integrate all live data and remove placeholder content from the demo path.
-2. Prioritize the dashboard by urgency and estimated shortage time.
-3. Add filters for provider and time; add agent/area filters per [R] priority if the data model supports them.
-4. Show per-provider **data health** indicators on the dashboard.
-5. Add EN / Bangla / Banglish toggle on alert detail (same structured object, no drift).
-6. Standardize severity, provider colors, status labels, timestamps, units, and number formatting.
-7. Make uncertainty visible next to the prediction, not hidden in a tooltip or documentation.
-8. Add clear navigation from dashboard alert → evidence → case actions/history.
-9. Test the complete story from a fresh setup and clean browser/session.
-10. Fix only issues that block comprehension, correctness, safety, or the demo.
+| Owner | Independent implementation | Prerequisite | Completion handoff |
+|---|---|---|---|
+| **Member 1** | Replace all demo-path fixtures with live adapters; finalize urgency ordering, filters, responsive layout, formatting, uncertainty placement, localization toggle and dashboard → evidence → case navigation. | `P5-M1`, secured endpoints from `P5-M2` | `P6-M1` demo-ready frontend |
+| **Member 2** | Wire all modules in the single deployable app; stabilize API errors, migrations, seed/reset command, Docker/local startup and clean-session authentication. Fix integration defects only in platform-owned code. | `P5-M2`, packages from `P4-M3`/`P5-M3` | `P6-M2` reproducible integrated build |
+| **Member 3** | Create and run an automated A–D end-to-end regression suite, including expected forecasts, anomaly evidence, degraded-data suppression, lifecycle completion, provider isolation and safe-language scan. Fix only analytics/test-owned defects. | `P5-M3`, stable routes from `P5-M2` | `P6-M3` MVP regression report |
+
+**Integration order:** Member 2 publishes a release candidate at 11:00. Member 1 and Member 3 independently validate that same build. Member 2 accepts only reproducible blocking defects until the Hour 12 gate.
 
 ### Deliverables
 
@@ -451,15 +392,13 @@ Expose results via `/metrics` endpoint or a validation dashboard panel.
 
 ### Actions
 
-1. Implement **Monitoring & Observability** — structured request logs, `/health`, `/metrics` summary, data-quality event log.
-2. Freeze a labeled validation dataset separate from threshold-tuning examples.
-3. Run repeatable evaluation and save raw outputs or screenshots.
-4. Test intentionally missing, delayed, malformed, and conflicting provider data (fault injection).
-5. Test normal event-driven demand to expose false positives.
-6. Verify no unsupported profiling or final fraud judgment appears.
-7. Audit the repository for real credentials, identities, account data, and unsafe actions.
-8. Verify setup on a clean environment or teammate machine (Docker one-command start).
-9. Record limitations honestly; do not inflate simulated results into production claims.
+| Owner | Independent validation work | Prerequisite | Evidence ID |
+|---|---|---|---|
+| **Member 1** | Run responsive, accessibility, navigation, localization and safe-wording QA. Measure alert explanation coverage and capture final screenshots from the release candidate. | `P6-M1`, `P6-M2` | `P7-M1` UX/safety evidence |
+| **Member 2** | Add structured request logs, `/health`, latency instrumentation and data-quality event counts. Benchmark average/p95 API latency and verify clean Docker/setup, migrations, auth and audit persistence. | `P6-M2` | `P7-M2` platform/reliability evidence |
+| **Member 3** | Freeze held-out labeled data; measure forecast error/lead time, anomaly precision/recall/false-positive rate and degraded-input handling. Run secret/real-data/unsafe-action scans and publish metric payloads for Member 2's `/metrics` endpoint. | `P6-M3`; metrics ingestion shape from `P6-M2` | `P7-M3` analytics/security evidence |
+
+Member 2 only serves Member 3's metric payload; Member 2 does not recalculate it. Member 1 only presents captured evidence; Member 1 does not alter test results.
 
 ### Exit gate
 
@@ -475,30 +414,13 @@ Expose results via `/metrics` endpoint or a validation dashboard panel.
 
 ### Actions
 
-1. Finalize README:
-   - Problem and users.
-   - Features and screenshots if available.
-   - Architecture summary.
-   - Setup/run steps (include Supabase project creation, running migrations, and seed command).
-   - Environment variables and `.env.example` (`SUPABASE_URL`, `DATABASE_URL`, keys — placeholders only).
-   - Demo scenario instructions.
-   - Test and metric commands.
-2. Finalize the architecture diagram — modular monolith with all §2 components: Ingestion, Ledger, Data Quality, Liquidity, Anomaly, Alert/Case, Explainability, Coordination, Auth, Monitoring; provider boundaries and case coordination flow shown.
-3. Write the data and simulation note (System Design deliverable):
-   - Generation method and deterministic seed.
-   - Fields, volumes, and scenarios (A–D).
-   - Fault-injection configuration.
-   - Assumptions and injected anomalies.
-   - Validation split.
-   - Known limitations.
-4. Write the responsible-design note (derived from guardrails — not after-the-fact):
-   - Synthetic data and privacy.
-   - Anomaly is not proof of fraud; `plausible_benign_explanation` purpose.
-   - False-positive risk and human review.
-   - Provider separation and RBAC.
-   - Actions intentionally not performed (no fund movement, blocking, or accusation).
-5. Add `/metrics` or validation panel results with methods and limitations.
-6. Confirm sample data and source code are committed; `.env.example` documents Supabase vars; Docker/README setup is reproducible (judges use their own Supabase project or a shared read-only demo project).
+| Owner | Independent documentation work | Prerequisite | Output ID |
+|---|---|---|---|
+| **Member 1** | Write README problem/users, features, demo-scenario instructions and UI usage; add screenshots and build the presentation skeleton. | `P7-M1` | `P8-M1` product/demo docs |
+| **Member 2** | Write exact setup/run/migration/seed/environment instructions; finalize the modular-monolith architecture diagram and integration/deployment notes. | `P7-M2` | `P8-M2` architecture/setup docs |
+| **Member 3** | Write data/simulation methodology, deterministic scenarios, validation split, metrics/methods/limitations and responsible-design note covering human review, privacy, provider separation and prohibited actions. | `P7-M3` | `P8-M3` evidence/responsibility docs |
+
+**Assembly:** Member 2 links the three owned documents and confirms commands against the release candidate. Content corrections return to the original owner; no one silently rewrites another member's evidence.
 
 ### Exit gate
 
@@ -526,17 +448,13 @@ Expose results via `/metrics` endpoint or a validation dashboard panel.
 
 ### Actions
 
-1. Rehearse at least twice with a timer and assigned speaker transitions.
-2. Use a deterministic demo dataset and reset procedure.
-3. Prepare backup screenshots or a short local recording for every critical screen.
-4. Prepare concise answers for:
-   - Why this is more than separate charts.
-   - How shortage time is calculated.
-   - Why an activity was flagged.
-   - How false positives and low-quality data are handled.
-   - How provider boundaries are enforced.
-   - What the system deliberately cannot do.
-5. Stop adding features.
+| Owner | Independent preparation | Prerequisite | Live responsibility |
+|---|---|---|---|
+| **Member 1** | Finalize slides, speaker transitions and backup screenshots; time the full story and trim narration. | `P8-M1` | Lead problem, users, UI and Scenarios A–D demo |
+| **Member 2** | Validate deterministic reset, local build and backup path; prepare architecture, persistence, RBAC and deployment answers. | `P8-M2` | Operate reset/backup and explain platform boundaries |
+| **Member 3** | Recheck every displayed number; prepare forecast, anomaly, confidence, false-positive, metrics and responsible-design answers. | `P8-M3` | Present analytical evidence, safety and limitations |
+
+Run two full-team rehearsals at approximately 14:45 and 15:10. Rehearsal is the only shared activity; preparation and artifact ownership remain separate. Stop adding features.
 
 ### Exit gate
 
@@ -551,12 +469,13 @@ Expose results via `/metrics` endpoint or a validation dashboard panel.
 
 ### Actions
 
-1. Fix only critical failures: startup, broken demo path, incorrect output, unsafe wording, missing deliverable, or submission access.
-2. Run the exact demo once; do not refactor.
-3. Verify repository access, branch/commit, README, sample data, diagram, notes, metrics, slides, and environment example.
-4. Confirm no secrets or real data are committed.
-5. Submit early enough to recover from upload/network problems.
-6. Keep the tested local build and backup media unchanged.
+| Owner | Final non-overlapping check | May fix |
+|---|---|---|
+| **Member 1** | Slides, screenshots, links, wording, responsive demo route and presentation permissions. | Only presentation/UI blockers |
+| **Member 2** | Release commit/tag, repository access, startup, migrations, `.env.example`, deployment and actual submission/upload. | Only build/platform/submission blockers |
+| **Member 3** | Sample data, deterministic reset outputs, tests, metrics, provider-boundary checks, and final secret/real-data scan. | Only analytics/test/data blockers |
+
+At 15:45, Member 2 runs the exact demo once using the frozen build while Members 1 and 3 check their own evidence. Do not refactor or exchange ownership. Submit early enough to recover from access/network problems and keep the tested local build unchanged.
 
 ### Exit gate
 
@@ -571,12 +490,12 @@ Expose results via `/metrics` endpoint or a validation dashboard panel.
 | Deadline | Non-negotiable milestone | If missed |
 |---|---|---|
 | Hour 2:15 | Contracts, scenarios, wireframes, and architecture agreed | Stop UI polish; resolve contracts first |
-| Hour 5 | Runnable dashboard with synthetic multi-provider data (3 providers) | Reduce to two providers and one agent; use local fixtures |
+| Hour 5 | Runnable dashboard with synthetic multi-provider data (3 providers) | Keep all three provider cards; simplify interactions and use local fixtures |
 | Hour 7:30 | Forecast and explainable anomaly work | Simplify to deterministic rate forecast and one rule |
 | Hour 10 | Confidence fallback, anomaly suppression, case lifecycle, RBAC | Drop filters, localization, and all optional views |
 | Hour 12 | Integrated MVP passes full story | Freeze scope; only repair mandatory flow |
 | Hour 13:30 | Metrics and safety/reliability evidence captured | Stop feature work; measure the stable build |
-| Hour 14:30 | All required repository documents complete | Assign one owner and use concise factual notes |
+| Hour 14:30 | All required repository documents complete | Each member shortens only their owned document to concise factual notes |
 | Hour 15:30 | Rehearsed presentation and backup ready | Use screenshots/recording; do not risk untested fixes |
 | Hour 16 | Submission confirmed | Submit the last stable build, not a late experimental version |
 
