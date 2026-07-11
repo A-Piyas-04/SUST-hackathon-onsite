@@ -21,7 +21,7 @@ from pathlib import Path
 import psycopg2
 
 MIGRATIONS_DIR = Path(__file__).resolve().parent
-DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/liquidity_platform"
+DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@localhost:5433/liquidity_platform"
 
 
 def load_dotenv_if_present() -> None:
@@ -131,7 +131,7 @@ def main() -> int:
                 sql_text = migration_file.read_text(encoding="utf-8")
                 with conn.cursor() as cur:
                     try:
-                        if sql_text.strip():
+                        if sql_text.strip() and not is_reserved_placeholder(sql_text):
                             cur.execute(sql_text)
                         cur.execute(
                             "INSERT INTO schema_migrations (filename) VALUES (%s)",

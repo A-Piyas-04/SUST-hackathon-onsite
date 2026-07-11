@@ -26,10 +26,10 @@ class Settings(BaseSettings):
     # Async SQLAlchemy connection string (asyncpg driver). Points at local
     # Postgres (docker-compose.yml) in dev; swap for the Supabase pooled
     # connection string in later phases without changing any code.
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/liquidity_platform"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/liquidity_platform"
 
     # Sync driver variant used only by migrations/run_migrations.py.
-    MIGRATIONS_DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/liquidity_platform"
+    MIGRATIONS_DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5433/liquidity_platform"
 
     # Supabase — optional in this phase, wired for later phases.
     SUPABASE_URL: str | None = None

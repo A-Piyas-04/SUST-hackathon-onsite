@@ -6,12 +6,15 @@ here too once they exist (Phase 2+); until then only the placeholder
 """
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.db import engine
+from app.core.errors import http_exception_handler, unhandled_exception_handler, validation_exception_handler
 from app.core.logging import configure_logging
+from app.core.middleware import RequestIdMiddleware
 from app.member1.routers import (
     anomaly,
     dashboard,
@@ -46,6 +49,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestIdMiddleware)
+
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, unhandled_exception_handler)
 
 
 @app.on_event("startup")
