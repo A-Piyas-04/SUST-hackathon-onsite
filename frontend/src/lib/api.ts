@@ -256,13 +256,153 @@ export type ProviderDashboardItem = {
   feed_health: FeedHealthSummary;
   projection: ProjectionSummary;
 };
+
+// Dashboard alerts embedded in GET /outlets/{id}/dashboard (view JSON shape)
+export type DashboardAlert = {
+  alert_id: string;
+  type?: AlertType | string;
+  alert_type?: AlertType | string;
+  severity: Severity | string;
+  provider_id?: string | null;
+  detected_at: string;
+  title_key?: string;
+  case_id?: string | null;
+  has_case?: boolean;
+};
+
 export type DashboardResponse = {
   outlet: { outlet_id: string; synthetic_code: string; area: string };
   shared_cash: SharedCashDashboard;
   providers: ProviderDashboardItem[];
-  alerts: unknown[];
+  alerts: DashboardAlert[];
+  recent_transactions?: Transaction[];
   generated_at: string;
 };
+
+export type TransactionType = "cash_in" | "cash_out" | "balance_snapshot";
+export type TransactionStatus = "completed" | "pending" | "failed" | "reversed";
+
+export type Transaction = {
+  transaction_id: string;
+  synthetic_transaction_ref: string;
+  synthetic_party_ref: string;
+  provider: ProviderCode;
+  transaction_type: TransactionType;
+  status: TransactionStatus;
+  amount: string;
+  currency_code: string;
+  occurred_at: string;
+  received_at: string;
+  is_flagged?: boolean;
+};
+
+export type TransactionListResponse = {
+  outlet_id: string;
+  transactions: Transaction[];
+  total: number;
+};
+
+export function fetchTransactions(
+  outletId: string,
+  params?: {
+    provider_code?: ProviderCode;
+    transaction_type?: TransactionType;
+    page?: number;
+    page_size?: number;
+  },
+): Promise<TransactionListResponse> {
+  const q = new URLSearchParams();
+  if (params?.provider_code) q.set("provider_code", params.provider_code);
+  if (params?.transaction_type) q.set("transaction_type", params.transaction_type);
+  if (params?.page) q.set("page", String(params.page));
+  if (params?.page_size) q.set("page_size", String(params.page_size));
+  const suffix = q.toString() ? `?${q.toString()}` : "";
+  return request<TransactionListResponse>(`/outlets/${outletId}/transactions${suffix}`);
+}
+
+// --------------------------------------------------------------------------- //
+// Data quality
+// --------------------------------------------------------------------------- //
+export type DataQualityItem = {
+  provider: ProviderCode;
+  phase?: string;
+  assessment: {
+    status: FeedHealthStatus;
+    confidence_modifier: number;
+    latest_source_at: string | null;
+    summary: string;
+    assessed_at: string;
+    issues?: { issue_type: string; severity: string }[];
+  };
+};
+
+export type DataQualityResponse = {
+  outlet_id: string;
+  phase?: string;
+  note?: string;
+  providers: DataQualityItem[];
+};
+
+export type DataQualityHistorySegment = {
+  provider_code: ProviderCode;
+  status: FeedHealthStatus;
+  started_at: string;
+  ended_at: string | null;
+};
+
+export type DataQualityHistoryResponse = {
+  outlet_id: string;
+  phase?: string;
+  assessments: DataQualityItem[];
+};
+
+export function fetchDataQuality(outletId: string): Promise<DataQualityResponse> {
+  return request<DataQualityResponse>(`/outlets/${outletId}/data-quality`);
+}
+
+export function fetchDataQualityHistory(
+  outletId: string,
+  hours = 24,
+): Promise<DataQualityHistoryResponse> {
+  return request<DataQualityHistoryResponse>(
+    `/outlets/${outletId}/data-quality/history?hours=${hours}`,
+  );
+}
+
+// --------------------------------------------------------------------------- //
+// Metrics (observability)
+// --------------------------------------------------------------------------- //
+export type MetricsSummaryResponse = {
+  contract_version: string;
+  release_candidate: Record<string, unknown>;
+  process: Record<string, unknown>;
+  validation_metrics?: Record<string, unknown>[];
+  generated_at: string;
+};
+
+export async function fetchMetrics(): Promise<MetricsSummaryResponse> {
+  const token = getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${getApiBaseUrl()}/metrics`, { headers, cache: "no-store" });
+  if (!res.ok) {
+    const text = await res.text();
+    let payload: unknown = null;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      /* ignore */
+    }
+    const err = (payload as { error?: { code?: string; message?: string } } | null)?.error;
+    throw new ApiError(
+      kindForStatus(res.status, err?.code ?? "http_error"),
+      res.status,
+      err?.code ?? "http_error",
+      err?.message ?? `Request failed (${res.status}).`,
+    );
+  }
+  return (await res.json()) as MetricsSummaryResponse;
+}
 
 export function fetchOutlets(): Promise<OutletListItem[]> {
   return request<OutletListItem[]>("/outlets");
