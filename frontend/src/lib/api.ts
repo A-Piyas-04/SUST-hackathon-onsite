@@ -645,3 +645,50 @@ export function fetchNotifications(): Promise<NotificationListResponse> {
 export function markNotificationRead(notificationId: string): Promise<Notification> {
   return request<Notification>(`/notifications/${notificationId}/read`, { method: "POST" });
 }
+
+// --------------------------------------------------------------------------- //
+// Validation evidence (Phase 7) — admin/management read grant only
+// --------------------------------------------------------------------------- //
+export type MetricCategory = "analytics" | "performance" | "reliability" | "explainability";
+export type ValidationSplit = "tuning" | "held_out" | "demo";
+export type ValidationRunStatus = "running" | "completed" | "failed";
+
+export type MetricResultDetail = {
+  metric_code: string;
+  category: MetricCategory;
+  value: string;
+  unit: string;
+  sample_size: number;
+  method: string;
+  limitations: string;
+  details: Record<string, unknown> | null;
+  computed_at: string;
+};
+
+export type ValidationMetricPayload = {
+  validation_run_id: string;
+  name: string;
+  dataset_split: ValidationSplit;
+  engine_version: string;
+  configuration: Record<string, unknown>;
+  status: ValidationRunStatus;
+  started_at: string;
+  completed_at: string | null;
+  metrics: MetricResultDetail[];
+};
+
+export type ValidationResultsResponse = {
+  runs: ValidationMetricPayload[];
+  generated_at: string;
+};
+
+export function fetchValidationResults(params?: {
+  datasetSplit?: ValidationSplit;
+  status?: ValidationRunStatus;
+}): Promise<ValidationResultsResponse> {
+  const q = new URLSearchParams();
+  if (params?.datasetSplit) q.set("dataset_split", params.datasetSplit);
+  if (params?.status) q.set("status", params.status);
+  const suffix = q.toString() ? `?${q.toString()}` : "";
+  return request<ValidationResultsResponse>(`/validation/results${suffix}`);
+}

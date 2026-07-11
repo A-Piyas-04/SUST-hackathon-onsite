@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "release_candidate": {
+    "commit": "629a91eb78c51e7b437d9b8c684915873dc7924a",
+    "contract_version": "1.0.0",
+    "engine_versions": {
+      "quality": "quality-v1",
+      "liquidity": "liquidity-v1",
+      "anomaly": "anomaly-v1",
+      "validation": "validation-v1"
+    }
+  },
+  "scans": [
+    {
+      "name": "secrets_and_real_data",
+      "passed": true,
+      "files_scanned": 280,
+      "findings": [],
+      "waivers": []
+    },
+    {
+      "name": "unsafe_action_endpoints",
+      "passed": true,
+      "routes_checked": 44,
+      "findings": []
+    },
+    {
+      "name": "prohibited_language",
+      "passed": true,
+      "files_scanned": 17,
+      "findings": []
+    }
+  ],
+  "generated_at": "2026-07-11T16:44:55.019222+00:00"
+}

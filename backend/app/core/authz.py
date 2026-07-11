@@ -93,6 +93,12 @@ def require_admin(user: UserContext) -> None:
         raise ForbiddenError("Demo setup actions require an admin identity.")
 
 
+def require_admin_or_management(user: UserContext) -> None:
+    """Evidence/observability reads are limited to admin and management roles."""
+    if not (_is_admin(user) or _is_management(user)):
+        raise ForbiddenError("Validation and metrics evidence require an admin or management role.")
+
+
 async def require_outlet_access(
     session: AsyncSession, user: UserContext, *, outlet_id: UUID
 ) -> None:

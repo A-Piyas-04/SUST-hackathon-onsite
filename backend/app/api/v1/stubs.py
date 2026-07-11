@@ -1,27 +1,17 @@
-"""Versioned API stub routers — contract placeholders for later phases.
+"""Versioned API stub router — placeholder for post-MVP stretch endpoints.
 
-Phase 3 (reference/ledger), Phase 4 (analytics), and Phase 5 (auth/alerts/cases/
-notifications/audit) are now implemented in their own routers. Only endpoints
-scheduled for a later phase remain stubbed here.
+Phase 3 (reference/ledger), Phase 4 (analytics), Phase 5 (auth/alerts/cases/
+notifications/audit), and Phase 7 (validation/observability) are implemented in
+their own routers. The Phase 7 validation-results stub has been replaced by the
+persistence-backed router in ``app.api.v1.validation``.
+
+This router intentionally exposes no routes: the five stretch endpoints
+(what-if-runs, relationships, nearby-support-options, support-requests) are
+gated behind the complete MVP and remain unimplemented (Phase 8+).
 """
 
 from __future__ import annotations
 
-from typing import Annotated
+from fastapi import APIRouter
 
-from fastapi import APIRouter, Depends
-
-from app.core.auth import UserContext, require_authenticated
-from app.core.errors import NotImplementedFeatureError
-
-router = APIRouter(prefix="/api/v1", tags=["stubs-phase7+"])
-
-
-def _raise(phase: str, feature: str) -> None:
-    raise NotImplementedFeatureError(f"{feature} — implemented in Phase {phase}.")
-
-
-# --- Validation (Phase 7) -----------------------------------------------------
-@router.get("/validation/results")
-async def validation_results(_user: Annotated[UserContext, Depends(require_authenticated)]):
-    _raise("7", "Validation results")
+router = APIRouter(prefix="/api/v1", tags=["stubs-phase8+"])

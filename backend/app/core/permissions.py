@@ -50,6 +50,7 @@ def permissions_for_user(user: UserContext) -> tuple[str, ...]:
                 "tab:scenarios",
                 "tab:alerts",
                 "tab:cases",
+                "tab:validation",
                 "outlet:switch",
                 "simulation:manage",
                 "ingestion:manage",
@@ -73,6 +74,7 @@ def permissions_for_user(user: UserContext) -> tuple[str, ...]:
                 "tab:liquidity",
                 "tab:alerts",
                 "tab:cases",
+                "tab:validation",
                 "outlet:switch",
             }
         )
