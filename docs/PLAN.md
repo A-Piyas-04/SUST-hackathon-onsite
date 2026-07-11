@@ -15,11 +15,7 @@ Your prototype needs to do three things without ever touching real money or accu
 ### Mandatory
 
 **Unified liquidity dashboard** — Shows physical cash balance and each provider's e-money balance side by side, never combined into one number.
-<<<<<<< HEAD
 - *Logic*: Ingest each transaction event (provider, type, amount, timestamp), maintain running balances per provider + one shared cash balance. Cash-out decreases physical cash and increases that provider's e-money (the customer sent e-money to the agent to receive cash); cash-in does the reverse.
-=======
-- *Logic*: Ingest each transaction event (provider, type, amount, timestamp), maintain running balances per provider + one shared cash balance. Cash-out decreases physical cash and increases the relevant provider's e-money; cash-in increases physical cash and decreases the relevant provider's e-money.
->>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 - *Example*: Cash: 45,000 taka | bKash: 12,000 taka | Nagad: 38,000 taka | Rocket: 21,000 taka. Agent sees at a glance that bKash is thin even though total value looks fine.
 - *Stakeholders*: Agent, management.
 - *Evaluation category*: Problem understanding (15%), UX/explainability (10%).

@@ -191,17 +191,12 @@ def generate_dataset(
                 amount = cluster_amount
                 txn_type = TransactionType.CASH_OUT
                 txn_obs = cluster_anchor + timedelta(minutes=t * cluster_step_minutes)
-                cash_balance = max(Decimal("0"), cash_balance - amount)
-                provider_balances[provider] += amount
             elif scenario_code == ScenarioCode.SCENARIO_A and provider == target_provider:
                 # Concentrated cash-out demand drains shared physical cash while
                 # this provider's e-money rises — the hidden pressure Scenario A
                 # demonstrates (the combined view still looks healthy).
                 amount = Decimal(_amount(rng, 2500, 0.1))
                 txn_type = TransactionType.CASH_OUT
-<<<<<<< HEAD
-                cash_balance = max(Decimal("0"), cash_balance - amount)
-                provider_balances[provider] += amount
             else:
                 # Ordinary alternating retail flow on non-target providers. Under
                 # the corrected direction cash-out RAISES provider e-money, so the
@@ -213,19 +208,9 @@ def generate_dataset(
                 if t % 2 == 0:
                     amount = Decimal(_amount(rng, 1500))
                     txn_type = TransactionType.CASH_OUT
-                    cash_balance = max(Decimal("0"), cash_balance - amount)
-                    provider_balances[provider] += amount
                 else:
                     amount = Decimal(_amount(rng, 800))
                     txn_type = TransactionType.CASH_IN
-                    cash_balance += amount
-                    provider_balances[provider] = max(
-                        Decimal("0"), provider_balances[provider] - amount
-                    )
-=======
-            else:
-                amount = Decimal(_amount(rng, 1500 if t % 2 == 0 else 800))
-                txn_type = TransactionType.CASH_IN if t % 2 == 0 else TransactionType.CASH_OUT
 
             cash_balance, provider_balances[provider] = _apply_transaction_effect(
                 cash_balance=cash_balance,
@@ -233,7 +218,6 @@ def generate_dataset(
                 transaction_type=txn_type,
                 amount=amount,
             )
->>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 
             ref = f"TXN-{provider.value.upper()}-{seed}-{t:03d}"
             if is_cluster_provider and t < cluster_count:
