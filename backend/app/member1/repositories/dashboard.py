@@ -37,9 +37,9 @@ async def list_transactions(
                transaction_type, status, amount, currency_code, occurred_at, received_at
         FROM transactions
         WHERE outlet_id = :outlet_id
-          AND (:provider_id IS NULL OR provider_id = :provider_id)
-          AND (:from_ts IS NULL OR occurred_at >= :from_ts)
-          AND (:to_ts IS NULL OR occurred_at <= :to_ts)
+          AND (CAST(:provider_id AS uuid) IS NULL OR provider_id = CAST(:provider_id AS uuid))
+          AND (CAST(:from_ts AS timestamptz) IS NULL OR occurred_at >= CAST(:from_ts AS timestamptz))
+          AND (CAST(:to_ts AS timestamptz) IS NULL OR occurred_at <= CAST(:to_ts AS timestamptz))
         ORDER BY occurred_at DESC
         LIMIT :limit
         """,
@@ -62,8 +62,8 @@ async def list_cash_balance_history(
         SELECT balance, currency_code, observed_at, received_at, source_kind
         FROM cash_balance_snapshots
         WHERE outlet_id = :outlet_id
-          AND (:from_ts IS NULL OR observed_at >= :from_ts)
-          AND (:to_ts IS NULL OR observed_at <= :to_ts)
+          AND (CAST(:from_ts AS timestamptz) IS NULL OR observed_at >= CAST(:from_ts AS timestamptz))
+          AND (CAST(:to_ts AS timestamptz) IS NULL OR observed_at <= CAST(:to_ts AS timestamptz))
         ORDER BY observed_at DESC
         LIMIT :limit
         """,
@@ -86,8 +86,8 @@ async def list_provider_balance_history(
         SELECT balance, currency_code, observed_at, received_at, source_kind
         FROM provider_balance_snapshots
         WHERE outlet_id = :outlet_id AND provider_id = :provider_id
-          AND (:from_ts IS NULL OR observed_at >= :from_ts)
-          AND (:to_ts IS NULL OR observed_at <= :to_ts)
+          AND (CAST(:from_ts AS timestamptz) IS NULL OR observed_at >= CAST(:from_ts AS timestamptz))
+          AND (CAST(:to_ts AS timestamptz) IS NULL OR observed_at <= CAST(:to_ts AS timestamptz))
         ORDER BY observed_at DESC, received_at DESC
         LIMIT :limit
         """,

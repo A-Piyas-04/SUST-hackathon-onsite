@@ -17,7 +17,7 @@ async def list_anomaly_flags(
                window_start, window_end, confidence_score, confidence_level, disposition, reason_code,
                evidence_summary, plausible_benign_explanation, suppression_reason
         FROM anomaly_flags
-        WHERE outlet_id = :outlet_id AND (:provider_id IS NULL OR provider_id = :provider_id)
+        WHERE outlet_id = :outlet_id AND (CAST(:provider_id AS uuid) IS NULL OR provider_id = CAST(:provider_id AS uuid))
         ORDER BY window_end DESC
         LIMIT :limit
         """,

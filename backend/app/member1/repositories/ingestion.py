@@ -101,7 +101,7 @@ async def get_current_feed_health(session: AsyncSession, outlet_id: UUID, *, pro
         SELECT data_quality_assessment_id, outlet_id, provider_id, status, confidence_modifier,
                sample_count, latest_source_at, assessed_at, summary, issues
         FROM v_current_feed_health
-        WHERE outlet_id = :outlet_id AND (:provider_id IS NULL OR provider_id = :provider_id)
+        WHERE outlet_id = :outlet_id AND (CAST(:provider_id AS uuid) IS NULL OR provider_id = CAST(:provider_id AS uuid))
         ORDER BY assessed_at DESC
         """,
         {"outlet_id": str(outlet_id), "provider_id": str(provider_id) if provider_id else None},
@@ -118,7 +118,7 @@ async def get_feed_health_history(
                sample_count, latest_source_at, assessed_at, summary,
                '[]'::jsonb AS issues
         FROM data_quality_assessments
-        WHERE outlet_id = :outlet_id AND (:provider_id IS NULL OR provider_id = :provider_id)
+        WHERE outlet_id = :outlet_id AND (CAST(:provider_id AS uuid) IS NULL OR provider_id = CAST(:provider_id AS uuid))
         ORDER BY assessed_at DESC
         LIMIT :limit
         """,

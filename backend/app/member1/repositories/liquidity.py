@@ -19,7 +19,7 @@ async def list_latest_projections(
                is_actionable, non_actionable_reason
         FROM v_latest_liquidity_projections
         WHERE outlet_id = :outlet_id AND reserve_type = :reserve_type
-          AND (:provider_id IS NULL OR provider_id = :provider_id)
+          AND (CAST(:provider_id AS uuid) IS NULL OR provider_id = CAST(:provider_id AS uuid))
         ORDER BY as_of_at DESC
         """,
         {"outlet_id": str(outlet_id), "reserve_type": reserve_type, "provider_id": str(provider_id) if provider_id else None},
@@ -38,7 +38,7 @@ async def list_projection_history(
                is_actionable, non_actionable_reason
         FROM liquidity_projections
         WHERE outlet_id = :outlet_id AND reserve_type = :reserve_type
-          AND (:provider_id IS NULL OR provider_id = :provider_id)
+          AND (CAST(:provider_id AS uuid) IS NULL OR provider_id = CAST(:provider_id AS uuid))
         ORDER BY as_of_at DESC
         LIMIT :limit
         """,

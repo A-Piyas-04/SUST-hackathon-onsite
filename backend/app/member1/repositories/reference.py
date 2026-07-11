@@ -24,7 +24,7 @@ async def list_outlets(session: AsyncSession, *, area_id: UUID | None = None, li
         FROM outlets o
         LEFT JOIN outlet_provider_accounts opa ON opa.outlet_id = o.outlet_id AND opa.is_active
         LEFT JOIN providers p ON p.provider_id = opa.provider_id
-        WHERE (:area_id IS NULL OR o.area_id = :area_id)
+        WHERE (CAST(:area_id AS uuid) IS NULL OR o.area_id = CAST(:area_id AS uuid))
         GROUP BY o.outlet_id
         ORDER BY o.synthetic_code
         LIMIT :limit
