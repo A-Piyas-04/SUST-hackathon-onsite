@@ -116,11 +116,11 @@ async def ingest_batch(session: AsyncSession, request: IngestBatchRequest) -> In
         else:
             accepted += 1
 
+    # Fully rejected batches are REJECTED; anything else (including partial
+    # rejection) is NORMALIZED — the status domain has no 'partial' value.
     batch_status = (
         NormalizationStatus.REJECTED
         if rejected == len(request.events)
-        else NormalizationStatus.NORMALIZED
-        if rejected == 0
         else NormalizationStatus.NORMALIZED
     )
 
