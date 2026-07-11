@@ -62,7 +62,7 @@ jobs:
         run: |
           test_file="$(find tests -type f -name 'test_*.py' -print -quit 2>/dev/null)"
           if [[ -n "$test_file" ]]; then
-            pytest --cov=app --cov=analytics --cov-report=xml:coverage.xml
+            pytest --cov=app --cov-report=xml:coverage.xml
           else
             echo "No backend tests exist yet; skipping Python coverage generation."
           fi
