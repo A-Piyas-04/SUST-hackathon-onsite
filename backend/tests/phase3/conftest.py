@@ -11,12 +11,12 @@ from app.core.auth import AGENT1, OUTLET1
 from app.core.config import Settings, get_settings
 from app.main import create_app
 
-os.environ.setdefault(
-    "TEST_DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5433/liquidity_platform",
-)
+from helpers import resolve_test_dsn
+
+_test_dsn = resolve_test_dsn()
+os.environ.setdefault("TEST_DATABASE_URL", _test_dsn)
 os.environ["APP_ENV"] = "test"
-os.environ["DIRECT_DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+os.environ["DIRECT_DATABASE_URL"] = _test_dsn
 os.environ.pop("DATABASE_URL", None)
 os.environ.pop("SUPABASE_DB_PASSWORD", None)
 
@@ -25,7 +25,7 @@ os.environ.pop("SUPABASE_DB_PASSWORD", None)
 def settings() -> Settings:
     get_settings.cache_clear()
     return Settings(
-        direct_database_url=os.environ["TEST_DATABASE_URL"],
+        direct_database_url=_test_dsn,
         database_url=None,
         app_env="test",
     )

@@ -11,10 +11,9 @@ from app.core.auth import AGENT1
 from app.core.config import Settings, get_settings
 from app.main import create_app
 
-_test_dsn = os.environ.get(
-    "TEST_DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5433/liquidity_platform",
-)
+from helpers import resolve_test_dsn
+
+_test_dsn = resolve_test_dsn()
 os.environ["APP_ENV"] = "test"
 os.environ["DIRECT_DATABASE_URL"] = _test_dsn
 os.environ.pop("DATABASE_URL", None)
