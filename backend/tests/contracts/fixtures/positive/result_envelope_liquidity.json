@@ -8,8 +8,13 @@
   "confidence_level": "high",
   "evidence": [
     {
+<<<<<<< HEAD
       "signal_code": "burn_rate_per_hour",
       "label": "Recent outflow (burn) rate",
+=======
+      "signal_code": "recent_cashout_velocity",
+      "label": "Shared-cash depletion from cash-out demand",
+>>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
       "numeric_value": 3000.0,
       "unit": "currency_per_hour",
       "direction": "increases_pressure"
@@ -17,7 +22,7 @@
   ],
   "generated_at": "2026-07-11T10:00:00Z",
   "engine_specific": {
-    "reserve_type": "provider_e_money",
+    "reserve_type": "shared_cash",
     "provider_code": "bkash",
     "current_balance": 9000.0,
     "burn_rate_per_hour": 3000.0,

@@ -129,7 +129,11 @@ A modular monolith (single deployable backend, cleanly separated internal module
 ### 2.4 Liquidity Forecasting Engine
 **Purpose:** Predicts when shared cash or a specific provider balance will run out.
 
+<<<<<<< HEAD
 - Computes a rolling burn rate per reserve from that reserve's own balance depletion — shared physical cash (drained by cash-out demand) and each provider e-money balance (drawn down by cash-in) are forecast independently, never blended.
+=======
+- Computes reserve-specific rolling burn rates. Cash-out velocity depletes shared physical cash and replenishes the relevant provider e-money reserve; cash-in velocity has the opposite effect.
+>>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 - Projects time-to-shortage with a confidence band (wider band when Data Quality Engine reports degraded input).
 - Outputs: `{provider, projected_shortage_time, confidence, contributing_signal}`.
 

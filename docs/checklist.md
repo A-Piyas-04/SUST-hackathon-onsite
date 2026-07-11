@@ -182,7 +182,7 @@ Use this checklist to track development progress for the **single project owner 
 
 ## G. Demonstration Scenario Coverage (from Section 11)
 
-- [ ] Scenario A — Hidden provider shortage
+- [ ] Scenario A — Hidden shared-cash shortage driven by provider cash-out demand
 - [ ] Scenario B — Liquidity pressure with unusual activity
 - [ ] Scenario C — Cross-provider or data inconsistency
 - [ ] Scenario D — Coordinated response and closure

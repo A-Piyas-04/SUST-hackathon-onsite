@@ -75,7 +75,7 @@ Hour 10.5 sits right at the boundary where PLAN.md's "Build First" (Hours 1-10) 
 
 ### 2. What to actually demo
 
-The smallest coherent slice now: **Scenario A into Scenario B, live.** Show the liquidity forecast catching a provider sliding toward shortage with a stated confidence level, then show the Velocity Spike anomaly firing on the same underlying transaction stream — explicitly narrate that this is the same data, same agent, two distinct engines (forecast + anomaly) both reading it, which is exactly the "connected chain, not three cards on a dashboard" story the rubric rewards.
+The smallest coherent slice now: **Scenario A into Scenario B, live.** Show the liquidity forecast catching shared physical cash sliding toward shortage under one provider's heavy cash-out demand, with a stated confidence level. Then show the Velocity Spike anomaly firing on the same underlying transaction stream — explicitly narrate that this is the same data, same agent, two distinct engines (forecast + anomaly) both reading it, which is exactly the "connected chain, not three cards on a dashboard" story the rubric rewards.
 
 If the second detector (Repeated Amounts) is working even roughly, show it as a second, separately tagged alert — this is your strongest single moment to demonstrate you're not doing single-pattern anomaly detection. If it's not stable enough to demo live, don't force it — describe it accurately (see point 4) rather than risk a crash on stage.
 

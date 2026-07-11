@@ -15,14 +15,18 @@ Your prototype needs to do three things without ever touching real money or accu
 ### Mandatory
 
 **Unified liquidity dashboard** — Shows physical cash balance and each provider's e-money balance side by side, never combined into one number.
+<<<<<<< HEAD
 - *Logic*: Ingest each transaction event (provider, type, amount, timestamp), maintain running balances per provider + one shared cash balance. Cash-out decreases physical cash and increases that provider's e-money (the customer sent e-money to the agent to receive cash); cash-in does the reverse.
+=======
+- *Logic*: Ingest each transaction event (provider, type, amount, timestamp), maintain running balances per provider + one shared cash balance. Cash-out decreases physical cash and increases the relevant provider's e-money; cash-in increases physical cash and decreases the relevant provider's e-money.
+>>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 - *Example*: Cash: 45,000 taka | bKash: 12,000 taka | Nagad: 38,000 taka | Rocket: 21,000 taka. Agent sees at a glance that bKash is thin even though total value looks fine.
 - *Stakeholders*: Agent, management.
 - *Evaluation category*: Problem understanding (15%), UX/explainability (10%).
 
 **Liquidity forecasting / shortage prediction** — Projects when a specific balance will hit zero given recent transaction velocity.
-- *Logic*: Take a rolling window (last 15-30 min) of net outflow rate per provider/cash. Linear extrapolation: time_to_zero = current_balance / outflow_rate_per_minute. Wrap with a simple confidence band based on variance in the window (tight variance means "high confidence", high variance means "estimate, low confidence").
-- *Example*: bKash outflow averaging 800 taka/min over the last 20 min, balance 12,000 taka, so about 15 minutes to zero, flagged "high confidence" because variance is low.
+- *Logic*: Take a rolling window (last 15-30 min) of reserve-specific net depletion. Cash-out volume contributes to shared physical-cash depletion while increasing the relevant provider e-money reserve; cash-in contributes in the opposite direction. Linear extrapolation: time_to_zero = current_balance / depletion_rate_per_minute. Wrap with a confidence band based on variance in the window.
+- *Example*: Shared-cash depletion driven by bKash cash-outs averages 800 taka/min over the last 20 min; with 12,000 taka physical cash remaining, shortage is approximately 15 minutes away.
 - *Stakeholders*: Agent, provider ops, management.
 - *Evaluation category*: Innovation/decision value (20%), data & analytical quality (20%).
 
@@ -194,7 +198,7 @@ Before your demo, confirm your prototype does none of the following:
 ## 8. Demo Script Skeleton
 
 1. Open on the unified agent dashboard — cash + 3 provider balances, calm and healthy-looking at a glance.
-2. Narrate Scenario A — trigger/point to the bKash balance sliding down; forecast panel shows "about 20 min to shortage, high confidence" with the Bangla alert rendered live.
+2. Narrate Scenario A — point to shared physical cash sliding down under heavy bKash cash-out demand while the bKash e-money balance remains healthy; forecast panel shows "about 20 min to shared-cash shortage, high confidence" with the Bangla alert rendered live.
 3. Transition into Scenario B — show the Velocity Spike alert firing alongside the liquidity pressure, and the Repeated-Amounts alert firing separately and distinctly (two tagged alert types, not one blended score). Explicitly say out loud: "this could just be pre-Eid demand — here's why we're not calling it fraud," pointing to the false-positive framing in the alert copy.
 4. Cut to the Ops dashboard — show the case queue, click into one alert, show the evidence table, click Acknowledge, add a case note, then Resolve, marking it "review-worthy" or "false positive" — narrating the ownership/escalation path from Section 5's hierarchy.
 5. Switch the role/login to a different provider's ops account and show that the just-resolved case (and its evidence) is not visible from that account — the concrete demonstration of the provider-boundary guardrail.

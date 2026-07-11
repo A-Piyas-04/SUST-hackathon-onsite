@@ -24,7 +24,11 @@
 
 **In:** The new transaction row.
 
+<<<<<<< HEAD
 **Process:** Applies the transaction to the relevant balance. A bKash cash-out pays physical cash out of the drawer while the customer sends e-money in, so physical cash minus 1,500 and bKash e-money plus 1,500. Writes to provider_balances and the shared cash_balance field — never combining the two provider figures into one number.
+=======
+**Process:** Applies the cash-out direction: physical cash minus 1,500, bKash e-money plus 1,500. The customer sends e-money to the agent and receives physical cash. Writes separate provider and shared-cash snapshots without combining them.
+>>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 
 **Out:** Updated balances: Cash 43,500 tk | bKash 13,500 tk | Nagad 38,000 tk | Rocket 21,000 tk.
 
@@ -40,6 +44,7 @@
 
 **In:** A burst of bKash cash-out events — 18 transactions in the next 10 minutes, amounts 700-2,800 tk, from a mix of accounts.
 
+<<<<<<< HEAD
 **Process:** Ledger keeps applying them normally: each cash-out pays physical cash out of the drawer (bKash e-money actually *rises* as customers send it in), so the shared cash reserve drops fast. Liquidity Engine's rolling window now sees roughly 1,050 tk/min average outflow from shared cash over the last 10 minutes, with low variance.
 
 **Out:** Shared cash falls from ~43,500 toward ~33,000 tk and keeps sliding; bKash e-money climbs past 25,000 tk. Forecast engine has enough signal to project forward (next step).
@@ -47,10 +52,23 @@
 ## Step 6 — Liquidity Forecasting Engine
 
 **In:** Current shared cash balance (~33,000 tk), rolling outflow rate (1,050 tk/min), variance of that rate.
+=======
+**Process:** The ledger applies each cash-out consistently: shared physical cash drops while bKash e-money rises. The Liquidity Engine's rolling window sees roughly 1,050 tk/min average shared-cash depletion attributable to bKash cash-out demand, with low variance.
+
+**Out:** Shared cash falls quickly while the bKash e-money card remains healthy or rises. The forecast engine has enough shared-cash depletion signal to project forward.
+
+## Step 6 — Liquidity Forecasting Engine
+
+**In:** Current shared-cash balance (5,700 tk), rolling depletion rate attributable to bKash cash-outs (1,050 tk/min), and variance of that rate.
+>>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 
 **Process:** time_to_zero = 33,000 / 1,050, approximately 31 minutes. Variance is low so confidence band is tight. The combined value of all balances still looks healthy — the pressure is hidden in the *physical-cash* reserve, not any single provider's e-money.
 
+<<<<<<< HEAD
 **Out:** A forecast record: `{reserve: shared_cash, projected_shortage_time: 15:43, confidence: high, contributing_signal: "sustained cash-out velocity draining physical cash"}`.
+=======
+**Out:** A forecast record: `{reserve: shared_cash, pressure_provider: bKash, projected_shortage_time: 15:17, confidence: high, contributing_signal: "sustained cash-out velocity"}`.
+>>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 
 ## Step 7 — Anomaly Engine, Pattern 1 (Velocity Spike) fires
 
@@ -82,7 +100,11 @@
 
 **Process:** Templates fill EN and Bangla strings from the same underlying object — no free-form generation.
 
+<<<<<<< HEAD
 **Out (Bangla, liquidity):** "বর্তমান লেনদেনের ধারা অনুযায়ী বিকেল ৩টা ৪৩ মিনিটের মধ্যে আপনার নগদ টাকা শেষ হয়ে যেতে পারে। সবচেয়ে বেশি চাপ আসছে বিকাশ ক্যাশ-আউট থেকে।"
+=======
+**Out (Bangla, liquidity):** "বর্তমান লেনদেনের ধারা অনুযায়ী বিকেল ৩টা ১৭ মিনিটের মধ্যে আপনার নগদ টাকা শেষ হয়ে যেতে পারে। সবচেয়ে বেশি চাপ আসছে বিকাশ ক্যাশ-আউট থেকে।"
+>>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 
 **Out (EN, anomaly):** "Unusual cash-out pattern detected — requires review. Possibly normal Eid demand."
 
@@ -90,7 +112,11 @@
 
 **In:** The rendered cases, via polling.
 
+<<<<<<< HEAD
 **Process:** Agent dashboard shows the shared-cash card turning amber with the shortage countdown (bKash e-money is green — it rose during the burst). Ops dashboard's case queue gets two new rows, tagged distinctly [Velocity] and [Amount-Pattern].
+=======
+**Process:** Agent dashboard shows the shared-cash card turning amber with the shortage countdown and identifies bKash cash-out demand as the main contributor. Ops dashboard's case queue gets two new rows, tagged distinctly [Velocity] and [Amount-Pattern].
+>>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 
 **Out:** Live UI state — nothing new computed here, purely a read/render step.
 

@@ -53,6 +53,25 @@ def _party_ref(rng: random.Random, provider: ProviderCode, idx: int) -> str:
     return f"PARTY-{provider.value.upper()}-{idx:04d}"
 
 
+def _apply_transaction_effect(
+    *,
+    cash_balance: Decimal,
+    provider_balance: Decimal,
+    transaction_type: TransactionType,
+    amount: Decimal,
+) -> tuple[Decimal, Decimal]:
+    """Apply the real-world reserve direction for agent cash transactions.
+
+    cash_out: customer sends provider e-money; agent gives physical cash.
+    cash_in: customer gives physical cash; agent sends provider e-money.
+    """
+    if transaction_type == TransactionType.CASH_OUT:
+        return max(Decimal("0"), cash_balance - amount), provider_balance + amount
+    if transaction_type == TransactionType.CASH_IN:
+        return cash_balance + amount, max(Decimal("0"), provider_balance - amount)
+    return cash_balance, provider_balance
+
+
 def generate_dataset(
     *,
     scenario_code: ScenarioCode,
@@ -180,6 +199,7 @@ def generate_dataset(
                 # demonstrates (the combined view still looks healthy).
                 amount = Decimal(_amount(rng, 2500, 0.1))
                 txn_type = TransactionType.CASH_OUT
+<<<<<<< HEAD
                 cash_balance = max(Decimal("0"), cash_balance - amount)
                 provider_balances[provider] += amount
             else:
@@ -202,6 +222,18 @@ def generate_dataset(
                     provider_balances[provider] = max(
                         Decimal("0"), provider_balances[provider] - amount
                     )
+=======
+            else:
+                amount = Decimal(_amount(rng, 1500 if t % 2 == 0 else 800))
+                txn_type = TransactionType.CASH_IN if t % 2 == 0 else TransactionType.CASH_OUT
+
+            cash_balance, provider_balances[provider] = _apply_transaction_effect(
+                cash_balance=cash_balance,
+                provider_balance=provider_balances[provider],
+                transaction_type=txn_type,
+                amount=amount,
+            )
+>>>>>>> e655a22cf5a220f90c3c8157fa6074ad68bfb82b
 
             ref = f"TXN-{provider.value.upper()}-{seed}-{t:03d}"
             if is_cluster_provider and t < cluster_count:
