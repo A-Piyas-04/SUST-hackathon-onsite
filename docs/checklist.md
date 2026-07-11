@@ -17,18 +17,23 @@ Use this checklist to track development progress for the **single project owner 
 
 ### 0.2 Phase 1 — physical schema implementation
 
-- [ ] Migration 001: foundation and identity.
-- [ ] Migration 002: simulation, ingestion and ledger.
-- [ ] Migration 003: data quality and intelligence.
-- [ ] Migration 004: alerts and coordination.
-- [ ] Migration 005: validation, indexes and read views.
-- [ ] Migration 006: security, immutability, grants and RLS.
-- [ ] Reference/demo seeds implemented.
-- [ ] Migration runner/checksum history implemented.
-- [ ] Clean empty-database migration passes.
-- [ ] Re-run/idempotency check passes.
-- [ ] Constraint, trigger, view and provider A/B RLS tests pass.
-- [ ] Schema dump/metadata snapshot and migration log saved.
+- [x] Migration 001: foundation and identity. — `backend/migrations/001_foundation_and_identity.sql`
+- [x] Migration 002: simulation, ingestion and ledger. — `backend/migrations/002_simulation_ingestion_ledger.sql`
+- [x] Migration 003: data quality and intelligence. — `backend/migrations/003_quality_and_intelligence.sql`
+- [x] Migration 004: alerts and coordination. — `backend/migrations/004_alerts_and_coordination.sql`
+- [x] Migration 005: validation, indexes and read views. — `backend/migrations/005_validation_indexes_views.sql`
+- [x] Migration 006: security, immutability, grants and RLS. — `backend/migrations/006_security_immutability_rls.sql`
+- [x] Reference/demo seeds implemented. — `backend/seeds/reference_seed.sql` (deterministic, idempotent)
+- [x] Migration runner/checksum history implemented. — `backend/migrations/run_migrations.py`; `schema_migrations` table; see `docs/verification/migration_checksums.txt`
+- [x] Clean empty-database migration passes. — `docs/verification/migration_log.txt` (42 tables, 7 views, 75 indexes, 30 policies)
+- [x] Re-run/idempotency check passes. — `docs/verification/migration_log.txt` ("nothing to apply"); `test_migration_chain.py::test_reapply_is_idempotent`
+- [x] Constraint, trigger, view and provider A/B RLS tests pass. — `docs/verification/test_report.txt` (53 passed); `rls_provider_ab_report.txt`
+- [x] Schema dump/metadata snapshot and migration log saved. — `docs/verification/schema.sql`, `migration_log.txt`
+- [x] Deviations recorded as decision notes. — `docs/adr/0001`–`0005`
+
+> Verified on local PostgreSQL 17.5 with the Supabase-compatible chain. Supabase
+> deployment verification is **blocked pending project credentials** in
+> `backend/.env` (see `backend/README.md`); it is not claimed until run.
 
 ### 0.3 Solo operating rules
 
@@ -47,8 +52,8 @@ Use this checklist to track development progress for the **single project owner 
 
 - [ ] Show shared physical cash and separate balances for each provider
   - [x] *Design data model: shared cash pool + per-provider e-money balance fields (`schema.md`)*
-  - [ ] *Implement the designed tables, constraints and views through Phase 1 migrations*
-  - [ ] *Build unified dashboard view combining cash + all provider balances*
+  - [x] *Implement the designed tables, constraints and views through Phase 1 migrations* — migrations `001`–`006`; separation enforced by `lp_reserve_xor`, no-`provider_id` on `cash_balance_snapshots`, `v_outlet_dashboard` (no blended total). Evidence: `test_reserve_invariants.py`, `docs/verification/schema.sql`
+  - [ ] *Build unified dashboard view combining cash + all provider balances* — DB read-model `v_outlet_dashboard` exists; app/UI deferred to later phases
 - [ ] Show which provider or shared cash reserve may face a shortage and approximately when
   - [ ] *Implement demand/burn-rate projection logic (e.g., time-series or rate-based forecast)*
   - [ ] *Display estimated time-to-shortage per provider and for shared cash*

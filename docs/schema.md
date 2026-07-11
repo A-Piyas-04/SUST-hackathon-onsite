@@ -6,6 +6,19 @@
 **Architecture:** Single modular-monolith backend  
 **Data classification:** Synthetic/mock data only
 
+> **Phase 1 implementation status (physical schema built and verified).** The
+> `001`–`006` migration chain, reference seeds, checksum-tracked runner, and
+> schema/RLS/view tests are implemented under `backend/migrations`,
+> `backend/seeds`, and `backend/tests`. The chain applies cleanly and idempotently
+> and passes 53 constraint/append-only/RLS/view tests on PostgreSQL 17.5 (see
+> `docs/verification/`). Enumerations are implemented as CHECK-constrained
+> `DOMAIN`s (the "constrained text" option in §4). Five controlled deviations are
+> recorded in `docs/adr/0001`–`0005` (enum domains; guarded `auth.users`/role
+> shims for non-Supabase verification; seeds kept out of checksummed DDL;
+> RLS identity/claims shim; deferred "≥1 alert source link" enforcement). None
+> change the table/column contract below. Supabase deployment verification is
+> pending project credentials.
+
 ## 1. Purpose
 
 This document defines the authoritative data model and REST API contract for the Multi-Provider Agent Liquidity & Coordination Platform. It is derived from the problem statement, system design, implementation checklist, demonstration scenarios, validation deliverables and responsible-design guardrails.

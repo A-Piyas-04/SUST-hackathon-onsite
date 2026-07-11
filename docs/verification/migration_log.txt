@@ -1,0 +1,29 @@
+# Phase 1 clean-database migration log
+# Generated against local PostgreSQL 17.5 (Supabase-compatible chain).
+# Date: 2026-07-11T08:40:43Z
+
+## reset (clean database)
+target: localhost:5441/liquidity_platform
+  reset complete — schema dropped and recreated (development only).
+
+## apply 001-006
+target: localhost:5441/liquidity_platform
+  applying 001_foundation_and_identity.sql ...
+  applying 002_simulation_ingestion_ledger.sql ...
+  applying 003_quality_and_intelligence.sql ...
+  applying 004_alerts_and_coordination.sql ...
+  applying 005_validation_indexes_views.sql ...
+  applying 006_security_immutability_rls.sql ...
+  applied 6 migration(s).
+
+## seed reference/demo data
+target: localhost:5441/liquidity_platform
+  reference/demo seed applied (idempotent).
+
+## re-apply (idempotency proof)
+target: localhost:5441/liquidity_platform
+  up to date — nothing to apply.
+
+## re-seed (idempotency proof)
+target: localhost:5441/liquidity_platform
+  reference/demo seed applied (idempotent).
