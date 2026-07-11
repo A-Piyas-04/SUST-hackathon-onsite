@@ -8,8 +8,11 @@ behavior is reproducible and auditable rather than hidden in scattered literals.
 from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal
+from pathlib import Path
 
 from app.contracts.v1.enums import ConfidenceLevel
+
+_BACKEND_DIR = Path(__file__).resolve().parents[3]
 
 # --- Engine versions (traceable in persisted outputs) ------------------------
 QUALITY_ENGINE_VERSION = "quality-v1"
@@ -34,6 +37,14 @@ QUALITY_STATUS_MODIFIER = {
 }
 # Floor applied when rejections are present but not total.
 QUALITY_REJECTION_FLOOR = 0.3
+
+# --- Learned confidence calibration (Feature 1) ------------------------------
+# Minimum labeled examples required before switching from the fixed formula.
+CALIBRATION_MIN_LABELED_EXAMPLES = 20
+# Offline-trained logistic regression artifact (non-production demo path).
+CONFIDENCE_CALIBRATION_ARTIFACT_PATH = (
+    _BACKEND_DIR / "data" / "ml" / "confidence_calibration.json"
+)
 
 # --- Liquidity engine defaults -----------------------------------------------
 # Minimum balance observations required to forecast a burn rate.

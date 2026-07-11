@@ -12,10 +12,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from app.contracts.v1.enums import FeedHealthStatus, QualityIssueType, Severity
 from app.services.analytics import config as cfg
+from app.services.quality.calibration import (
+    build_feature_vector,
+    get_calibration_model,
+    log_calibration_mode,
+    resolve_calibration_mode,
+)
+
+CalibrationMode = Literal["fixed_formula", "learned"]
 
 # Precedence when multiple issues coexist: the highest-precedence classification
 # wins the top-level status while all detected issues remain recorded as evidence.
@@ -64,6 +72,60 @@ class QualityAssessmentResult:
     trusted_observed_at: datetime | None
     summary: str
     issues: list[QualityIssue] = field(default_factory=list)
+    calibration_mode: CalibrationMode = "fixed_formula"
+    feature_contributions: dict[str, float] = field(default_factory=dict)
+
+
+def compute_fixed_confidence_modifier(
+    *,
+    status: FeedHealthStatus,
+    sample_count: int,
+    min_samples: int,
+    rejected_event_count: int,
+) -> Decimal:
+    """Fixed penalty formula (Step 3 of the quality pipeline)."""
+    modifier = Decimal(str(cfg.QUALITY_STATUS_MODIFIER[status.value]))
+    if status != FeedHealthStatus.MISSING and min_samples > 0:
+        adequacy = min(1.0, sample_count / min_samples)
+        modifier = modifier * Decimal(str(adequacy))
+    total_events = sample_count + rejected_event_count
+    if rejected_event_count > 0 and total_events > 0:
+        rejection_ratio = rejected_event_count / total_events
+        penalty = max(cfg.QUALITY_REJECTION_FLOOR, 1.0 - rejection_ratio)
+        modifier = modifier * Decimal(str(penalty))
+    return cfg.quantize_score(modifier)
+
+
+def _resolve_confidence_modifier(
+    *,
+    status: FeedHealthStatus,
+    sample_count: int,
+    min_samples: int,
+    rejected_event_count: int,
+    age_minutes: float | None,
+) -> tuple[Decimal, CalibrationMode, dict[str, float]]:
+    model = get_calibration_model()
+    mode = resolve_calibration_mode(model)
+    n_labeled = model.n_labeled_examples if model is not None else 0
+    log_calibration_mode(mode, n_labeled=n_labeled)
+
+    if mode == "learned" and model is not None:
+        features = build_feature_vector(
+            status=status,
+            sample_count=sample_count,
+            rejected_event_count=rejected_event_count,
+            age_minutes=age_minutes,
+        )
+        modifier, contributions, _logit = model.predict_modifier(features)
+        return modifier, mode, contributions
+
+    modifier = compute_fixed_confidence_modifier(
+        status=status,
+        sample_count=sample_count,
+        min_samples=min_samples,
+        rejected_event_count=rejected_event_count,
+    )
+    return modifier, "fixed_formula", {}
 
 
 def _detect_conflict(observations: list[BalanceObservation]) -> tuple[bool, list[dict[str, Any]]]:
@@ -171,18 +233,14 @@ def assess_provider_quality(data: ProviderQualityInput) -> QualityAssessmentResu
         detected.add(FeedHealthStatus.STALE)
     status = next((s for s in _STATUS_PRECEDENCE if s in detected), FeedHealthStatus.FRESH)
 
-    # --- Confidence modifier: base by status, reduced by sample adequacy and
-    # rejection ratio. ----------------------------------------------------------
-    modifier = Decimal(str(cfg.QUALITY_STATUS_MODIFIER[status.value]))
-    if status != FeedHealthStatus.MISSING and data.min_samples > 0:
-        adequacy = min(1.0, sample_count / data.min_samples)
-        modifier = modifier * Decimal(str(adequacy))
-    total_events = sample_count + data.rejected_event_count
-    if data.rejected_event_count > 0 and total_events > 0:
-        rejection_ratio = data.rejected_event_count / total_events
-        penalty = max(cfg.QUALITY_REJECTION_FLOOR, 1.0 - rejection_ratio)
-        modifier = modifier * Decimal(str(penalty))
-    modifier = cfg.quantize_score(modifier)
+    # --- Confidence modifier: fixed formula or learned calibration. ------------
+    modifier, calibration_mode, feature_contributions = _resolve_confidence_modifier(
+        status=status,
+        sample_count=sample_count,
+        min_samples=data.min_samples,
+        rejected_event_count=data.rejected_event_count,
+        age_minutes=age_minutes,
+    )
 
     trusted_balance, trusted_observed_at = _last_trusted(observations)
 
@@ -197,6 +255,8 @@ def assess_provider_quality(data: ProviderQualityInput) -> QualityAssessmentResu
         trusted_observed_at=trusted_observed_at,
         summary=summary,
         issues=issues,
+        calibration_mode=calibration_mode,
+        feature_contributions=feature_contributions,
     )
 
 
