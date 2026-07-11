@@ -14,6 +14,11 @@ import sys
 import psycopg2
 import pytest
 
+os.environ.setdefault(
+    "DIRECT_DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5433/liquidity_platform",
+)
+
 BACKEND_DIR = pathlib.Path(__file__).resolve().parents[1]
 RUNNER = BACKEND_DIR / "migrations" / "run_migrations.py"
 
@@ -51,9 +56,22 @@ def _dsn() -> str:
     pytest.exit(f"Could not connect via any configured DSN: {type(last).__name__ if last else 'none'}", 2)
 
 
+def _session_needs_database(session) -> bool:
+    """Only Phase 1 schema/RLS tests require a migrated PostgreSQL instance."""
+    for item in session.items:
+        path = str(item.path).replace("\\", "/")
+        if "/tests/contracts/" in path or "/tests/app/" in path:
+            continue
+        return True
+    return False
+
+
 @pytest.fixture(scope="session", autouse=True)
-def _prepared_db():
+def _prepared_db(request):
     """Apply migrations and seeds once per test session (idempotent)."""
+    if not _session_needs_database(request.session):
+        yield
+        return
     env = {**os.environ, "APP_ENV": os.environ.get("APP_ENV", "test")}
     for cmd in ("apply", "seed"):
         proc = subprocess.run(

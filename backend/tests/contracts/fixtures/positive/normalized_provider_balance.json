@@ -1,0 +1,10 @@
+{
+  "outlet_id": "0b000000-0000-0000-0000-000000000001",
+  "outlet_provider_account_id": "e1000000-0000-0000-0000-000000000001",
+  "provider_code": "bkash",
+  "balance": "42000.00",
+  "currency_code": "BDT",
+  "observed_at": "2026-07-11T08:00:00Z",
+  "received_at": "2026-07-11T08:00:05Z",
+  "source_kind": "feed"
+}

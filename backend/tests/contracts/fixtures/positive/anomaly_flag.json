@@ -1,0 +1,24 @@
+{
+  "outlet_id": "0b000000-0000-0000-0000-000000000001",
+  "provider_id": "11111111-1111-1111-1111-111111111111",
+  "outlet_provider_account_id": "e1000000-0000-0000-0000-000000000001",
+  "data_quality_assessment_id": "a8000000-0000-0000-0000-000000000001",
+  "window_start": "2026-07-11T08:00:00Z",
+  "window_end": "2026-07-11T08:30:00Z",
+  "pattern": "near_identical_amounts",
+  "confidence_score": "0.7400",
+  "confidence_level": "medium",
+  "disposition": "requires_review",
+  "reason_code": "near_identical_amounts_cluster",
+  "evidence_summary": "4 cash-outs of approximately 987.50 occurred from 3 distinct account(s); this is unusual and may warrant review.",
+  "plausible_benign_explanation": "This pattern may reflect normal, event-driven demand rather than an issue requiring escalation.",
+  "evidence_items": [
+    {
+      "evidence_type": "count",
+      "label": "Transactions in cluster",
+      "value": 4,
+      "display_order": 0
+    }
+  ],
+  "transaction_ids": []
+}

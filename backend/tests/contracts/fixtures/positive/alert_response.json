@@ -1,0 +1,29 @@
+{
+  "alert_id": "c1000000-0000-0000-0000-000000000001",
+  "type": "combined",
+  "severity": "high",
+  "provider": "bkash",
+  "outlet_id": "0b000000-0000-0000-0000-000000000001",
+  "detected_at": "2026-07-11T08:01:00Z",
+  "confidence": {
+    "score": "0.7400",
+    "level": "medium",
+    "feed_status": "fresh"
+  },
+  "evidence": {
+    "liquidity_projection_ids": ["c2000000-0000-0000-0000-000000000001"],
+    "anomaly_flag_ids": ["c3000000-0000-0000-0000-000000000001"],
+    "summary": "Five near-identical cash-outs occurred while shared cash was falling quickly."
+  },
+  "plausible_benign_explanation": "This may reflect normal pre-Eid demand.",
+  "recommended_next_step": "Review the listed synthetic transactions and contact the outlet through the authorized process.",
+  "explanation": {
+    "locale": "en",
+    "situation": "Possible liquidity pressure requires review.",
+    "evidence": "Five cash-outs of approximately BDT 1,000 occurred in 12 minutes.",
+    "uncertainty": "The pattern may be caused by normal event-driven demand.",
+    "next_step": "Review the transactions before coordinating operational support."
+  },
+  "case_id": "c4000000-0000-0000-0000-000000000001",
+  "state": "active"
+}

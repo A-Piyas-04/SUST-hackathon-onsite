@@ -1,0 +1,23 @@
+{
+  "engine": "liquidity",
+  "engine_version": "1.0.0",
+  "input_window_start": "2026-07-11T08:00:00Z",
+  "input_window_end": "2026-07-11T10:00:00Z",
+  "quality_assessment_ids": [],
+  "confidence": 0.82,
+  "confidence_level": "high",
+  "evidence": [],
+  "generated_at": "2026-07-11T10:00:00Z",
+  "engine_specific": {
+    "reserve_type": "provider_e_money",
+    "provider_code": "bkash",
+    "current_balance": 9000.0,
+    "burn_rate_per_hour": 3000.0,
+    "projected_shortage_at": null,
+    "lower_bound_at": null,
+    "upper_bound_at": null,
+    "sample_count": 1,
+    "is_actionable": false,
+    "non_actionable_reason": "insufficient_samples"
+  }
+}
