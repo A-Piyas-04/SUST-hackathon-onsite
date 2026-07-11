@@ -14,13 +14,15 @@ import sys
 import psycopg2
 import pytest
 
+os.environ.setdefault(
+    "DIRECT_DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5433/liquidity_platform",
+)
+
 BACKEND_DIR = pathlib.Path(__file__).resolve().parents[1]
 RUNNER = BACKEND_DIR / "migrations" / "run_migrations.py"
 
 sys.path.insert(0, str(BACKEND_DIR / "tests"))
-from helpers import LOCAL_DEFAULT_DSN, resolve_test_dsn  # noqa: E402
-
-os.environ.setdefault("DIRECT_DATABASE_URL", LOCAL_DEFAULT_DSN)
 
 
 def _load_dotenv() -> None:
@@ -70,7 +72,10 @@ def _prepared_db(request):
     if not _session_needs_database(request.session):
         yield
         return
-    test_dsn = resolve_test_dsn()
+    test_dsn = os.environ.get(
+        "TEST_DATABASE_URL",
+        "postgresql://postgres:postgres@localhost:5433/liquidity_platform",
+    )
     env = {
         **os.environ,
         "APP_ENV": os.environ.get("APP_ENV", "test"),

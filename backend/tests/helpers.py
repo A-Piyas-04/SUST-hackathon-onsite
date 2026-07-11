@@ -7,17 +7,6 @@ nothing persists between tests.
 from __future__ import annotations
 
 import contextlib
-import os
-
-LOCAL_DEFAULT_DSN = "postgresql://postgres:postgres@localhost:5433/liquidity_platform"
-
-
-def resolve_test_dsn() -> str:
-    """Prefer TEST_DATABASE_URL, then DIRECT_DATABASE_URL, then local default."""
-    return os.environ.get(
-        "TEST_DATABASE_URL",
-        os.environ.get("DIRECT_DATABASE_URL", LOCAL_DEFAULT_DSN),
-    )
 
 # --- Seeded reference ids (see backend/seeds/reference_seed.sql) --------------
 BKASH = "11111111-1111-1111-1111-111111111111"
