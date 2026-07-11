@@ -1,42 +1,43 @@
 # Project Progress Checklist
 ### Codex Community Hackathon — bKash presents SUST CSE Carnival 2026
 
-Use this checklist to track development progress for the **single project owner**. Work is serialized according to `16-hour-hackathon-phase-distribution.md`; the older Member 1/2/3 plans are historical implementation references, not parallel assignments. Items in *italics* under each requirement are suggested sub-tasks — check the parent only after the capability works end to end on the frozen build.
+Use this checklist to track development progress for the **single project owner starting from zero implementation**. Work is serialized according to `16-hour-hackathon-phase-distribution.md`. Do not treat any existing backend/frontend file as completed work when using this plan. Check a parent only after the capability works end to end on the frozen build.
 
 ---
 
-## 0. Solo Execution Baseline
+## 0. Zero-State and Schema-First Baseline
 
-### 0.1 Verified existing assets
+### 0.1 Planning state
 
-- [x] Complete project schema and proposed API contract exist in `docs/schema.md`.
-- [x] FastAPI data/intelligence modules, OpenAPI, adapters, fixtures and migrations `001`/`002`/`003`/`005` exist.
-- [x] Analytics confidence, liquidity and anomaly modules exist; **23 analytics tests pass** from repository root.
-- [x] Coordination/auth/alert/case/notification/audit scaffolds exist; **128 coordination tests pass** from `backend/`.
-- [x] `python scripts/verify_fixtures.py` validates `ResultEnvelope`, derived `AlertCandidate`, validation payload and dashboard response.
-- [x] Next.js frontend scaffold exists.
+- [x] Authoritative professional schema/API contract completed in `docs/schema.md`.
+- [x] Solo schema-first phase plan completed in `docs/16-hour-hackathon-phase-distribution.md`.
+- [ ] No backend/frontend implementation is credited as complete at project start.
+- [ ] Development environment and database target selected.
+- [ ] Repository conventions, command names and contract versioning agreed.
 
-### 0.2 Current blockers to clear in Solo Phase 1/2
+### 0.2 Phase 1 — physical schema implementation
 
-- [ ] Install/use the intended backend environment so `app.main` imports with all `backend/requirements.txt` dependencies.
-- [ ] Normalize Python package/test paths so one documented command runs analytics and coordination tests together.
-- [ ] Resolve the `.pytest_cache` path warning if it affects repeatable runs.
-- [ ] Reconcile former owner-specific coordination/security migration scaffolds into one numeric migration path.
-- [ ] Restore deferred `app_users` foreign keys and finish the case-timeline/read-view dependency.
-- [ ] Register coordination routers in `app.main` behind working authentication/scope middleware.
-- [ ] Replace coordination runtime `501` services with persistence-backed behavior.
-- [ ] Finish ingestion persistence, scenario reset and idempotency TODOs.
-- [ ] Replace the default Next.js starter page with the thin demo surface.
-- [ ] Run a clean A–D end-to-end regression on one release candidate.
+- [ ] Migration 001: foundation and identity.
+- [ ] Migration 002: simulation, ingestion and ledger.
+- [ ] Migration 003: data quality and intelligence.
+- [ ] Migration 004: alerts and coordination.
+- [ ] Migration 005: validation, indexes and read views.
+- [ ] Migration 006: security, immutability, grants and RLS.
+- [ ] Reference/demo seeds implemented.
+- [ ] Migration runner/checksum history implemented.
+- [ ] Clean empty-database migration passes.
+- [ ] Re-run/idempotency check passes.
+- [ ] Constraint, trigger, view and provider A/B RLS tests pass.
+- [ ] Schema dump/metadata snapshot and migration log saved.
 
 ### 0.3 Solo operating rules
 
-- [ ] Preserve module boundaries: analytics → result adapter → alert candidate → alert → case.
-- [ ] Complete/test each producer before implementing its consumer.
-- [ ] Apply migrations in one dependency order; no parallel-owner placeholder remains in the final path.
-- [ ] Keep all 43 MVP endpoints under one owner; defer all 5 stretch endpoints until the Hour 12 gate.
-- [ ] Record the tested commit/release state at every phase boundary.
-- [ ] If late, cut optional breadth/UI polish before correctness, evidence, provider boundaries or safe fallback.
+- [ ] Preserve module boundaries: normalized input → engines → result → candidate → alert → case.
+- [ ] Complete/test each producer before its consumer.
+- [ ] Apply only forward numbered migrations; record every later schema change.
+- [ ] Keep all 43 MVP endpoints under one owner; defer 5 stretch endpoints until the complete MVP gate.
+- [ ] Record schema/contract/release versions at each phase boundary.
+- [ ] Cut optional breadth/UI polish before correctness, evidence, provider boundaries or safe fallback.
 
 ---
 
@@ -45,7 +46,8 @@ Use this checklist to track development progress for the **single project owner*
 ### A.1 Mandatory
 
 - [ ] Show shared physical cash and separate balances for each provider
-  - [x] *Design data model: shared cash pool + per-provider e-money balance fields (`schema.md` + migrations)*
+  - [x] *Design data model: shared cash pool + per-provider e-money balance fields (`schema.md`)*
+  - [ ] *Implement the designed tables, constraints and views through Phase 1 migrations*
   - [ ] *Build unified dashboard view combining cash + all provider balances*
 - [ ] Show which provider or shared cash reserve may face a shortage and approximately when
   - [ ] *Implement demand/burn-rate projection logic (e.g., time-series or rate-based forecast)*
@@ -65,7 +67,7 @@ Use this checklist to track development progress for the **single project owner*
   - [ ] *Implement data quality checks (missing, delayed, conflicting feeds)*
   - [ ] *Implement confidence scoring or fallback state in UI*
 - [ ] Use AI, APIs, analytics, or data processing as a meaningful part of the product
-  - [x] *Identify and implement non-trivial analytics components (confidence, liquidity forecast, anomaly rule modules and tests exist)*
+  - [ ] *Implement non-trivial analytics components: confidence, liquidity forecast and anomaly rule modules with tests*
   - [ ] *Document how it's used and why it's meaningful (not decorative)*
 
 ### A.2 Recommended
@@ -271,24 +273,24 @@ An endpoint group is complete only when routes are registered, runtime behavior 
 - [ ] Case endpoints complete (9): list, detail, timeline, assignment, acknowledge, escalate, resolve, notes and review.
 - [ ] Notification/audit endpoints complete (3): notification list/read and case audit events.
 
-### I.3 Stretch endpoints — 5, Hour 12 gate required
+### I.3 Stretch endpoints — 5, complete MVP gate required
 
 - [ ] What-if run create/read.
 - [ ] Synthetic relationship insight.
 - [ ] Nearby support options.
 - [ ] Approved-process support request.
 
-## J. Solo Phase Gates — Same Nine-Phase, 16-Hour Schedule
+## J. Solo Phase Gates — Dependency-Based, No Time Boxes
 
-- [ ] **Phase 1 — 00:00–02:15:** intended environment works; full app/test invocation is reproducible; current TODO/501/migration gaps and contracts are frozen.
-- [ ] **Phase 2 — 02:15–05:00:** migrations, deterministic data/quality, demo auth/scopes, registered routers and provider-scoped empty queues work.
-- [ ] **Phase 3 — 05:00–07:30:** engine → persisted result → `AlertCandidate` → immutable localized alert → routed initial case works.
-- [ ] **Phase 4 — 07:30–10:00:** degraded-data fallback, anomaly suppression, lifecycle, notification, audit, idempotency/concurrency and RBAC/RLS work.
-- [ ] **Phase 5 — 10:00–12:00:** thin UI and one release candidate pass complete A–D regression; MVP frozen.
-- [ ] **Phase 6 — 12:00–13:30:** at least three numeric metrics plus safety/security evidence are signed off.
-- [ ] **Phase 7 — 13:30–14:30:** README, architecture, data/simulation, validation, responsible design and presentation artifacts match implementation.
-- [ ] **Phase 8 — 14:30–15:30:** two timed solo rehearsals pass with deterministic reset and backup.
-- [ ] **Phase 9 — 15:30–16:00:** critical checks pass and submission receipt/permissions are confirmed.
+- [ ] **Phase 1 — Authoritative schema:** all six migrations, constraints, indexes, views, seeds, grants and RLS pass on a fresh database.
+- [ ] **Phase 2 — Application foundation:** runnable backend/DB/config/errors/logging/OpenAPI/contracts/tests and frontend scaffold.
+- [ ] **Phase 3 — Synthetic ingestion and ledger:** deterministic A–D data, faults, append-only ledger and separated dashboard reads.
+- [ ] **Phase 4 — Data quality and intelligence:** quality/confidence, forecast, anomaly evidence, suppression, persistence and analytics APIs.
+- [ ] **Phase 5 — Alerts, cases and security:** auth, localized immutable alerts, routing, lifecycle, notifications, audit, idempotency/concurrency and provider RBAC/RLS.
+- [ ] **Phase 6 — Integrated API and thin UI:** one release candidate passes complete Scenarios A–D; MVP frozen.
+- [ ] **Phase 7 — Validation/observability/safety:** at least three numeric metrics plus safety/security evidence signed off.
+- [ ] **Phase 8 — Documentation/presentation:** all seven deliverables match implementation and two clean rehearsals pass.
+- [ ] **Phase 9 — Final QA/submission:** critical checks pass and submission receipt/permissions are confirmed.
 
 ## K. Final Submission Checklist (from problem statement Section 16)
 

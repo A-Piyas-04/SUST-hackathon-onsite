@@ -1,10 +1,65 @@
-# Project Data and API Schema
+# Canonical Database and API Schema
+
+**Schema version:** 1.0.0  
+**Status:** Authoritative implementation baseline  
+**Target:** PostgreSQL 15+ / Supabase PostgreSQL  
+**Architecture:** Single modular-monolith backend  
+**Data classification:** Synthetic/mock data only
 
 ## 1. Purpose
 
-This document defines the implementation-ready data model and proposed REST API contract for the Multi-Provider Agent Liquidity & Coordination Platform. It is derived from the problem statement, system design, implementation checklist, and 16-hour delivery plan.
+This document defines the authoritative data model and REST API contract for the Multi-Provider Agent Liquidity & Coordination Platform. It is derived from the problem statement, system design, implementation checklist, demonstration scenarios, validation deliverables and responsible-design guardrails.
 
-The schema is designed for PostgreSQL on Supabase and a single modular-monolith backend. It supports the committed MVP while leaving narrow extension points for the recommended and optional features. This is a design artifact only; it does not contain migrations or application code.
+The schema is designed from a clean database baseline for PostgreSQL on Supabase. **No backend code, migration, model, repository, route, test, seed or UI implementation is assumed to exist.** It supports the committed MVP while leaving narrow extension points for recommended and optional features. **Phase 1 must translate this document into the complete numbered migration set and verify it on a fresh database before Phase 2 application work proceeds.**
+
+The authority order is:
+
+1. This document's invariants and entity definitions.
+2. Applied numbered SQL migrations and their recorded checksums.
+3. Generated database metadata/OpenAPI contracts.
+4. Application models, repositories, services, fixtures, and UI consumers.
+
+Lower layers must not silently redefine an upper-layer contract. If implementation needs require a change, follow the controlled process below.
+
+## 1.1 Schema-first delivery policy
+
+- Phase 1 implements **all MVP tables, constraints, indexes, views, seed reference rows, grants and RLS policies** described here.
+- Phase 1 uses an empty development database to prove the complete migration chain from zero.
+- No API/service is considered ready if its required table, constraint, view or policy is still a placeholder.
+- Application code may be scaffolded before the schema gate, but feature work does not proceed until the gate passes.
+- The schema supports multiple outlets even though the committed demo may seed one outlet.
+- Optional extension tables in §19 are excluded from the Phase 1 gate.
+
+## 1.2 Controlled schema changes after Phase 1
+
+Later changes are allowed when implementation reveals a real need, but every change must be explicit and reproducible:
+
+1. Record the reason, affected requirement, tables/contracts and compatibility impact in a short decision note.
+2. Add a new forward-only numbered migration; never edit an already applied/checksummed migration.
+3. Update this document in the same change.
+4. Update affected Pydantic/API contracts, fixtures, seeds, views, RLS policies and tests.
+5. Verify both a clean migration and an upgrade from the previous schema version.
+6. Increment schema version: patch for compatible constraint/index/view corrections, minor for additive fields/tables, major for breaking changes.
+7. Record the new schema version in validation evidence and the final release notes.
+
+Emergency exceptions after the MVP freeze require a demonstrated blocker. Prefer an application-level workaround when a late schema change would risk the tested migration path.
+
+## 1.3 Phase 1 schema completion gate
+
+The schema is considered implemented only when all of these pass:
+
+- [ ] A fresh database applies migrations `001` through `006` without manual SQL.
+- [ ] Re-running the migration command is idempotent and reports no unexpected changes.
+- [ ] Reference seeds create exactly the intended providers, scenario definitions, active anomaly rule and demo roles/scopes.
+- [ ] Shared cash has no provider ID; each provider balance/transaction matches one outlet-provider account.
+- [ ] Conflicting balance snapshots can coexist and are surfaced through quality/read models safely.
+- [ ] Analytics results reference reproducible run/configuration/quality inputs.
+- [ ] Published alert evidence is immutable; cases use legal mutable workflow state.
+- [ ] Append-only/audit tables reject unauthorized update/delete.
+- [ ] Provider-scoped RLS denies cross-provider reads and writes.
+- [ ] Required current-state/dashboard/timeline/validation views compile and return the documented shapes.
+- [ ] Seed/reset and fixture verification pass against the migrated schema.
+- [ ] Database metadata, `schema.md`, application contracts and OpenAPI have no unresolved field/type mismatch.
 
 ## 2. Core design decisions
 
@@ -1046,13 +1101,43 @@ Allowed statuses should be `suggested`, `contact_requested`, `authorized_outside
 
 Area/provider/time aggregates can be derived from existing outlets, transactions, alerts, and cases. Use provider-scoped materialized views only if demonstrated volume requires them; do not persist a second conflicting source of truth.
 
-## 20. Recommended implementation order
+## 20. Required Phase 1 physical implementation
 
-1. **Migration 001 — foundation:** enums/check constraints, providers, areas, outlets, outlet-provider accounts, users/scopes.
-2. **Migration 002 — simulation and ledger:** scenarios/runs/faults, ingestion tables, transactions, cash/provider snapshots.
-3. **Migration 003 — intelligence:** quality assessments/issues, analytics runs, projections/signals, anomaly rules/flags/evidence.
-4. **Migration 004 — coordination:** alerts/source links, templates/renders, routing, cases, assignments, statuses, notes, notifications, audit.
-5. **Migration 005 — validation and reads:** validation tables, indexes, dashboard/current-state/timeline views.
-6. **Migration 006 — security:** RLS policies, grants, append-only protections, transition and scope-validation triggers.
+All six groups are completed and applied during Phase 1. The numbering defines dependency order, not separate feature phases.
 
-For the 16-hour MVP, implement every table marked **MVP foundation**. `case_reviews`, optional notification channels, extra anomaly rules, coordinates, and advanced scenario behavior can be deferred without changing the core schema.
+1. **Migration 001 — foundation and identity**
+   - Extensions, constrained enums/text domains, providers, areas, outlets and outlet-provider accounts.
+   - `app_users`, `user_access_scopes` and reference/demo identities.
+   - Required uniqueness, synthetic-data checks and scope-shape constraints.
+2. **Migration 002 — simulation, ingestion and ledger**
+   - Scenario/run/fault tables, batches/events, transactions and cash/provider snapshots.
+   - Append-only and provider/account consistency triggers.
+   - Deterministic reference scenario seeds.
+3. **Migration 003 — quality and intelligence**
+   - Quality assessments/issues, analytics runs, projections/signals/quality links, anomaly rules/flags/evidence/transaction links.
+   - Active `near_identical_amounts` rule seed and analytical integrity constraints.
+4. **Migration 004 — alerts and coordination**
+   - Alerts/source links, explanation templates/renders, routing, cases, assignments, status history, notes, notifications, reviews and audit events.
+   - EN templates plus at least one Bangla/Banglish demo template.
+5. **Migration 005 — validation, indexes and read models**
+   - Validation runs, ground truth, metric results and all required indexes.
+   - Latest cash/provider/quality/projection, outlet dashboard, case timeline and validation summary views.
+6. **Migration 006 — security and immutability**
+   - Grants, RLS policies, append-only protections, legal transition checks, scope consistency and audit protections.
+   - Application/service roles receive only the minimum permissions required by their endpoints.
+
+### 20.1 Phase 1 verification artifacts
+
+Produce and retain:
+
+- Clean migration log and migration checksum table.
+- Schema-only database dump or generated metadata snapshot.
+- Seed log with stable synthetic IDs.
+- Constraint/invariant test report.
+- RLS provider A/B denial report.
+- View compilation and representative query results.
+- Decision notes for any deviation from this document.
+
+### 20.2 Deferred schema scope
+
+The optional tables in §19, optional notification channels, extra anomaly rules, coordinates and advanced scenario behavior may be deferred. Deferral must not leave placeholder objects in the required `001`–`006` chain.

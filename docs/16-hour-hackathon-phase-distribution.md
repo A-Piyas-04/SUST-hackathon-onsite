@@ -1,603 +1,776 @@
-# 16-Hour Hackathon Phase Distribution
+# Solo Project Phase Distribution
 
-## 1. Objective
+## 1. Planning Assumption
 
-Build and demonstrate a **complete and well-engineered** (not maximal) decision-support prototype — a modular monolith for multi-provider agent liquidity and coordination — that:
+This plan is for **one solo developer starting from zero**. Treat the backend and frontend as empty implementation directories. Do not assume that any existing route, migration, model, service, fixture, test, seed, UI component or deployment setup is reusable or complete.
 
-1. Shows one shared physical-cash reserve alongside **separate** provider e-money balances (bKash, Nagad, Rocket — never blended or converted).
-2. Predicts which reserve may run short and approximately when, with a confidence indicator on every projection.
-3. Detects at least one unusual transaction pattern with an evidence trail and a plausible-benign-explanation field — never a fraud label.
-4. Reduces confidence or falls back safely when source data is missing, delayed, or conflicting (Data Quality & Confidence Engine).
-5. Routes important alerts through assignment, acknowledgement, escalation, and resolution with provider-boundary-respecting RBAC.
-6. Renders explainable alert copy in English and at least one Bengali/Banglish template from a single structured alert object.
-7. Uses synthetic data only, preserves provider boundaries, and supports human review without declaring fraud or executing financial actions.
+The filename is retained for repository continuity, but this plan intentionally contains **no hour or duration allocation**. Progress is controlled by phase prerequisites and exit gates.
 
-The plan deliberately favors a **connected liquidity → anomaly → coordination chain** (traceable end-to-end) over a broad collection of unfinished features or "three cards on a dashboard."
-
-## 2. Scope Decision Before the Clock Starts
-
-### Committed MVP (maps to System Design [M] + critical [E] items)
-
-**Architecture:** Single deployable modular monolith — clear internal module boundaries, no microservice sprawl. **Persistence:** PostgreSQL hosted on **Supabase** (SQL migrations in repo; secrets in `.env` only).
-
-**Providers & data:**
-- Three logically separate providers: **bKash, Nagad, Rocket** (simulated feeds; no real API integration).
-- One agent/outlet with a shared physical-cash pool and per-provider e-money balances.
-- Provider Feed Ingestion & Normalization with injectable delay/inconsistency for Scenario C.
-
-**Core backend modules (minimum):**
-- Ledger & Aggregation Service — shared cash + per-provider balances; read-only unified view; no cross-provider transfers.
-- Data Quality & Confidence Engine — `fresh` / `stale` / `missing` / `conflicting` flags feeding downstream engines.
-- Liquidity Forecasting Engine — burn-rate projection per provider and shared cash with confidence band.
-- Anomaly Detection Engine — one fully-built pattern (e.g., near-identical repeated amounts); evidence + `plausible_benign_explanation`.
-- Alert & Case Management Service — routing, ownership, lifecycle `open → acknowledged → escalated → resolved`, case notes.
-- Explainability & Localization Service — EN + at least one Bangla/Banglish template fill (situation, evidence, uncertainty, next step).
-- Auth & Provider-Boundary Guard — JWT RBAC; Provider A ops cannot open Provider B cases.
-- Monitoring & Observability — structured logs, `/health` + `/metrics` summary.
-
-**Data/API contract:** [`schema.md`](./schema.md) is the implementation baseline. Source observations and analytical outputs are append-only; current dashboard values are derived. Analytical **alerts are immutable evidence records**, while **cases are separate mutable human-workflow records** opened only for important alerts.
-
-**Demo surfaces (minimum, intentionally thin):**
-- Agent/unified dashboard sufficient to exercise data and intelligence endpoints.
-- Alert detail and case coordination console sufficient to exercise workflow endpoints.
-- Provider-scoped access enforced per role; no time is reserved for a high-polish frontend or broad component library.
-
-**Demo & validation:**
-- Configurable fault injection for stale/conflicting feeds (Scenario C).
-- Activity/audit trail for every case transition.
-- At least three measured validation metrics (see Phase 6).
-- README, architecture diagram, data/simulation note, responsible-design note, and final presentation.
-
-### Stretch Scope Only ([R] and [O] from System Design)
-
-- Multi-agent overview for Operations/Management.
-- Contributing-signal breakdown on forecasts; what-if simulation.
-- Second/third anomaly patterns; cross-provider relationship view.
-- Nearby-agent support discovery.
-- Simulated webhook/email notification stub beyond in-app alerts.
-- Short demo video.
-- Redis cache or sophisticated ML models.
-
-Do not begin stretch work until the MVP passes the Hour 12 integration gate.
-
-### Explicitly Excluded (System Design §7 — do not build)
-
-- Real bKash/Nagad/Rocket API integration or credentials.
-- Any endpoint capable of moving money, blocking users, or freezing funds.
-- Multi-service/distributed architecture (Kafka, service mesh, multi-region).
-- Free-form LLM-generated financial recommendations without template/evidence structure.
-- Deep learning anomaly models without labeled validation data.
-
-## 3. Recommended Technical Strategy
-
-Keep the architecture small enough to finish while matching the System Design modular monolith:
+The implementation order is deliberately schema-first:
 
 ```text
-[Simulated Provider Feeds: bKash / Nagad / Rocket]
-                 │
-                 ▼
-      [Ingestion & Normalization] ──► [Data Quality & Confidence Engine]
-                 │                              │
-                 ▼                              │ (confidence signal)
-       [Ledger & Aggregation]                  │
-        (cash + per-provider balances)         │
-                 │                              │
-     ┌───────────┴────────────┐                 │
-     ▼                        ▼                  │
-[Liquidity Engine]     [Anomaly Detection] ◄─────┘
-     │                        │
-     └───────────┬────────────┘
-                 ▼
-     [Alert & Case Management]
-        (routing + ownership)
-                 │
-      ┌──────────┴───────────┐
-      ▼                       ▼
-[Explainability /      [Coordination /
- Localization]          Notification (in-app)]
-      │                       │
-      └───────────┬───────────┘
-                  ▼
-     [Role-based Dashboards]  ◄── [Auth & Provider-Boundary Guard]
-                  │
-                  ▼
-        [Human: ack / escalate / resolve / notes]
-                  │
-                  ▼
-        [Audit Log] ──► [Metrics Store] ──► [/metrics + validation evidence]
+Authoritative schema
+    ↓
+Physical migrations, constraints, views and RLS
+    ↓
+Application foundation and contracts
+    ↓
+Synthetic data, ingestion and ledger
+    ↓
+Data quality, forecasting and anomaly engines
+    ↓
+Alerts, cases, localization, audit and security
+    ↓
+Integrated API and thin UI
+    ↓
+Validation, documentation and presentation
 ```
 
-**Suggested stack** (from System Design §6):
+## 2. Product Objective
 
-| Layer | Suggestion |
-|---|---|
-| Frontend | Thin React (or Next.js) + Tailwind demo surfaces only — enough to exercise dashboard/scenario and alert/case APIs |
-| Backend | Node.js (Express/NestJS) or Python (FastAPI) — modular boundaries matching §2 components |
-| Database | PostgreSQL via **Supabase** — ledger, cases, audit trail; SQL migrations in repo |
-| Auth | JWT-based RBAC in app layer — provider-boundary enforcement (optional: Supabase RLS policies per provider scope) |
-| Analytics | Hand-rolled statistical rules or pandas/scikit-learn — explainable, not opaque |
-| Deployment | Single Docker container — one command for judges |
+Build a complete, explainable and safe decision-support prototype that:
 
-**Degraded-data behavior** (Scenario C path — non-negotiable):
+1. Shows one shared physical-cash reserve alongside separate bKash, Nagad and Rocket e-money balances.
+2. Predicts which reserve may run short and approximately when, with confidence on every projection.
+3. Detects at least one unusual pattern with structured evidence and plausible benign context.
+4. Reduces confidence or becomes non-actionable when data is missing, stale, malformed or conflicting.
+5. Converts important analytical results into immutable alerts and provider-aware human cases.
+6. Supports routing, assignment, acknowledgement, escalation, notes, notification, review and resolution.
+7. Preserves a complete audit trail.
+8. Renders structured English and Bangla/Banglish alert explanations.
+9. Enforces provider/outlet/area boundaries with application authorization and PostgreSQL RLS.
+10. Uses synthetic data only and never executes financial or punitive actions.
 
-- Data Quality Engine flags `stale` / `conflicting` → Liquidity Engine widens confidence band or marks projection low-confidence.
-- Anomaly Engine **suppresses** new high-confidence flags for the affected provider; surfaces a data-issue advisory instead.
-- Dashboard shows: "Provider X data delayed — figures may be outdated" (balances stay separate; no blended misleading number).
+## 3. Hard Guardrails
 
-Suggested analytics:
+- Shared cash and provider e-money are separate reserves. Never blend or convert them.
+- No real provider integration, wallet, account, customer identity, credential, PIN, OTP, password or secret data.
+- No endpoint or table may transfer, convert, settle, refill, recover, reverse, block, freeze, accuse or make a fraud decision.
+- An anomaly means “unusual” or “requires review,” never proof of fraud.
+- Alerts preserve analytical evidence; cases own the mutable human workflow.
+- Conflicting source snapshots remain preserved and visibly lower confidence.
+- Suppressed anomaly evaluations remain measurable but cannot create a high-confidence anomaly alert.
+- Provider A users cannot read or mutate Provider B confidential records.
+- Every important action is attributable and auditable.
 
-- **Liquidity forecast:** rolling burn rate per provider and shared cash. Output `{provider, projected_shortage_time, confidence, contributing_signal}`. Wider band when data quality is degraded.
-- **Forecast confidence:** feed freshness, sample count, rate stability, conflicting-balance checks → consumed by both engines via the Data Quality modifier.
-- **Unusual activity:** one fully-built rule (e.g., near-identical repeated amounts from a small account cluster — Scenario B). Every flag carries triggering signals, raw evidence, confidence, and `plausible_benign_explanation` (e.g., "may reflect Eid demand").
-- **Safe language:** `unusual`, `requires review`, `possible liquidity pressure`, `estimated`. Never `fraudster`, `fraud confirmed`, or `block account`.
+## 4. Schema Authority
 
-## 4. Solo Ownership and Current Baseline
+[`schema.md`](./schema.md) is the authoritative v1 contract for the entire project.
 
-This plan assumes **one person owns the entire project**. The existing data/API, coordination/security and analytics boundaries remain useful as internal module boundaries, but they are no longer people or handoff points. Work is serialized in dependency order inside one modular monolith:
+### 4.1 Phase 1 schema rule
 
-```text
-Scenario/generator and normalized input
-        ↓
-Data quality → liquidity/anomaly engines
-        ↓ ResultEnvelope
-Persistence/API adapter → AlertCandidate
-        ↓
-Immutable alert → routing → mutable case workflow
-        ↓
-Audit/notifications → validation metrics → thin demo UI
-```
+Phase 1 physically implements the complete MVP schema before feature development:
 
-### Repository state verified before replanning
+1. `001_foundation_and_identity.sql`
+2. `002_simulation_ingestion_ledger.sql`
+3. `003_quality_and_intelligence.sql`
+4. `004_alerts_and_coordination.sql`
+5. `005_validation_indexes_views.sql`
+6. `006_security_immutability_rls.sql`
 
-| Area | Current state | Solo implication |
+The schema phase includes tables, constraints, indexes, views, triggers, grants, RLS policies, reference seeds and schema verification tests. No placeholder migration is allowed in the Phase 1 exit gate.
+
+### 4.2 Controlled changes later
+
+The schema may change when implementation reveals a genuine need. Every change must:
+
+- have a short decision record;
+- use a new forward-only migration;
+- update `schema.md`, API/OpenAPI contracts, fixtures and tests together;
+- document compatibility and rollback impact;
+- preserve provider separation, append-only evidence, safe language and prohibited-action guardrails;
+- pass both clean-database and upgrade-path verification.
+
+## 5. Solo Development Rules
+
+1. Keep analytics, persistence/API and coordination/security as separate internal modules even though one person owns all of them.
+2. Implement and test a producer before its consumer.
+3. Preserve these seams:
+   - normalized input → quality/analytics engine;
+   - engine → `ResultEnvelope`;
+   - persisted result → `AlertCandidate`;
+   - candidate → immutable alert;
+   - alert → mutable case.
+4. Do not start a phase until its prerequisite gate passes.
+5. At each phase exit, record the schema version, migration state, contract version and tested release identifier.
+6. Fix current-phase blockers before adding breadth.
+7. Stretch scope starts only after the complete integrated MVP gate passes.
+
+## 6. Phase Overview
+
+| Phase | Focus | Required result |
 |---|---|---|
-| Data/API foundation | FastAPI modules, migrations `001`/`002`/`003`/`005`, adapters, fixtures, OpenAPI and data/intelligence routes exist | Verify and finish seams; do not rebuild foundation |
-| Analytics | Confidence, forecast and anomaly modules exist; **23 analytics tests pass** when run from repository root | Integrate engines into persisted/API flow and extend degraded/evaluation coverage |
-| Coordination/security | Auth/alert/case/notification/audit scaffolds and fixtures exist; **128 coordination tests pass** from `backend/` | Replace honest `501` services with runtime persistence and register routers |
-| Contracts | Fixture verification passes for `ResultEnvelope`, derived `AlertCandidate`, validation payload and dashboard response | Preserve contracts; consolidate ownership rather than redesigning them |
-| Database | Top-level `004_coordination.sql` and `006_security.sql` are pointer/placeholders; detailed coordination migration scaffolds exist separately and are unapplied | Promote/reconcile/apply them in serialized order and restore deferred FKs/views |
-| Application composition | `app.main` includes data/intelligence routers but not coordination routers | Register coordination after runtime auth/services are ready |
-| Test execution | Suites pass separately, but one unified pytest invocation fails because analytics imports `backend.*` while coordination imports `app.*` | Normalize package/test invocation during Phase 1 |
-| Environment | Current interpreter is missing `pydantic-settings`, so full app import fails until requirements are installed in the intended environment | Establish reproducible environment before runtime work |
-| Frontend | Next.js default starter page only | Build one thin demonstration surface after backend integration |
-
-### Solo responsibilities
-
-The single owner is responsible for all schema sections, all 48 proposed endpoints, all analytics, all tests, the thin frontend, documentation, rehearsal and submission. Keep internal packages separated:
-
-- `backend/analytics/**`: pure generator/quality/forecast/anomaly/evaluation logic.
-- `backend/app/member1/**`: data, simulation, ledger, analytics persistence and read APIs.
-- `backend/app/coordination/**`: auth, alerts, routing, cases, notifications and audit.
-- `backend/app/core/**`, migrations and `app/main.py`: shared composition/infrastructure.
-- `frontend/**`: thin demo only.
-
-### Endpoint scope
-
-| Group | MVP endpoint work |
-|---|---|
-| Reference/dashboard | Providers, areas, outlets, dashboard, transactions and balance history |
-| Simulation/ingestion/quality | Scenario run/reset/faults, ingestion batches, current/history quality |
-| Intelligence | Liquidity run/read, anomaly run/read/evidence |
-| Auth/profile | Demo login, current user and locale preference |
-| Alerts/cases | Alert list/detail/explanations; case open/list/detail/timeline/assignment/acknowledge/escalate/resolve/notes/review |
-| Notification/audit | Notification list/read and case audit events |
-| Operations/evidence | `/health`, `/metrics`, validation results |
-
-#### Solo endpoint inventory
-
-| Group | Endpoints |
-|---|---|
-| Reference/outlets | `GET /api/v1/providers`; `GET /api/v1/areas`; `GET /api/v1/outlets`; `GET /api/v1/outlets/{outletId}` |
-| Dashboard/ledger | `GET /api/v1/outlets/{outletId}/dashboard`; `GET /api/v1/outlets/{outletId}/transactions`; `GET /api/v1/outlets/{outletId}/balances/history` |
-| Simulation | `GET /api/v1/simulations/scenarios`; `POST /api/v1/simulations/runs`; `GET /api/v1/simulations/runs/{runId}`; `POST /api/v1/simulations/runs/{runId}/reset`; `POST /api/v1/simulations/runs/{runId}/faults`; `PATCH /api/v1/simulations/runs/{runId}/faults/{faultId}` |
-| Ingestion/quality | `POST /api/v1/ingestion/batches`; `GET /api/v1/outlets/{outletId}/data-quality`; `GET /api/v1/outlets/{outletId}/data-quality/history` |
-| Liquidity | `GET /api/v1/outlets/{outletId}/liquidity-projections`; `POST /api/v1/internal/analytics/liquidity/run` |
-| Anomaly | `GET /api/v1/outlets/{outletId}/anomaly-flags`; `GET /api/v1/anomaly-flags/{flagId}`; `POST /api/v1/internal/analytics/anomalies/run` |
-| Auth/profile | `POST /api/v1/auth/demo-login`; `GET /api/v1/me`; `PATCH /api/v1/me/preferences` |
-| Alerts | `GET /api/v1/alerts`; `GET /api/v1/alerts/{alertId}`; `GET /api/v1/alerts/{alertId}/explanations`; `POST /api/v1/alerts/{alertId}/cases` |
-| Cases | `GET /api/v1/cases`; `GET /api/v1/cases/{caseId}`; `GET /api/v1/cases/{caseId}/timeline`; `POST /api/v1/cases/{caseId}/assignments`; `POST /api/v1/cases/{caseId}/acknowledge`; `POST /api/v1/cases/{caseId}/escalate`; `POST /api/v1/cases/{caseId}/resolve`; `POST /api/v1/cases/{caseId}/notes`; `POST /api/v1/cases/{caseId}/review` |
-| Notifications/audit | `GET /api/v1/notifications`; `POST /api/v1/notifications/{notificationId}/read`; `GET /api/v1/cases/{caseId}/audit-events` |
-| Operations/evidence | `GET /health`; `GET /metrics`; `GET /api/v1/validation/results` |
-| Stretch only | `POST /api/v1/outlets/{outletId}/what-if-runs`; `GET /api/v1/what-if-runs/{whatIfRunId}`; `GET /api/v1/outlets/{outletId}/relationships`; `GET /api/v1/outlets/{outletId}/nearby-support-options`; `POST /api/v1/cases/{caseId}/support-requests` |
-
-Stretch endpoints—what-if, relationships, nearby support and support requests—remain frozen until the Hour 12 gate. No endpoint may transfer, convert, settle, refill, recover, reverse, block, freeze, accuse, or make a fraud decision.
-
-### Solo serialization rules
-
-1. Preserve `ResultEnvelope → AlertCandidate → Alert → Case` as four distinct contracts even though one person owns all of them.
-2. Complete and test the producer before implementing its consumer.
-3. Keep analytical calculations out of routes/workflow services and keep case fields out of analytical results.
-4. Apply migrations in numeric dependency order; never leave parallel-owner placeholder/pointer migrations in the final path.
-5. At each checkpoint, commit/tag or record the tested state before moving forward.
-6. Fix blockers in the current phase only. Queue non-blocking polish for Phase 5 or cut it.
-7. Do not start stretch scope before the complete Hour 12 MVP gate passes.
-
-## 5. Sixteen-Hour Schedule at a Glance
-
-| Clock | Duration | Phase | Serialized solo focus | Required result |
-|---|---:|---|---|---|
-| 00:00-02:15 | 2:15 | 1. API/schema contract and scaffolding | Reproduce environment/tests, audit current implementation, normalize imports/composition/migrations/contracts | One runnable baseline, unified test command, frozen solo backlog |
-| 02:15-05:00 | 2:45 | 2. Foundation APIs | Finish ingestion/simulation seams; promote coordination migrations; implement demo auth/scopes; register protected empty queues | Persisted synthetic foundation plus working auth/provider boundaries |
-| 05:00-07:30 | 2:30 | 3. Intelligence-to-alert chain | Wire engines → persistence → `AlertCandidate`; implement immutable alerts, explanations, routing and initial case | Scenario A/B analytical result becomes an explainable routed case |
-| 07:30-10:00 | 2:30 | 4. Safe coordinated response | Finish degraded data behavior, case lifecycle, notification, audit, idempotency/concurrency and RBAC/RLS | Scenarios C/D work safely end to end |
-| 10:00-12:00 | 2:00 | 5. Integration and MVP freeze | Build thin UI, compose full app, seed/reset and run A–D regression | Complete demo-ready release candidate |
-| 12:00-13:30 | 1:30 | 6. Validation and observability | Held-out analytics, API latency, explanation/audit/quality coverage, safety/security scans | Three or more signed-off metrics with evidence |
-| 13:30-14:30 | 1:00 | 7. Documentation | Reconcile README, OpenAPI, schema, data/analytics, responsible design and limitations | All seven submission deliverables present and truthful |
-| 14:30-15:30 | 1:00 | 8. Presentation and rehearsal | Prepare/reset/backup, rehearse twice and verify every displayed result | Timed story-driven demo with fallback |
-| 15:30-16:00 | 0:30 | 9. Final buffer and submission | Critical checks only, final demo, permissions and submission | Frozen tested build submitted |
-
-Total: **16 hours**.
-
-### Solo workload control
-
-The first four phases are intentionally dense, so each has a strict internal sequence and cut rule. The current codebase already contains contracts, analytics modules and coordination scaffolds; the solo plan spends time on runtime completion and integration rather than recreating those artifacts.
-
-| Phase | Difficulty | Do not exceed | First cut if late |
-|---|---:|---|---|
-| 1 | 4/5 | 2:15 | Historical owner-doc cleanup; preserve runtime/test consolidation |
-| 2 | 5/5 | 2:45 | Nonessential read filters and UI shells |
-| 3 | 5/5 | 2:30 | Combined/extra alert variants; retain one forecast and one anomaly rule |
-| 4 | 5/5 | 2:30 | Review sophistication and extra routing/locales; retain security/lifecycle/audit |
-| 5 | 4/5 | 2:00 | Visual polish and optional filters |
-| 6 | 4/5 | 1:30 | Extra metrics beyond the strongest required three |
-| 7 | 3/5 | 1:00 | Long prose; keep concise factual deliverables |
-| 8 | 3/5 | 1:00 | Extra slides/video |
-| 9 | 1/5 | 0:30 | Nothing mandatory; fix only submission blockers |
+| 1 | Authoritative schema implementation | Complete clean-database migration chain, constraints, views and RLS |
+| 2 | Application foundation and contracts | Runnable modular monolith, configuration, DB layer, errors, OpenAPI and seam contracts |
+| 3 | Synthetic ecosystem, ingestion and ledger | Deterministic scenarios, fault injection, append-only observations and separated dashboard reads |
+| 4 | Data quality and intelligence | Quality, confidence, liquidity and anomaly engines producing persisted explainable results |
+| 5 | Alerts, cases and security | Candidate-to-alert routing, localization, workflow, notification, audit, auth and provider boundaries |
+| 6 | Integrated API and thin UI | Complete Scenarios A–D through one runnable backend and minimal frontend |
+| 7 | Validation, observability and safety | Numeric analytics/performance/reliability evidence and complete safety verification |
+| 8 | Documentation and presentation | All required deliverables and rehearsed story-driven demo |
+| 9 | Final QA and submission | Frozen tested build, verified permissions and confirmed submission |
 
 ---
 
-## 6. Detailed Phase Instructions
+## Phase 1 — Authoritative Schema Implementation
 
-## Phase 1 — API/Schema Contract and Executable Scaffolding
+### Goal
 
-**Time:** 00:00-02:15  
-**Goal:** Convert the existing multi-owner scaffold into one reproducible solo baseline before adding features.
+Turn `schema.md` into a complete, tested PostgreSQL/Supabase schema before writing application features.
 
-### Serialized work
+### Prerequisites
 
-| Clock | Solo task | Checkpoint output |
-|---|---|---|
-| 00:00-00:30 | Create/activate the intended backend environment, install `backend/requirements.txt`, verify Node dependencies, and record exact Python/Node/Postgres commands. | Full app imports or an exact dependency blocker is recorded |
-| 00:30-01:00 | Normalize test package paths/config so coordination and analytics run from one documented root command; preserve the currently verified 128 coordination and 23 analytics tests. | One unified backend test command; fixture verifier still passes |
-| 01:00-01:30 | Audit `TODO(owner=...)`, `501` services, router registration, migration placeholders/sub-migrations, deferred FKs/views and default frontend. Convert them into one ordered solo blocker list. | Current-state matrix with `done`, `scaffolded`, `runtime missing`, `stretch` |
-| 01:30-02:00 | Revalidate `ResultEnvelope`, `AlertCandidate`, validation payload, schema/API invariants, case transitions, role scopes and Scenario A-D expectations. Freeze contracts rather than redesigning them. | Frozen contracts, scenario expectations and test fixtures |
-| 02:00-02:15 | Freeze the nine-phase backlog, cut list, exact demo sequence and checkpoint commands. | `P1-SOLO` reproducible baseline and serialized execution board |
+- Final review of `Problem_Statement.md`, `System-Design.md`, `schema.md` and `checklist.md`.
+- PostgreSQL/Supabase development database credentials stored outside source control.
+- Agreed naming, UUID, timestamp, decimal money and migration conventions.
 
-### Deliverables
+### Work
 
-- Reproducible environment and one documented backend test command.
-- Current implementation/TODO/501/migration/UI inventory.
-- Frozen OpenAPI/schema/contracts and canonical dashboard, analytics, alert and case fixtures.
-- One numeric migration path with former owner-specific scaffolds reconciled.
-- Existing coordination and analytics tests plus fixture verification passing.
-- Thin single-page demo plan covering dashboard/scenario and alert/case controls.
-- Written 3-5 minute demo sequence and explicit guardrail list.
+#### 1. Freeze the logical contract
 
-### Exit gate
+- Review every enum, table, relationship, optionality rule and unique constraint.
+- Confirm shared-cash/provider-e-money XOR rules.
+- Confirm synthetic-only fields and prohibited data.
+- Confirm alert versus case separation.
+- Confirm role/scope and provider-boundary model.
+- Confirm validation/ground-truth/metric schema.
+- Record any amendment before physical implementation.
 
-- Every mandatory capability maps to an endpoint, engine output, table/view, test, minimal demo control or document.
-- A `ResultEnvelope` produces a valid `AlertCandidate` through the existing verified adapter.
-- Full app import, test invocation and pending runtime seams are reproducible from the solo setup notes.
-- Alerts preserve analytical evidence; cases alone own receiver, owner, notes, transitions, and resolution.
-- No planned schema or endpoint transfers money, merges wallets, blocks/freezes users, exposes real identities, or declares fraud.
+#### 2. Implement migration 001 — foundation and identity
 
-## Phase 2 — Foundation APIs
+- Extensions and constrained enum/domain strategy.
+- `areas`, `providers`, `outlets`, `outlet_provider_accounts`.
+- `app_users`, `user_access_scopes`.
+- Synthetic bKash/Nagad/Rocket and demo scope seeds.
+- Area hierarchy and account/provider consistency constraints.
 
-**Time:** 02:15-05:00  
-**Goal:** Finish the runtime foundation in dependency order: database and synthetic input first, then identity/scope, then protected reads.
+#### 3. Implement migration 002 — simulation, ingestion and ledger
 
-### Serialized work
+- Scenario/run/fault tables.
+- Ingestion batches/events.
+- Transactions and cash/provider balance snapshots.
+- Append-only protections.
+- Provider/account/outlet consistency triggers.
+- Conflicting snapshots allowed and preserved.
 
-| Clock | Solo task | Checkpoint output |
-|---|---|---|
-| 02:15-03:00 | Reconcile/promote coordination identity/workflow migration scaffolds into the numeric migration path; restore deferred `app_users` FKs and prepare security/view dependencies without breaking existing `001`-`005`. | Clean pending migration plan; local/Supabase check succeeds |
-| 03:00-03:40 | Finish ingestion normalization persistence, deterministic seed/reset behavior, simulation idempotency and data-quality round trip using existing generator/contracts. | Synthetic normal/A-C data persists and replays deterministically |
-| 03:40-04:20 | Implement demo identities, login, `/me`, locale preference and request scope dependency; replace the shared auth TODO and register coordination routers only after safe middleware is active. | Scoped demo authentication works across route groups |
-| 04:20-05:00 | Implement protected empty alert/case queues, safe same-shape 404 behavior, provider A/B denial tests and dashboard quality read; verify no blended total. | `P2-SOLO` persisted foundation and provider-boundary proof |
+#### 4. Implement migration 003 — quality and intelligence
 
-### Checkpoint at Hour 4
+- Quality assessments/issues.
+- Analytics runs.
+- Liquidity projections/signals/quality links.
+- Anomaly rules/flags/evidence/transaction links.
+- Active near-identical-amount rule seed.
+- Confidence, sample and reserve-type integrity constraints.
 
-- Migrations apply in one order and are idempotent.
-- Deterministic scenario/quality fixtures persist without cross-provider mixing.
-- Demo authentication and scope dependency work; if not, stop and finish them before workflow routes.
-- The unified backend suite remains green after each serialized slice.
+#### 5. Implement migration 004 — alerts and coordination
 
-### Exit gate at Hour 5
+- Alerts and typed analytical-source links.
+- Explanation templates/renders.
+- Routing rules.
+- Cases, assignments, status history, notes, reviews.
+- Notifications and audit events.
+- English plus one Bangla/Banglish demo template.
 
-- One command starts the prototype (Docker or documented local setup); backend reads/writes **Supabase PostgreSQL**.
-- The dashboard displays shared cash and **three separate** provider balances from generated data.
-- Per-provider data-health state is visible.
-- Synthetic scenarios can be selected or replayed deterministically; fault injection is toggleable.
-- Demo authentication and provider/outlet authorization middleware work on both endpoint groups.
-- Coordination routers are registered without any unauthenticated confidential read path.
-- No real credentials, names, balances, accounts, or production APIs exist in the repository.
+#### 6. Implement migration 005 — validation, indexes and views
 
-## Phase 3 — Intelligence-to-Alert Chain
+- Validation runs, ground truth and metric results.
+- Required indexes from `schema.md`.
+- Latest cash/provider/quality/projection views.
+- Outlet dashboard, case timeline and validation summary views.
+- No blended monetary total.
 
-**Time:** 05:00-07:30  
-**Goal:** Complete the engine → persisted result → immutable alert → routed initial case chain and make every output explainable.
+#### 7. Implement migration 006 — security and immutability
 
-### Actions
+- Database roles and minimum grants.
+- RLS policies for provider/outlet/area access.
+- Append-only ledger/evidence/audit protection.
+- Alert immutability.
+- Case transition/scope consistency checks.
+- Audit mutation protection.
 
-| Clock | Solo task | Checkpoint output |
-|---|---|---|
-| 05:00-05:45 | Wire existing confidence, liquidity and anomaly modules into the internal run endpoints and persistence adapters. Verify separate shared-cash/provider projections, quality links, evidence and precision-preserving round trips. | Scenario A/B `ResultEnvelope`s persist and read correctly |
-| 05:45-06:15 | Finish candidate gating/mapping: invalid or suppressed anomaly results cannot create risk candidates; actionable results retain confidence/evidence/benign context. | Persisted result → valid `AlertCandidate` trace |
-| 06:15-07:00 | Replace alert-service `501`s with candidate validation, source links, deduplication, immutable alert persistence, EN + Bangla/Banglish render snapshots and routing. | Live candidate becomes one explainable alert |
-| 07:00-07:30 | Implement initial case creation plus alert/case list/detail reads; add the smallest combined Scenario B path and regression tests. | `P3-SOLO` result → alert → routed case chain |
+#### 8. Verify the schema
 
-### Deliverables
-
-- Working Liquidity Forecasting Engine with confidence and contributing signals.
-- Working Anomaly Detection rule with evidence and `plausible_benign_explanation`.
-- Immutable alert records linked to their projection/flag evidence, with routed cases created only for important alerts.
-- EN + at least one Bangla/Banglish explanation from templates.
-- At least one combined liquidity/anomaly alert.
-- Initial analytics evaluation output.
-- Former coordination alert-service `501`s on the Phase 3 path are removed.
-
-### Exit gate
-
-- A judge can see what may run short, approximately when, why the alert exists, how uncertain it is, and what safe human step is recommended.
-- The unusual-activity alert never claims fraud.
-- Known synthetic positives trigger; normal cases remain mostly unflagged.
-
-## Phase 4 — Safe Coordinated Response
-
-**Time:** 07:30-10:00  
-**Goal:** Demonstrate reliability under imperfect data and a traceable human workflow.
-
-### Actions
-
-| Clock | Solo task | Checkpoint output |
-|---|---|---|
-| 07:30-08:10 | Harden stale/missing/conflicting/insufficient-sample behavior; show last trusted balance plus conflict evidence, lower/unavailable forecasts, widened bounds and retained suppressed anomaly evaluations. | Scenario C safe analytical/read behavior |
-| 08:10-09:10 | Replace case/notification/audit `501`s: assignment, acknowledge, escalate, resolve, notes, review, notification/read, timeline and audit, all with legal transitions. | Scenario D workflow works locally |
-| 09:10-09:40 | Add durable idempotency, optimistic version checks, atomic workflow+audit writes and safe same-shape errors. | Duplicate/stale mutation tests pass |
-| 09:40-10:00 | Apply RBAC/RLS/grants and run provider/outlet/area leakage tests across data and workflow routes. | `P4-SOLO` secured Scenarios C/D |
+- Apply all migrations to an empty database.
+- Re-run migrations and prove idempotent migration tracking.
+- Test every critical constraint with valid and invalid rows.
+- Test provider A/B RLS denial.
+- Compile/query every required view.
+- Produce a schema-only dump or metadata snapshot.
+- Verify upgrade/change procedure with a small test migration if desired.
 
 ### Deliverables
 
-- Low-confidence/stale/conflicting data states with visible per-provider data health.
-- Anomaly suppression under degraded data (Scenario C).
-- Provider-aware routing, ownership, and RBAC enforcement.
-- In-app notification on alert assignment.
-- Visible end-to-end case history and final status.
-- Tests for invalid state changes and cross-provider leakage.
-- No MVP coordination service still returns an intentional `501`.
-
-### Exit gate at Hour 10
-
-- Scenario C visibly lowers confidence, widens bands, and suppresses high-confidence anomaly flags — shows data-issue advisory instead.
-- Scenario D can be completed entirely through the UI/API without editing data manually.
-- Alert creation, routing, assignment, acknowledgement, escalation, notes, and resolution are traceable in audit log.
-- Provider-boundary RBAC verified (Provider A user cannot access Provider B case).
-
-## Phase 5 — Integration and MVP Freeze
-
-**Time:** 10:00-12:00  
-**Goal:** Compose one stable release candidate and add only the frontend needed to demonstrate the complete backend/analytics story.
-
-### Actions
-
-| Clock | Solo task | Checkpoint output |
-|---|---|---|
-| 10:00-10:30 | Compose all routers/migrations, clean startup/shutdown, seed/reset, OpenAPI and environment commands; remove obsolete owner-only runtime seams. | One-command backend release candidate |
-| 10:30-11:20 | Replace the Next.js starter with one thin responsive page: login/role switch, shared/provider cards, quality/forecast/anomaly evidence, fault/scenario controls, alert explanation and case actions/timeline. | Complete demonstrable UI path, minimal styling |
-| 11:20-12:00 | Run deterministic A-D end-to-end regression: no blended totals, confidence/evidence, suppression, alert immutability, lifecycle, denial, idempotency, concurrency and safe language. Fix blockers only. | `P5-SOLO` tested demo-ready release candidate |
-
-### Deliverables
-
-- Stable integrated MVP.
-- Complete story covering scenarios A through D, whether as separate fixtures or one sequence.
-- Feature freeze and tagged/demo-ready commit.
-- Unified backend tests, frontend lint/build and fixture verification pass from documented commands.
-
-### Hour 12 hard gate
-
-The following must work before any stretch feature is considered:
-
-- Shared cash plus **three separate** provider balances (bKash, Nagad, Rocket), never blended.
-- Forward shortage estimate with confidence on every projection.
-- One evidence-backed unusual-activity alert with `plausible_benign_explanation`.
-- Per-provider data-health indicator; missing/stale/conflicting-data fallback with anomaly suppression (Scenario C).
-- Recipient, owner, next step, full lifecycle (ack → escalate → resolve).
-- EN + at least one Bangla/Banglish explanation from templates.
-- Audit trail and provider-boundary RBAC.
-- Careful human-review language throughout.
-
-If any item fails, spend all remaining development time on it and cut recommended/optional features.
-
-## Phase 6 — Validation, Reliability, and Safety QA
-
-**Time:** 12:00-13:30  
-**Goal:** Produce credible measured evidence and eliminate high-risk failures.
-
-### Required metrics
-
-Measure at least three from System Design §5.8; the recommended set covers analytics, performance, and reliability:
-
-1. **Analytics — anomaly precision/recall** and **false-positive rate** on labeled synthetic scenarios (injected test cases). State sample size and injection method.
-2. **Analytics — forecast error** or **shortage detection lead time** on held-out simulated data.
-3. **Performance — API latency** (average and p95) at documented transaction volume.
-4. **Reliability — alert explanation coverage** — percentage of high-impact alerts containing reason, evidence, uncertainty, and recommended next step; target 100% for demo set.
-5. **Reliability — data-quality incident handling** — percentage of missing/stale/conflicting inputs that correctly produce degraded confidence and anomaly suppression; target 100% for defined failure cases.
-
-Expose results via `/metrics` endpoint or a validation dashboard panel.
-
-### Actions
-
-| Clock | Solo task | Evidence output |
-|---|---|---|
-| 12:00-12:35 | Run frozen held-out analytics; calculate anomaly precision/recall/FPR and forecast error or lead time with seed, version, sample size and limitations. | Analytical metric payloads and raw summaries |
-| 12:35-13:00 | Measure average/p95 API latency, data-quality handling rate and explanation coverage at documented volume. | Performance/reliability evidence |
-| 13:00-13:20 | Measure case transition, notification, audit, idempotency/concurrency and provider-denial correctness. | Workflow/security evidence |
-| 13:20-13:30 | Persist/serve metrics unchanged; run secret, real-data, unsafe-action, prohibited-language and provider-boundary scans. | `P6-SOLO` signed-off evidence pack |
+- Six complete numbered migrations.
+- Migration runner and checksum/history table.
+- Reference/demo seed script.
+- Constraint, trigger, view and RLS tests.
+- Clean migration log and metadata/schema dump.
+- Decision records for every deviation from `schema.md`.
 
 ### Exit gate
 
-- At least three metrics have numeric results, sample sizes, methods, and limitations.
-- The demo survives bad-data tests without crashing or producing misleading confidence.
-- All high-impact alerts expose evidence and uncertainty.
-- No critical safety, privacy, or provider-boundary issue remains.
-
-## Phase 7 — Submission Documentation
-
-**Time:** 13:30-14:30  
-**Goal:** Complete every required non-code deliverable.
-
-### Actions
-
-| Clock | Solo task | Output |
-|---|---|---|
-| 13:30-13:50 | Update root/backend/frontend README with exact environment, migration, seed/reset, test, run and demo commands; regenerate/check OpenAPI. | Reproducible source-repository guide |
-| 13:50-14:05 | Finalize architecture/data flow and schema deviation notes; remove stale claims that owner-specific placeholders are intentionally unimplemented. | Architecture/setup documentation |
-| 14:05-14:20 | Write data/simulation and analytics/validation methodology with seeds, splits, metrics, false-positive risk and limitations. | Data and validation notes |
-| 14:20-14:30 | Write responsible-design note and assemble links/screenshots/deliverables. | `P7-SOLO` complete submission documentation |
-
-### Exit gate
-
-- A reviewer can run the prototype from the README.
-- All seven required deliverables are present.
-- Documentation matches the actual implementation; no production-readiness or regulatory claims are made.
-
-## Phase 8 — Presentation and Rehearsal
-
-**Time:** 14:30-15:30  
-**Goal:** Present the complete decision-support story clearly and on time.
-
-### Suggested presentation flow
-
-1. **Problem and stakes:** one shared cash pool, three separate provider balances (bKash/Nagad/Rocket), fragmented coordination.
-2. **Users:** agent, field officer, provider operations, risk/review, and management.
-3. **Live scenario:** unified balance view and hidden shortage (Scenario A).
-4. **Decision value:** forecast, confidence, contributing signals, unusual-activity evidence, and plausible-benign explanation (Scenario B).
-5. **Reliability:** stale/conflicting feed lowers confidence and suppresses anomaly flags; data-health indicator visible (Scenario C).
-6. **Coordination:** route per hierarchy, assign, acknowledge, escalate, resolve, in-app notification, audit history (Scenario D).
-7. **Architecture:** modular monolith, provider boundaries, Data Quality → engines → Alert/Case chain.
-8. **Evidence:** show three+ measured metrics from `/metrics` or validation panel.
-9. **Responsibility:** synthetic data, human review, false positives, RBAC, and prohibited actions.
-10. **Limitations and next steps:** explicitly excluded scope (no real APIs, no fund movement, no Kafka/microservices).
-
-### Actions
-
-| Clock | Solo task | Output |
-|---|---|---|
-| 14:30-14:45 | Freeze slides/narration, deterministic reset, backup screenshots/responses and Q&A answers. | Rehearsal-ready package |
-| 14:45-15:00 | Rehearsal 1: run the complete story with a timer; record only blocking timing/demo issues. | First timing and issue list |
-| 15:00-15:10 | Fix narration/reset/backup issues only; do not add features. | Corrected presentation |
-| 15:10-15:25 | Rehearsal 2 from a clean state, including fallback. | Passing timed rehearsal |
-| 15:25-15:30 | Freeze build, slides, spoken wording and backup media. | `P8-SOLO` final presentation package |
-
-### Exit gate
-
-- The presentation fits the official time limit with a small buffer.
-- The solo presenter knows every transition, next action and fallback.
-- The live demo starts from a known state and ends with a visible resolution.
-
-## Phase 9 — Final Buffer and Submission
-
-**Time:** 15:30-16:00  
-**Goal:** Protect the finished submission from last-minute regressions.
-
-### Actions
-
-| Clock | Solo task | May fix |
-|---|---|---|
-| 15:30-15:40 | Run critical tests, fixture verification, frontend build, migrations/check, secret scan and non-owner permission check. | Only startup, correctness, safety, access or missing-deliverable blockers |
-| 15:40-15:50 | Run the exact demo once on the frozen build and compare metrics/expected outputs. | Only a reproducible demo blocker; rerun affected checks |
-| 15:50-16:00 | Submit, confirm receipt/link and preserve the tested local build/backups unchanged. | Submission/access issue only |
-
-### Exit gate
-
-- Submission receipt/link is confirmed.
-- Repository and presentation permissions work from a non-owner view.
-- The final checklist below is entirely checked or any omission is explicitly disclosed.
+- A fresh database reaches the full MVP schema with one command.
+- No required migration or object is a placeholder.
+- All critical invariants and provider-boundary tests pass.
+- Views return separated cash/provider structures.
+- Application feature work may now begin.
 
 ---
+
+## Phase 2 — Application Foundation and Contracts
+
+### Goal
+
+Create the runnable modular-monolith foundation and freeze the contracts connecting future modules.
+
+### Prerequisite
+
+Phase 1 schema gate passes on a fresh database.
+
+### Work
+
+- Create backend project structure and dependency manifest.
+- Implement environment/config loading with `.env.example` containing placeholders only.
+- Implement async database connection/session/transaction handling.
+- Implement migration/seed commands.
+- Create application factory, startup/shutdown and CORS for the thin frontend.
+- Add request ID, structured logging and safe global error handling.
+- Define authentication dependency interface without bypassing authorization.
+- Create versioned Pydantic/domain contracts for:
+  - normalized transaction/balance input;
+  - quality assessment;
+  - liquidity projection;
+  - anomaly flag/evidence;
+  - `ResultEnvelope`;
+  - `AlertCandidate`;
+  - validation metric payload;
+  - dashboard, alert and case responses.
+- Create fixture examples and contract tests.
+- Generate OpenAPI from registered routes/stubs without claiming unimplemented behavior works.
+- Create one documented command for tests, migrations, seed, server and OpenAPI generation.
+- Create the frontend project shell only; defer feature UI.
+
+### Deliverables
+
+- Runnable backend skeleton connected to the Phase 1 database.
+- Safe configuration/error/logging/transaction infrastructure.
+- Frozen v1 seam contracts and fixtures.
+- Test harness and CI-ready commands.
+- Generated OpenAPI baseline.
+- Minimal frontend scaffold.
+
+### Exit gate
+
+- Application boots and `/health` verifies database readiness.
+- Migrations/seeds/tests run from documented commands.
+- All contracts validate positive/negative fixtures.
+- A `ResultEnvelope` can be transformed into a valid candidate fixture without case fields.
+- No route bypasses the future auth dependency for confidential data.
+
+---
+
+## Phase 3 — Synthetic Ecosystem, Ingestion and Ledger
+
+### Goal
+
+Produce deterministic multi-provider data, ingest it safely and expose a trustworthy separated ledger/dashboard foundation.
+
+### Prerequisite
+
+Phase 2 application/contracts gate passes.
+
+### Work
+
+#### Synthetic scenarios
+
+- Implement normal operation and Scenarios A–D with deterministic seeds.
+- Generate one outlet, shared cash, three provider accounts, transactions and snapshots.
+- Maintain tuning, held-out and demo dataset splits.
+- Implement delay, missing feed/field, malformed payload and conflicting balance faults.
+
+#### Ingestion and ledger
+
+- Validate and persist ingestion batches/events.
+- Normalize provider-specific mock shapes into one internal format without losing provider identity.
+- Reject malformed events without updating ledger tables.
+- Persist append-only transactions and snapshots.
+- Implement deterministic run/reset/fault behavior and idempotency.
+- Build latest cash/provider read repositories and preserve conflict candidates.
+
+#### APIs
+
+- Providers, areas, outlets and outlet detail.
+- Scenario list, run start/status/reset and fault create/toggle.
+- Batch ingestion.
+- Dashboard, transactions and balance history.
+- Initial current/history quality endpoints may return assessed foundation data.
+
+#### Tests
+
+- Determinism and replay.
+- Provider/account/outlet consistency.
+- Append-only behavior.
+- Invalid ingestion rejection.
+- No blended total.
+- Conflicting snapshots coexist.
+
+### Deliverables
+
+- Deterministic generator and A–D fixtures.
+- Ingestion/normalization/ledger services and repositories.
+- Reference/simulation/ingestion/dashboard APIs.
+- Seed/reset/fault commands.
+- Foundation integration tests.
+
+### Exit gate
+
+- A clean run displays shared cash and three separate provider balances from persisted synthetic data.
+- Same seed/config produces the same semantic dataset.
+- Faults are reproducible.
+- No rejected/malformed event updates the ledger.
+- No API/view exposes a blended balance.
+
+---
+
+## Phase 4 — Data Quality and Intelligence
+
+### Goal
+
+Turn the ledger into explainable, confidence-aware liquidity and anomaly results.
+
+### Prerequisite
+
+Phase 3 provides stable normalized inputs, scenarios and ledger reads.
+
+### Work
+
+#### Data Quality & Confidence Engine
+
+- Classify `fresh`, `stale`, `missing` and `conflicting` with defined precedence.
+- Emit issue evidence, sample count, last source time and confidence modifier.
+- Preserve last trusted value/time and conflicting candidates.
+- Handle insufficient samples and malformed inputs.
+
+#### Liquidity Forecasting Engine
+
+- Forecast shared cash independently from each provider e-money reserve.
+- Use transparent recent-window depletion/burn rate.
+- Return no shortage for zero/negative depletion.
+- Return non-actionable output for insufficient samples.
+- Apply quality modifier, confidence level and widening bounds.
+- Emit contributing signals.
+
+#### Anomaly Detection Engine
+
+- Implement near-identical-amount rule within one provider/outlet/window.
+- Emit exact evidence references, counts, amount cluster, party count and window.
+- Provide confidence, reason and plausible benign explanation.
+- Retain suppressed evaluations with suppression reason under degraded data.
+- Prevent suppressed evaluations from becoming anomaly candidates.
+
+#### Persistence and APIs
+
+- Persist analytics runs, quality results, projections, flags and evidence.
+- Implement liquidity run/read and anomaly run/list/detail endpoints.
+- Implement validated `ResultEnvelope` and `AlertCandidate` adapter.
+
+#### Tests/evaluation preparation
+
+- Zero/replenishing and threshold boundaries.
+- Provider isolation.
+- Known A/B positives and normal high-demand negatives.
+- Scenario C confidence degradation/suppression.
+- Decimal/timestamp/evidence round trip.
+
+### Deliverables
+
+- Quality, liquidity and anomaly engines.
+- Persisted analytical results and evidence APIs.
+- Result/candidate adapter.
+- Scenario A/B/C expected outputs.
+- Unit, boundary and integration tests.
+
+### Exit gate
+
+- Scenario A identifies the correct reserve, approximate shortage and confidence.
+- Scenario B produces an evidence-backed unusual pattern with benign context.
+- Scenario C lowers/unavailable confidence and suppresses risk alertability safely.
+- Every analytical result is reproducible and explainable.
+
+---
+
+## Phase 5 — Alerts, Cases and Security
+
+### Goal
+
+Turn important analytical candidates into safe, localized and provider-scoped human workflows.
+
+### Prerequisite
+
+Phase 4 produces persisted results and valid candidates.
+
+### Work
+
+#### Authentication and scopes
+
+- Seed demo agent, field/area, provider ops, risk analyst and management users.
+- Implement demo login, current user and locale preference.
+- Enforce provider/outlet/area authorization in application code and RLS.
+- Return the same safe not-found response for missing and forbidden confidential IDs.
+
+#### Alerts and explanations
+
+- Validate candidate source/scope/alertability.
+- Deduplicate active alerts.
+- Persist typed analytical source links without copying/recalculating evidence.
+- Freeze analytical alert content after publication.
+- Render/save EN and Bangla/Banglish situation, evidence, uncertainty, next step and benign context.
+
+#### Routing and cases
+
+- Resolve provider+area → provider → area → fallback routing.
+- Open a case only when required.
+- Store recipient, current owner, safe next step and current status.
+- Implement assignment/reassignment, acknowledge, escalate, notes, review and resolve.
+- Enforce legal transition matrix and resolution requirements.
+- Add optimistic version checks and idempotency for mutations.
+
+#### Notifications and audit
+
+- Queue/deliver/read in-app notifications.
+- Write audit events atomically with mutations.
+- Build case timeline and audit endpoints.
+
+#### APIs and thin workflow controls
+
+- Auth/profile endpoints.
+- Alert list/detail/explanations/case opening.
+- Case list/detail/timeline and action endpoints.
+- Notification list/read and audit event endpoints.
+- Minimal workflow controls for testing; complete UI waits for Phase 6.
+
+### Deliverables
+
+- Complete auth/alert/case/notification/audit API group.
+- EN and localized explanation templates/renders.
+- Routing and legal case lifecycle.
+- Provider-boundary, idempotency, concurrency and audit tests.
+- Scenario D API script.
+
+### Exit gate
+
+- Scenario D completes without direct database edits.
+- Provider A cannot enumerate/read/mutate Provider B confidential records.
+- Duplicate/stale mutations fail safely without duplicate history.
+- Alert evidence remains immutable while case workflow evolves.
+- Complete timeline/audit history is visible.
+
+---
+
+## Phase 6 — Integrated API and Thin UI
+
+### Goal
+
+Compose the complete MVP into one runnable release candidate and a minimal clear demonstration surface.
+
+### Prerequisites
+
+- Phase 3 data foundation passes.
+- Phase 4 analytics gate passes.
+- Phase 5 workflow/security gate passes.
+
+### Work
+
+- Register all routers through one application composition path.
+- Apply auth dependency to all confidential endpoints.
+- Verify startup/shutdown, migrations, seed/reset, OpenAPI and logs.
+- Build one thin responsive frontend containing:
+  - demo login/role switch;
+  - shared-cash and separate provider cards;
+  - data-health and confidence states;
+  - forecast and contributing signals;
+  - anomaly evidence and benign context;
+  - scenario/fault controls;
+  - alert explanation locale toggle;
+  - case assignment/acknowledge/escalate/note/resolve controls;
+  - notification and case timeline/audit display.
+- Implement loading, empty, error and forbidden states.
+- Run deterministic Scenarios A–D end to end.
+- Verify idempotency, concurrency, alert immutability, provider isolation and safe language.
+
+### Deliverables
+
+- One-command runnable backend and frontend.
+- Complete A–D demo path.
+- Frozen OpenAPI and release candidate.
+- End-to-end regression suite and backup captures.
+
+### MVP freeze gate
+
+- Shared cash plus three provider balances, never blended.
+- Shortage timing and confidence for every projection.
+- One evidence-backed anomaly with benign context.
+- Missing/stale/conflicting safe fallback and suppression.
+- Routed case with owner, next step, full lifecycle and audit.
+- EN and Bangla/Banglish explanation.
+- Provider-boundary enforcement.
+- No unsafe language/action.
+
+If any item fails, do not begin stretch work. Repair the MVP path.
+
+---
+
+## Phase 7 — Validation, Observability and Safety
+
+### Goal
+
+Produce credible measured evidence and eliminate high-risk failures on the frozen MVP.
+
+### Prerequisite
+
+Phase 6 release candidate and A–D regression pass.
+
+### Work
+
+#### Analytics evidence
+
+- Freeze held-out data before evaluation.
+- Measure anomaly precision, recall and false-positive rate.
+- Measure forecast error or shortage detection lead time.
+- State sample sizes, seeds, configuration, versions and limitations.
+
+#### Performance/reliability evidence
+
+- Measure average and p95 API latency at documented volume.
+- Measure data-quality incident handling rate.
+- Measure alert explanation coverage.
+- Measure legal transition, notification and audit completeness.
+- Measure provider-denial, idempotency and concurrency correctness.
+
+#### Observability
+
+- Structured request/error/audit logs with request IDs.
+- `/health`, `/metrics` and validation-result endpoints.
+- Data-quality event counts and failure evidence.
+
+#### Safety/security
+
+- Scan for secrets, real identities and unsafe action endpoints.
+- Scan user-visible text for definitive fraud language.
+- Re-run provider A/B RLS and application authorization tests.
+- Verify append-only and immutable protections.
+
+### Deliverables
+
+- At least three numeric metrics with method, sample size and limitation.
+- Raw/summary validation artifacts.
+- Performance and reliability report.
+- Security/safety scan report.
+- Signed-off release candidate identifier.
+
+### Exit gate
+
+- Evidence matches the exact frozen build.
+- Bad data never produces misleading confidence.
+- All high-impact alerts contain evidence and uncertainty.
+- No critical privacy, authorization, audit or responsible-design issue remains.
+
+---
+
+## Phase 8 — Documentation and Presentation
+
+### Goal
+
+Complete every required deliverable and prepare a reliable story-driven demo.
+
+### Prerequisite
+
+Phase 7 evidence is signed off.
+
+### Documentation work
+
+- Root README with problem, users, features and exact setup/run/test/demo commands.
+- Backend/frontend environment and deployment instructions.
+- Current OpenAPI and endpoint guide.
+- Architecture diagram with provider boundaries and coordination flow.
+- Data/simulation note: seeds, scenarios, faults, assumptions and limitations.
+- Analytics/validation note: methods, splits, metrics and false-positive risk.
+- Responsible-design note: privacy, human review, provider separation and prohibited actions.
+- Screenshots/backup responses from the frozen build.
+- Limitations and next steps without production/regulatory claims.
+
+### Presentation flow
+
+1. Problem: shared cash, separate provider balances and fragmented coordination.
+2. Scenario A: hidden shortage with timing/confidence.
+3. Scenario B: unusual repeated amounts with evidence and benign context.
+4. Scenario C: delayed/conflicting data lowers confidence and suppresses alerts.
+5. Scenario D: route, assign, acknowledge, escalate, note, resolve and audit.
+6. Architecture and provider boundaries.
+7. Metrics and validation evidence.
+8. Responsible design and limitations.
+
+### Rehearsal work
+
+- Run twice from a clean deterministic reset.
+- Time the full presentation.
+- Prepare backup screenshots/responses for every critical step.
+- Prepare concise answers on forecast method, anomaly reason, false positives, bad data, provider boundaries and prohibited actions.
+- Freeze slides, spoken wording and backup media after the final successful rehearsal.
+
+### Deliverables
+
+- Working prototype and source repository.
+- README/setup/OpenAPI.
+- Architecture diagram.
+- Data/simulation note.
+- Validation evidence.
+- Responsible-design note.
+- Final presentation and backup.
+
+### Exit gate
+
+- A reviewer can reproduce the prototype from documentation.
+- All seven required deliverables exist and match implementation.
+- The solo presentation completes with buffer and fallback.
+
+---
+
+## Phase 9 — Final QA and Submission
+
+### Goal
+
+Protect the completed submission from last-minute regression.
+
+### Prerequisite
+
+Phase 8 documentation and rehearsal gate passes.
+
+### Work
+
+- Run the critical backend, frontend, migration, fixture and E2E checks.
+- Run exact deterministic demo once.
+- Verify metrics and displayed values against signed-off evidence.
+- Verify repository/deployment/presentation permissions from a non-owner view.
+- Run final secret, real-data, unsafe-language and prohibited-action scan.
+- Confirm README, `.env.example`, migrations, seeds, sample data, OpenAPI, diagrams, notes, evidence and slides are included.
+- Submit and confirm receipt/link.
+- Preserve the tested local build and backup media unchanged.
+
+### May fix
+
+Only startup, incorrect mandatory output, safety/security, missing deliverable, access or submission blockers. Do not refactor, retune, change schema casually or add features.
+
+### Exit gate
+
+- Submission receipt/link confirmed.
+- Repository and presentation permissions work.
+- Final checklist is complete or any omission is explicitly disclosed.
 
 ## 7. Milestone Control Board
 
-| Deadline | Non-negotiable milestone | If missed |
+| Gate | Non-negotiable milestone | If missed |
 |---|---|---|
-| Hour 2:15 | Environment/app/tests are reproducible; current runtime gaps are inventoried; migrations/contracts/scenarios are frozen for solo work | Stop feature work; resolve environment, import and contract blockers first |
-| Hour 5 | Synthetic data/quality APIs, demo auth, provider boundaries and scoped empty workflow queues run on one database path | Keep all three providers; cut nonessential reads and UI work |
-| Hour 7:30 | Engine → persisted result → immutable explainable alert → routed initial case works | Keep one deterministic forecast and anomaly rule; cut combined/extra alert variants |
-| Hour 10 | Confidence fallback, anomaly suppression, case lifecycle, RBAC | Drop filters, localization, and all optional views |
-| Hour 12 | Integrated MVP passes full story | Freeze scope; only repair mandatory flow |
-| Hour 13:30 | Metrics and safety/reliability evidence captured | Stop feature work; measure the stable build |
-| Hour 14:30 | All required repository documents complete | Shorten prose; keep setup, evidence, safety and limitations factual |
-| Hour 15:30 | Rehearsed presentation and backup ready | Use screenshots/recording; do not risk untested fixes |
-| Hour 16 | Submission confirmed | Submit the last stable build, not a late experimental version |
+| Schema gate | Complete migrations, views, constraints, seeds and RLS on a fresh database | Do not write feature services; repair schema |
+| Foundation gate | Runnable app, DB, errors, logging, OpenAPI and seam contracts | Do not build domain modules; repair foundation |
+| Ledger gate | Deterministic synthetic data and separated persisted dashboard | Cut filters/UI; preserve three providers and append-only ledger |
+| Intelligence gate | Quality + forecast + evidence-backed anomaly + suppression | Keep one transparent forecast and anomaly rule |
+| Coordination gate | Auth, localized alert, routed lifecycle, notification, audit and RBAC/RLS | Cut review/routing breadth; preserve full mandatory lifecycle/security |
+| MVP gate | Complete A–D path through thin UI | Freeze scope; repair mandatory flow only |
+| Evidence gate | Three or more metrics and safety/security proof | Stop features; measure stable build |
+| Documentation gate | Seven required deliverables and rehearsed demo | Shorten prose; preserve reproducibility/evidence |
+| Submission gate | Tested frozen build submitted and accessible | Submit last stable build, not experimental changes |
 
-## 8. Requirement-to-Demo Traceability
+## 8. Requirement-to-Phase Traceability
 
-| Requirement / System Design feature | Implementation evidence | Demo moment |
+| Requirement | Primary phase | Verification |
 |---|---|---|
-| Shared cash + separate provider balances [M] | Ledger/dashboard endpoints and no blended-total invariant | Open dashboard |
-| Upcoming shortage + confidence [M] | Forecast engine persisted/exposed through projection endpoints | Trigger Scenario A |
-| Unusual activity + evidence [M] | Anomaly engine, evidence records and alert source links | Open alert detail |
-| Plausible-benign explanation [E] | Flag field preserved through result, candidate and alert render | Read alert wording |
-| Careful language [M] | Template/render and prohibited-language tests + responsible-design note | Read alert wording |
-| Recipient, owner, next step, lifecycle [M/E] | Alert/case/routing endpoints | Scenario D workflow |
-| Missing/late/conflicting fallback [M] | Quality engine plus fault/quality/read endpoints | Toggle fault injection (Scenario C) |
-| Anomaly suppression under bad data [E] | Suppression result enforced by candidate adapter | Scenario C — no false risk alert |
-| Data health per provider [E] | Data-quality endpoints and dashboard read model | Dashboard health indicators |
-| EN + Bangla/Banglish explanations [R/E] | Template/render and alert explanation endpoints | Toggle language on alert |
-| Provider boundaries [M/E] | JWT/RBAC/RLS and scope contract | Login as Provider A ops; verify B case blocked |
-| Meaningful analytics [M] | Quality, liquidity and anomaly engines exposed through APIs | Architecture + metrics slides |
-| Auditability [E] | Append-only audit and timeline endpoints | Review case history |
-| ≥3 validation metrics [M/E] | Frozen evaluation calculations served by `/metrics` | Metrics slide |
-| Safety/privacy/human review [M] | Synthetic IDs, advisory outputs, no automated action | Responsible-design slide |
+| Professional authoritative schema | 1 | Clean migrations, constraints, views, RLS and schema tests |
+| Shared cash + separate provider balances | 3 | Dashboard/ledger tests; no blended total |
+| Shortage timing + confidence | 4 | Scenario A and forecast tests |
+| Unusual activity + evidence/benign context | 4 | Scenario B and anomaly evidence tests |
+| Missing/stale/conflicting fallback | 4 | Scenario C and suppression tests |
+| Recipient, owner, next step and lifecycle | 5 | Scenario D API workflow |
+| EN + Bangla/Banglish explanation | 5 | Render snapshot coverage |
+| Provider-boundary RBAC/RLS | 1 and 5 | Database and API provider A/B denial tests |
+| Auditability | 5 | Timeline/audit completeness |
+| Integrated prototype | 6 | A–D E2E regression |
+| Three or more measured metrics | 7 | Metrics/validation endpoints and report |
+| Required documents/presentation | 8 | Deliverable audit and rehearsal |
+| Safe final submission | 9 | Final checklist and receipt |
 
-## 9. Final Submission Checklist
+## 9. Definition of Success
 
-### Prototype
+The project succeeds when it demonstrates one connected, reproducible and safe chain:
 
-- [ ] At least **two** provider contexts visibly and logically separate (target: three — bKash, Nagad, Rocket).
-- [ ] Shared physical cash and each provider balance displayed together — **never blended**.
-- [ ] A provider or shared-cash shortage projected with approximate timing and confidence indicator.
-- [ ] At least one unusual pattern detected with evidence and `plausible_benign_explanation`.
-- [ ] Alert wording says `unusual` or `requires review`, never confirmed fraud.
-- [ ] Per-provider data-health indicator visible.
-- [ ] Bad input lowers confidence, suppresses high-confidence anomaly flags, and shows data-issue advisory.
-- [ ] One alert shows recipient, owner, next step, and full lifecycle (ack → escalate → resolve).
-- [ ] EN + at least one Bangla/Banglish explanation from the same structured alert object.
-- [ ] Alert and case changes traceable in audit log.
-- [ ] Provider-boundary RBAC enforced (cross-provider case access blocked).
+> Authoritative schema → separate provider data and shared cash → visible data quality → forward liquidity insight → evidence-backed unusual activity with benign context → immutable localized alert → provider-aware human case → traceable resolution → measured evidence.
 
-### Quality and evidence
+Completeness, correctness, explainability and provider boundaries take priority over feature count or visual polish.
 
-- [ ] At least three numeric metrics include method, sample size, and limitation.
-- [ ] Normal, anomalous, missing, stale, and conflicting scenarios were tested.
-- [ ] Core interactions are responsive at the documented data volume.
-- [ ] High-impact alerts expose reason, evidence, and uncertainty.
-- [ ] False-positive risk and human-review boundaries are documented.
+## 10. Endpoint Delivery Map
 
-### Guardrails
+### Phase 2 — foundation
 
-- [ ] Only synthetic/mock/anonymized data is used.
-- [ ] No production API, real identity, account, balance, or credential is used.
-- [ ] No PIN, OTP, password, private key, or secret is collected or committed.
-- [ ] No wallet conversion, real settlement, or unauthorized financial action exists.
-- [ ] No automatic blocking, accusation, or final fraud decision exists.
-- [ ] No claim of regulatory approval or production readiness exists.
-- [ ] Provider data and authority boundaries remain explicit.
+- `GET /health`
 
-### Deliverables
+### Phase 3 — reference, simulation, ingestion and ledger
 
-- [ ] Working prototype.
-- [ ] Source repository with README, setup steps (Supabase + migrations), `.env.example`, and sample data/seed script.
-- [ ] Architecture diagram with all modular monolith components, analytics, monitoring, boundaries, and coordination flow.
-- [ ] Data and simulation note (generation, fault injection, scenarios A–D).
-- [ ] Validation evidence (`/metrics` or panel: precision/recall, forecast error or lead time, latency, etc.).
-- [ ] Responsible-design note.
-- [ ] Final presentation with a rehearsed live demo and backup.
+- `GET /api/v1/providers`
+- `GET /api/v1/areas`
+- `GET /api/v1/outlets`
+- `GET /api/v1/outlets/{outletId}`
+- `GET /api/v1/outlets/{outletId}/dashboard`
+- `GET /api/v1/outlets/{outletId}/transactions`
+- `GET /api/v1/outlets/{outletId}/balances/history`
+- `GET /api/v1/simulations/scenarios`
+- `POST /api/v1/simulations/runs`
+- `GET /api/v1/simulations/runs/{runId}`
+- `POST /api/v1/simulations/runs/{runId}/reset`
+- `POST /api/v1/simulations/runs/{runId}/faults`
+- `PATCH /api/v1/simulations/runs/{runId}/faults/{faultId}`
+- `POST /api/v1/ingestion/batches`
+- `GET /api/v1/outlets/{outletId}/data-quality`
+- `GET /api/v1/outlets/{outletId}/data-quality/history`
 
-## 10. Definition of Success
+### Phase 4 — intelligence
 
-At Hour 16, the strongest achievable submission is not the one with the most screens. It is the one that reliably demonstrates this complete chain from System Design §0:
+- `GET /api/v1/outlets/{outletId}/liquidity-projections`
+- `POST /api/v1/internal/analytics/liquidity/run`
+- `GET /api/v1/outlets/{outletId}/anomaly-flags`
+- `GET /api/v1/anomaly-flags/{flagId}`
+- `POST /api/v1/internal/analytics/anomalies/run`
 
-> Separate provider data and shared cash → Data Quality tagging → forward liquidity insight → explainable unusual-activity evidence (with plausible-benign context) → visible uncertainty → provider-aware routing and human ownership → traceable resolution → validation metrics.
+### Phase 5 — auth, alerts and coordination
 
-Every feature, module, document, metric, and presentation choice should strengthen that connected **liquidity → anomaly → coordination** story.
+- `POST /api/v1/auth/demo-login`
+- `GET /api/v1/me`
+- `PATCH /api/v1/me/preferences`
+- `GET /api/v1/alerts`
+- `GET /api/v1/alerts/{alertId}`
+- `GET /api/v1/alerts/{alertId}/explanations`
+- `POST /api/v1/alerts/{alertId}/cases`
+- `GET /api/v1/cases`
+- `GET /api/v1/cases/{caseId}`
+- `GET /api/v1/cases/{caseId}/timeline`
+- `POST /api/v1/cases/{caseId}/assignments`
+- `POST /api/v1/cases/{caseId}/acknowledge`
+- `POST /api/v1/cases/{caseId}/escalate`
+- `POST /api/v1/cases/{caseId}/resolve`
+- `POST /api/v1/cases/{caseId}/notes`
+- `POST /api/v1/cases/{caseId}/review`
+- `GET /api/v1/notifications`
+- `POST /api/v1/notifications/{notificationId}/read`
+- `GET /api/v1/cases/{caseId}/audit-events`
+
+### Phase 7 — validation evidence
+
+- `GET /metrics`
+- `GET /api/v1/validation/results`
+
+### Stretch after the complete Phase 6 MVP gate
+
+- `POST /api/v1/outlets/{outletId}/what-if-runs`
+- `GET /api/v1/what-if-runs/{whatIfRunId}`
+- `GET /api/v1/outlets/{outletId}/relationships`
+- `GET /api/v1/outlets/{outletId}/nearby-support-options`
+- `POST /api/v1/cases/{caseId}/support-requests`
