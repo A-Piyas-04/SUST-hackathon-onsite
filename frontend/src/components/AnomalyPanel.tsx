@@ -1,6 +1,6 @@
 "use client";
 
-import { AnomalyEvidenceItem, AnomalyFlag, fetchAnomalyFlags } from "@/lib/api";
+import { AnomalyEvidenceItem, AnomalyFlag, fetchAnomalyFlags, Principal } from "@/lib/api";
 import { useAsync } from "@/lib/hooks";
 import { AsyncView, Badge, Card, ConfidenceBadge, DispositionBadge, EmptyState, formatDateTime } from "@/lib/ui";
 
@@ -69,7 +69,15 @@ function FlagCard({ f }: { f: AnomalyFlag }) {
   );
 }
 
-export default function AnomalyPanel({ outletId, refreshKey }: { outletId: string; refreshKey: number }) {
+export default function AnomalyPanel({
+  outletId,
+  refreshKey,
+  user: _user,
+}: {
+  outletId: string;
+  refreshKey: number;
+  user: Principal;
+}) {
   const { state, reload } = useAsync(() => fetchAnomalyFlags(outletId), [outletId, refreshKey]);
 
   return (

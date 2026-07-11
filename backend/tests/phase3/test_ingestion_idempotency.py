@@ -7,10 +7,10 @@ from uuid import uuid4
 from app.core.auth import OUTLET1
 
 
-def test_idempotent_replay_no_duplicate_records(client, auth_headers):
+def test_idempotent_replay_no_duplicate_records(client, auth_headers, admin_headers):
     run = client.post(
         "/api/v1/simulations/runs",
-        headers=auth_headers,
+        headers=admin_headers,
         json={"scenario_code": "normal", "seed": 5555, "outlet_id": str(OUTLET1)},
     )
     run_id = run.json()["simulation_run_id"]
@@ -40,13 +40,13 @@ def test_idempotent_replay_no_duplicate_records(client, auth_headers):
         ],
     }
 
-    first = client.post("/api/v1/ingestion/batches", headers=auth_headers, json=payload)
-    second = client.post("/api/v1/ingestion/batches", headers=auth_headers, json=payload)
+    first = client.post("/api/v1/ingestion/batches", headers=admin_headers, json=payload)
+    second = client.post("/api/v1/ingestion/batches", headers=admin_headers, json=payload)
     assert first.status_code == 201
     assert second.status_code == 201
     assert first.json()["ingestion_batch_id"] == second.json()["ingestion_batch_id"]
 
-    status = client.get(f"/api/v1/simulations/runs/{run_id}", headers=auth_headers)
+    status = client.get(f"/api/v1/simulations/runs/{run_id}", headers=admin_headers)
     txns = status.json()["artifacts"]["transactions"]
     # Only one new txn from this batch (not duplicated on replay)
     assert client.get(

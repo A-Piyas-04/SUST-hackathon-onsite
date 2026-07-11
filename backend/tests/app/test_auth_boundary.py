@@ -1,6 +1,8 @@
+"""App-level auth boundary tests."""
+
 import pytest
 
-from tests.app.conftest import auth_headers, client
+from tests.app.conftest import admin_headers, auth_headers, client
 
 # Phase 5 auth/alert/case/notification GETs are now implemented but must still
 # enforce auth (401 without a token) and return 200 for an authenticated caller.
@@ -38,8 +40,15 @@ def test_implemented_get_routes_work_with_auth(client, auth_headers, method, pat
 
 
 @pytest.mark.parametrize("method,path", CONFIDENTIAL_ROUTES_IMPLEMENTED_WITH_BODY)
-def test_implemented_analytics_routes_are_not_stubbed(client, auth_headers, method, path):
-    # Authenticated but missing body: the route is wired to real logic, so it
-    # performs request validation (422) rather than returning the 501 stub.
-    response = client.request(method, path, headers=auth_headers, json={})
-    assert response.status_code == 422
+def test_internal_analytics_routes_require_admin(client, auth_headers, admin_headers, method, path):
+    denied = client.request(
+        method,
+        path,
+        headers=auth_headers,
+        json={"simulation_run_id": "00000000-0000-0000-0000-000000000001", "outlet_id": "0b000000-0000-0000-0000-000000000001"},
+    )
+    assert denied.status_code == 403
+    assert denied.json()["error"]["code"] == "forbidden"
+
+    validated = client.request(method, path, headers=admin_headers, json={})
+    assert validated.status_code == 422

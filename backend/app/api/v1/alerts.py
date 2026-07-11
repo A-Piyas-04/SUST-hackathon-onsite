@@ -16,6 +16,7 @@ from app.contracts.v1.coordination import (
     PublishResponse,
 )
 from app.core.auth import UserContext, require_authenticated
+from app.core.authz import require_admin, require_outlet_access
 from app.db.session import get_db_session
 from app.services.coordination import alerts as alerts_service
 
@@ -60,10 +61,9 @@ async def publish_alerts(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     user: Annotated[UserContext, Depends(require_authenticated)],
 ):
-    """Run analytics for a simulation run and publish alertable candidates.
-
-    Thin internal control so Scenario D is executable through the API only.
-    """
+    require_admin(user)
+    if request.outlet_id is not None:
+        await require_outlet_access(session, user, outlet_id=request.outlet_id)
     return await alerts_service.publish_from_run(
         session, user, simulation_run_id=request.simulation_run_id, outlet_id=request.outlet_id
     )

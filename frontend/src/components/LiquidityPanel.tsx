@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchLiquidityProjections, LiquidityProjection } from "@/lib/api";
+import { fetchLiquidityProjections, LiquidityProjection, Principal } from "@/lib/api";
 import { useAsync } from "@/lib/hooks";
 import {
   AsyncView,
@@ -95,7 +95,15 @@ function ProjectionCard({ p }: { p: LiquidityProjection }) {
   );
 }
 
-export default function LiquidityPanel({ outletId, refreshKey }: { outletId: string; refreshKey: number }) {
+export default function LiquidityPanel({
+  outletId,
+  refreshKey,
+  user: _user,
+}: {
+  outletId: string;
+  refreshKey: number;
+  user: Principal;
+}) {
   const { state, reload } = useAsync(() => fetchLiquidityProjections(outletId), [outletId, refreshKey]);
 
   return (

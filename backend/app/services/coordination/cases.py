@@ -42,6 +42,7 @@ from app.core.authz import (
     SafeNotFoundError,
     can_access_scope,
 )
+from app.core.permissions import CaseAction, require_role_action
 from app.db.transaction import transaction
 from app.services.coordination import alerts as alerts_service
 from app.services.coordination import audit, notifications, routing
@@ -176,6 +177,7 @@ async def open_case(
     session: AsyncSession, user: UserContext, alert_id: UUID, request: OpenCaseRequest
 ) -> tuple[CaseOutput, bool]:
     """Route and open a case from an alert. Idempotent: an alert has one case."""
+    require_role_action(user, CaseAction.OPEN)
     async with transaction(session):
         alert = await alerts_service.require_alert(session, user, alert_id)
 
@@ -375,6 +377,7 @@ async def _apply_status_change(
 async def acknowledge(
     session: AsyncSession, user: UserContext, case_id: UUID, request: AcknowledgeRequest
 ) -> CaseOutput:
+    require_role_action(user, CaseAction.ACKNOWLEDGE)
     scope_key = f"case:{case_id}"
     async with transaction(session):
         cached = await _idem_lookup(session, request.idempotency_key, scope_key, "acknowledge")
@@ -401,6 +404,7 @@ async def acknowledge(
 async def escalate(
     session: AsyncSession, user: UserContext, case_id: UUID, request: EscalateRequest
 ) -> CaseOutput:
+    require_role_action(user, CaseAction.ESCALATE)
     scope_key = f"case:{case_id}"
     async with transaction(session):
         cached = await _idem_lookup(session, request.idempotency_key, scope_key, "escalate")
@@ -441,6 +445,7 @@ async def escalate(
 async def resolve(
     session: AsyncSession, user: UserContext, case_id: UUID, request: ResolveRequest
 ) -> CaseOutput:
+    require_role_action(user, CaseAction.RESOLVE)
     scope_key = f"case:{case_id}"
     async with transaction(session):
         cached = await _idem_lookup(session, request.idempotency_key, scope_key, "resolve")
@@ -470,6 +475,7 @@ async def resolve(
 async def assign(
     session: AsyncSession, user: UserContext, case_id: UUID, request: AssignmentRequest
 ) -> CaseOutput:
+    require_role_action(user, CaseAction.ASSIGN)
     scope_key = f"case:{case_id}"
     async with transaction(session):
         cached = await _idem_lookup(session, request.idempotency_key, scope_key, "assign")
@@ -551,6 +557,7 @@ async def assign(
 async def add_note(
     session: AsyncSession, user: UserContext, case_id: UUID, request: NoteRequest
 ) -> NoteOutput:
+    require_role_action(user, CaseAction.NOTE)
     scope_key = f"case:{case_id}"
     async with transaction(session):
         cached = await _idem_lookup(session, request.idempotency_key, scope_key, "note")
@@ -608,6 +615,7 @@ async def add_note(
 async def add_review(
     session: AsyncSession, user: UserContext, case_id: UUID, request: ReviewRequest
 ) -> ReviewOutput:
+    require_role_action(user, CaseAction.REVIEW)
     scope_key = f"case:{case_id}"
     async with transaction(session):
         cached = await _idem_lookup(session, request.idempotency_key, scope_key, "review")

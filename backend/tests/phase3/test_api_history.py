@@ -14,10 +14,10 @@ def test_history_requires_reserve_type(client, auth_headers):
     assert response.json()["error"]["code"] == "validation_error"
 
 
-def test_history_returns_typed_records(client, auth_headers):
+def test_history_returns_typed_records(client, auth_headers, admin_headers):
     client.post(
         "/api/v1/simulations/runs",
-        headers=auth_headers,
+        headers=admin_headers,
         json={"scenario_code": "normal", "seed": 1001, "outlet_id": str(OUTLET1)},
     )
     cash = client.get(

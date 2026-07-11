@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.contracts.v1.ingestion import IngestBatchRequest, IngestBatchResponse
 from app.core.auth import UserContext, require_authenticated
+from app.core.authz import require_admin
 from app.db.session import get_db_session
 from app.db.transaction import transaction
 from app.services.ingestion.pipeline import ingest_batch
@@ -22,5 +23,6 @@ async def ingest_batch_route(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _user: Annotated[UserContext, Depends(require_authenticated)],
 ):
+    require_admin(_user)
     async with transaction(session):
         return await ingest_batch(session, request)

@@ -1,6 +1,6 @@
 # Authorization Fix Checklist
 
-**Status:** Open — tracking gaps between intended policy and current implementation  
+**Status:** Implemented — backend enforcement + frontend role gating (2026-07-11)  
 **Authority:** `docs/schema.md` §15 (RLS & authorization matrix), `docs/frontend/frontend-page-plan.md` §F (role-based navigation)  
 **Principle:** Backend policy is authoritative. Frontend gating improves UX; API enforcement is required for security.
 

@@ -23,8 +23,16 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.contracts.v1.enums import AppRole
 from app.core.auth import UserContext
 from app.core.errors import AppError
+
+
+class ForbiddenError(AppError):
+    """Explicit 403 for authenticated callers lacking action permission."""
+
+    def __init__(self, message: str = "You do not have permission to perform this action.") -> None:
+        super().__init__("forbidden", message, status_code=403)
 
 
 class SafeNotFoundError(AppError):
@@ -72,6 +80,39 @@ async def _outlet_has_provider_account(
     return result.first() is not None
 
 
+def _is_admin(user: UserContext) -> bool:
+    return AppRole.ADMIN in user.roles
+
+
+def _is_management(user: UserContext) -> bool:
+    return AppRole.MANAGEMENT in user.roles
+
+
+def require_admin(user: UserContext) -> None:
+    if not _is_admin(user):
+        raise ForbiddenError("Demo setup actions require an admin identity.")
+
+
+async def require_outlet_access(
+    session: AsyncSession, user: UserContext, *, outlet_id: UUID
+) -> None:
+    if not await has_outlet_scope(session, user, outlet_id=outlet_id):
+        raise SafeNotFoundError("Outlet")
+
+
+async def require_provider_access(
+    session: AsyncSession,
+    user: UserContext,
+    *,
+    provider_id: UUID,
+    outlet_id: UUID,
+) -> None:
+    if not await can_access_scope(
+        session, user, outlet_id=outlet_id, provider_id=provider_id
+    ):
+        raise SafeNotFoundError("Resource")
+
+
 async def has_provider_scope(
     session: AsyncSession,
     user: UserContext,
@@ -80,6 +121,8 @@ async def has_provider_scope(
     outlet_id: UUID,
 ) -> bool:
     """Mirror of ``app.has_provider_scope(provider, outlet)``."""
+    if _is_admin(user):
+        return True
     outlet_area = await _outlet_area(session, outlet_id)
     for s in user.scopes:
         if (
@@ -97,6 +140,8 @@ async def has_outlet_scope(
     session: AsyncSession, user: UserContext, *, outlet_id: UUID
 ) -> bool:
     """Mirror of ``app.has_outlet_scope(outlet)`` (shared-cash / outlet access)."""
+    if _is_admin(user) or _is_management(user):
+        return True
     outlet_area = await _outlet_area(session, outlet_id)
     for s in user.scopes:
         if s.outlet_id is not None and s.outlet_id == outlet_id:
@@ -120,6 +165,88 @@ async def can_access_scope(
     """Provider-confidential when provider_id is set; shared-cash otherwise."""
     if provider_id is None:
         return await has_outlet_scope(session, user, outlet_id=outlet_id)
+    if _is_management(user):
+        return False
     return await has_provider_scope(
         session, user, provider_id=provider_id, outlet_id=outlet_id
     )
+
+
+async def authorized_outlet_ids(
+    session: AsyncSession, user: UserContext
+) -> list[UUID] | None:
+    """Return authorized outlet ids, or ``None`` when the caller may list all outlets."""
+    if _is_admin(user) or _is_management(user):
+        return None
+
+    authorized: set[UUID] = set()
+    for scope in user.scopes:
+        if scope.outlet_id is not None:
+            authorized.add(scope.outlet_id)
+        if scope.area_id is not None:
+            result = await session.execute(
+                text("SELECT outlet_id FROM outlets WHERE area_id = :area_id"),
+                {"area_id": scope.area_id},
+            )
+            authorized.update(row[0] for row in result.all())
+        if scope.provider_id is not None:
+            result = await session.execute(
+                text(
+                    """
+                    SELECT outlet_id FROM outlet_provider_accounts
+                    WHERE provider_id = :provider_id AND is_active
+                    """
+                ),
+                {"provider_id": scope.provider_id},
+            )
+            authorized.update(row[0] for row in result.all())
+
+    return sorted(authorized)
+
+
+async def authorized_provider_ids(
+    session: AsyncSession, user: UserContext, *, outlet_id: UUID | None = None
+) -> list[UUID] | None:
+    """Return authorized provider ids, or ``None`` when all providers are visible."""
+    if _is_admin(user):
+        return None
+    if _is_management(user):
+        return None
+
+    authorized: set[UUID] = set()
+    for scope in user.scopes:
+        if scope.outlet_id is not None:
+            if outlet_id is not None and scope.outlet_id != outlet_id:
+                continue
+            result = await session.execute(
+                text(
+                    """
+                    SELECT provider_id FROM outlet_provider_accounts
+                    WHERE outlet_id = :outlet_id AND is_active
+                    """
+                ),
+                {"outlet_id": scope.outlet_id if outlet_id is None else outlet_id},
+            )
+            authorized.update(row[0] for row in result.all())
+        elif scope.provider_id is not None:
+            if outlet_id is not None and not await _outlet_has_provider_account(
+                session, outlet_id, scope.provider_id
+            ):
+                continue
+            authorized.add(scope.provider_id)
+
+    return sorted(authorized)
+
+
+async def provider_can_read_transactions(
+    session: AsyncSession, user: UserContext, *, outlet_id: UUID
+) -> bool:
+    """Management receives aggregate dashboard access but not raw provider transactions."""
+    if _is_management(user):
+        return False
+    if _is_admin(user):
+        return True
+    if AppRole.AGENT in user.roles:
+        return await has_outlet_scope(session, user, outlet_id=outlet_id)
+    provider_ids = await authorized_provider_ids(session, user, outlet_id=outlet_id)
+    return bool(provider_ids)

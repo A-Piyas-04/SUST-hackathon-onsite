@@ -1,0 +1,241 @@
+You are a senior full-stack engineer. Implement **Phase 7 (Validation, Observability and Safety)** for this repository as defined in `docs/16-hour-hackathon-phase-distribution.md`, while strictly following `docs/Problem_Statement.md`.
+
+## Mission
+
+Produce credible measured evidence and eliminate high-risk failures on the frozen Phase 6 MVP. A reviewer must be able to query at least three honest numeric metrics (with method, sample size, and limitations), inspect observability endpoints, and confirm that safety/security scans pass — all tied to the exact release-candidate build.
+
+## Hard Guardrails (Never Violate)
+
+1. Decision-support only. No real financial operations or punitive automation.
+2. Never implement transfer/refill/recovery/reversal/freeze/block/accusation/fraud verdict actions.
+3. Shared physical cash and provider e-money (bKash, Nagad, Rocket) remain separate — never blended in metrics or reports.
+4. Provider boundaries are strict: Provider A users cannot read Provider B confidential records.
+5. Validation evidence must be honest: state sample sizes, seeds, configuration, engine versions, and limitations explicitly.
+6. Held-out evaluation data must be frozen before measurement — no tuning on the reported split.
+7. Use safe wording everywhere: "unusual", "requires review", uncertainty-aware language — never definitive fraud claims.
+8. Synthetic/demo-safe identities and data only; no real credentials, phone numbers, or account data.
+9. Metrics and scans must reference the signed-off release-candidate identifier (commit hash, engine version, contract version).
+
+## Scope Boundary (Phase 7 Only)
+
+Implement validation evaluation, observability endpoints, performance/reliability measurement, and safety/security verification on the frozen MVP.
+
+Do **not** implement:
+- Phase 8 documentation deliverables (README expansion, architecture diagram rewrite, presentation slides, responsible-design note prose, demo video)
+- Phase 9 final submission checklist and receipt confirmation
+- Stretch endpoints after the MVP gate (`what-if-runs`, `relationships`, `nearby-support-options`, `support-requests`)
+- New analytics engines, schema migrations (unless a genuine blocker requires a controlled forward migration with decision record), or feature/UI polish beyond a thin validation evidence panel
+
+## Prerequisite Validation (do first)
+
+Before coding, confirm these gates are satisfied:
+
+1. **Phase 6 MVP freeze** — Scenarios A–D pass end to end through integrated backend and thin UI.
+2. **Phase 4 analytics** — quality, liquidity, and anomaly engines produce persisted, reproducible results.
+3. **Phase 5 security** — auth, provider RBAC/RLS, audit, idempotency, and concurrency tests pass.
+4. **Schema readiness** — `validation_runs`, `ground_truth_labels`, `metric_results`, and `v_validation_summary` exist and compile (migration 005).
+5. **Contracts** — `ValidationMetricPayload` and positive fixture `validation_metric.json` validate.
+
+If any prerequisite is missing, stop and report blockers with exact module/test names. Do not reimplement Phase 3–6 domain logic unless required to fix a measurement defect.
+
+Record the frozen release-candidate identifier before generating evidence:
+- git commit hash (or tagged release)
+- `contract_version` from settings
+- analytics `engine_version` string used in validation runs
+
+## Implementation Plan (execute in this order)
+
+### Step 1) Held-out evaluation harness
+
+Build a validation service that evaluates the frozen MVP against held-out synthetic data.
+
+1. **Freeze held-out split**
+   - Use scenarios/runs with `validation_split = held_out` from `reference_seed.sql` (do not use `demo` or `tuning` splits for reported metrics).
+   - Persist a `validation_run` row with `dataset_split = held_out`, `engine_version`, `configuration` (seed, thresholds, commit hash), and `status`.
+
+2. **Ground truth labels**
+   - Populate `ground_truth_labels` from known scenario expectations (shortage windows, anomaly clusters, normal negatives, data-quality incidents).
+   - Link labels to `simulation_run_id`, `outlet_id`, and optional `provider_id`.
+   - Label types: `shortage`, `anomaly`, `normal`, `data_quality_incident`.
+
+3. **Analytics metrics (at least two from this category)**
+   - `anomaly_precision` — true positives / (true positives + false positives) against injected held-out anomaly labels.
+   - `anomaly_recall` — true positives / (true positives + false negatives).
+   - `anomaly_false_positive_rate` — false positives / total negatives (or equivalent honest definition documented in `method`).
+   - `forecast_mae_minutes` or `shortage_lead_time_minutes` — forecast error or shortage-detection lead time against held-out shortage labels.
+   - Each metric row must include positive `sample_size`, explicit `method`, and honest `limitations` (e.g., synthetic data only, small sample, single rule).
+
+4. **Evaluation runner**
+   - Provide a documented command (e.g., `make validate` or `python -m app.cli validate`) that:
+     - resets/runs held-out scenarios deterministically;
+     - executes quality + liquidity + anomaly analytics;
+     - compares outputs to ground truth;
+     - persists `metric_results` and marks the validation run `completed` (or `failed` with reason).
+   - Re-running with the same seed/config must produce the same metric values.
+
+### Step 2) Performance and reliability metrics (at least one from this category)
+
+Measure operational correctness on the frozen build:
+
+1. **API latency**
+   - `api_avg_ms` and/or `api_p95_ms` at documented request volume (state endpoint set and concurrency in `details`).
+   - Use a repeatable load script or pytest benchmark against representative endpoints (dashboard, projections, alerts list).
+
+2. **Reliability/completeness counters** (persist or expose via `/metrics`)
+   - `data_quality_incident_rate` — share of feeds/windows classified stale/missing/conflicting vs total evaluated.
+   - `alert_explanation_coverage` — fraction of published high-impact alerts with complete EN explanation sections (situation, evidence, uncertainty, next step).
+   - `case_transition_completeness` — legal transitions exercised in Scenario D produce expected audit + notification side effects.
+   - `provider_denial_correctness` — cross-provider access attempts denied consistently (count or pass/fail in `details`).
+   - `idempotency_correctness` and `concurrency_correctness` — duplicate/stale mutations fail safely without duplicate history.
+
+Ensure the **total persisted/reported numeric metrics ≥ 3** across analytics + performance/reliability categories, each with method, sample size, and limitations.
+
+### Step 3) Observability endpoints
+
+Replace stubs with persistence-backed implementations.
+
+#### `GET /health` (verify existing)
+- Liveness and database readiness; no confidential details.
+- Confirm it still passes after integration.
+
+#### `GET /metrics` (implement)
+- Protected endpoint (authenticated; restrict to `admin` and/or `management` roles per `docs/schema.md` §16.6).
+- Return a JSON summary suitable for demo (not raw Prometheus-only unless you also expose a parsed summary).
+- Combine:
+  - latest completed validation metrics (from `v_validation_summary` or validation service);
+  - live process counters (request count, error count, data-quality event counts if tracked);
+  - release-candidate identifier and engine version.
+- Never expose confidential provider/outlet data in aggregate metrics.
+
+#### `GET /api/v1/validation/results` (implement)
+- Move out of `stubs.py` into a dedicated validation router.
+- Authorization: `admin` or `management` read grant only; agent/ops roles → 403 (per `docs/authorize-fix-checklist.md` B9.1).
+- Query parameters: optional `validation_run_id`, `dataset_split`, `status`.
+- Response shape: `ValidationMetricPayload` (list or single run with nested `metrics[]`).
+- Read from persisted `validation_runs` + `metric_results` (via `v_validation_summary` or repository).
+
+#### Structured logging (verify/enhance)
+- Confirm request ID middleware propagates to logs and error responses.
+- Ensure audit-correlated actions log `request_id` where applicable.
+- Data-quality evaluation counts should be measurable from persisted `quality_assessments` or validation `details` JSON.
+
+### Step 4) Safety and security verification
+
+Produce machine-checkable evidence (scripts + test suite + summary artifact).
+
+1. **Secrets and real-data scan**
+   - Scan codebase and committed seeds for API keys, passwords, PINs, OTP patterns, real phone numbers, and non-synthetic account identifiers.
+   - Fail CI if matches found outside `.env.example` placeholders.
+
+2. **Unsafe action endpoint scan**
+   - Assert no routes named or behaving as transfer, convert, settle, refill, recover, reverse, block, freeze, accuse, or fraud-decision.
+   - Reuse or extend existing route inventory tests.
+
+3. **Prohibited language scan**
+   - Scan user-visible strings (alert templates, explanation renders, frontend labels) for definitive fraud language ("fraud", "guilty", "criminal", "scammer", etc.).
+   - Allowlist only in negative-test fixtures if needed.
+
+4. **Authorization and immutability regression**
+   - Re-run provider A/B denial tests (`tests/phase5/test_authorization.py`, `tests/phase6/test_provider_isolation_*`).
+   - Verify append-only ledger/evidence/audit protections still hold.
+   - Verify alert analytical evidence remains immutable after case workflow mutations.
+
+5. **Responsible-design checks**
+   - Bad data (Scenario C faults) must not produce misleading high-confidence projections or alertable anomaly candidates.
+   - Suppressed evaluations remain measurable but non-alertable.
+
+Write results to `docs/evidence/` (or `backend/reports/`):
+- `validation-summary.json` — latest completed run with all metrics.
+- `performance-reliability.json` — latency and completeness measurements.
+- `safety-security-scan.json` — scan pass/fail with counts and any waivers.
+
+### Step 5) Thin validation evidence UI (optional but recommended)
+
+Add a minimal **Validation Evidence** panel to the frontend (management/admin only):
+
+1. Fetch `GET /api/v1/validation/results` for the latest completed held-out run.
+2. Display at least three metric cards: code, value, unit, sample size, method, limitations.
+3. Show run metadata: name, split, engine version, status, timestamps.
+4. Implement loading, empty (no run yet), error, and forbidden states.
+5. Do not parse raw ops metrics as the only product DTO — use validation results for cards.
+
+Gate visibility with `lib/authz.ts` — hide from agent/field/provider/risk roles.
+
+### Step 6) Sign-off and artifact freeze
+
+1. Record signed-off release-candidate identifier in validation run `configuration` JSON.
+2. Capture raw/summary artifacts committed or generated by CI (not hand-edited numbers).
+3. Verify displayed UI metrics match persisted validation results exactly.
+4. Document the `validate` command and metric definitions in code comments or a short `docs/evidence/README.md` stub (full prose docs are Phase 8).
+
+## API Surface (Phase 7 deliverables)
+
+### Observability and validation
+- `GET /health` — verify existing
+- `GET /metrics` — implement (protected JSON summary)
+- `GET /api/v1/validation/results` — implement (replace stub in `stubs.py`)
+
+Remove `/validation/results` from `stubs.py` once implemented. Keep any Phase 8+ stubs clearly marked.
+
+## Required Test Matrix
+
+### Validation harness
+1. held-out split is used for reported metrics (not demo/tuning)
+2. ground truth labels link to correct simulation runs and outlets
+3. evaluation runner is deterministic (same seed → same metric values)
+4. at least three metrics persisted with positive sample_size, method, and limitations
+5. `ValidationMetricPayload` contract validates API responses against fixtures
+
+### Observability
+6. `GET /metrics` returns release identifier and latest validation summary
+7. `GET /api/v1/validation/results` returns persisted runs; filters work
+8. agent role receives 403 on validation/metrics endpoints
+9. management/admin roles can read validation results
+
+### Performance/reliability
+10. latency measurement script/test runs at documented volume and records p95 or avg
+11. explanation coverage metric reflects actual published alerts
+12. Scenario D lifecycle completeness measurable (audit/notification counts or pass flag)
+
+### Safety/security
+13. secrets/real-data scan passes (or documents explicit waivers)
+14. no prohibited action endpoints exist
+15. prohibited-language scan passes on templates and UI strings
+16. provider A/B denial tests still pass
+17. alert immutability and append-only protections still pass
+18. Scenario C degraded data does not yield misleading high-confidence alertable output
+
+## Evidence Gate (must all pass)
+
+- [ ] At least three numeric metrics with method, sample size, and limitations persisted and queryable
+- [ ] Metrics computed on `held_out` split with frozen configuration before evaluation
+- [ ] Evidence matches the exact signed-off release-candidate build (commit/engine/contract version recorded)
+- [ ] `GET /metrics` and `GET /api/v1/validation/results` implemented and authorized
+- [ ] Bad data never produces misleading high-confidence actionable alerts (Scenario C regression)
+- [ ] All high-impact alerts contain evidence and uncertainty in explanations
+- [ ] Provider-boundary, idempotency, concurrency, and audit regressions pass
+- [ ] Safety/security scans pass with artifacts on disk
+- [ ] No critical privacy, authorization, audit, or responsible-design issue remains open
+
+If any item fails, stop feature work and repair evidence or safety gaps.
+
+## Quality Bar
+
+1. Honest metrics over impressive numbers — document limitations prominently.
+2. Reuse existing analytics engines and schema; do not retune models on held-out data.
+3. Persist results in `validation_runs` / `metric_results`; APIs read from DB, not hard-coded JSON.
+4. Match repository conventions (FastAPI services, Pydantic contracts, pytest, Makefile commands).
+5. Keep UI thin — metric cards for demo, not a analytics dashboard product.
+
+## Output Format (after implementation)
+
+Return:
+1. File-by-file implementation summary (validation service, routers, CLI, scans, optional UI panel).
+2. Commands to run validation, scans, and full test suite.
+3. Table of all reported metrics: code, value, unit, sample size, method, limitations.
+4. Signed-off release-candidate identifier and how it is embedded in evidence.
+5. Evidence gate checklist with pass/fail per item.
+6. Paths to generated artifacts (`validation-summary.json`, `performance-reliability.json`, `safety-security-scan.json`).
+7. Deferred items strictly limited to Phase 8+ (documentation prose, presentation, submission).
+
+Now implement end-to-end in this repository.

@@ -30,9 +30,9 @@ def _run_anomalies(client, headers, run_id, outlet_id):
 # --------------------------------------------------------------------------- #
 # Scenario A — hidden provider shortage
 # --------------------------------------------------------------------------- #
-def test_scenario_a_identifies_reserve_shortage(client, auth_headers, outlet_id):
-    run_id = start_run(client, auth_headers, "scenario_a")
-    result = _run_liquidity(client, auth_headers, run_id, outlet_id)
+def test_scenario_a_identifies_reserve_shortage(client, auth_headers, admin_headers, outlet_id):
+    run_id = start_run(client, admin_headers, "scenario_a")
+    result = _run_liquidity(client, admin_headers, run_id, outlet_id)
 
     # Shared cash is present and separated from provider reserves.
     shared = [p for p in result["projections"] if p["reserve_type"] == "shared_cash"]
@@ -65,9 +65,9 @@ def test_scenario_a_identifies_reserve_shortage(client, auth_headers, outlet_id)
     assert all(c["is_alertable"] for c in result["candidates"])
 
 
-def test_liquidity_projections_endpoint_round_trips(client, auth_headers, outlet_id):
-    run_id = start_run(client, auth_headers, "scenario_a")
-    _run_liquidity(client, auth_headers, run_id, outlet_id)
+def test_liquidity_projections_endpoint_round_trips(client, auth_headers, admin_headers, outlet_id):
+    run_id = start_run(client, admin_headers, "scenario_a")
+    _run_liquidity(client, admin_headers, run_id, outlet_id)
     resp = client.get(
         f"/api/v1/outlets/{outlet_id}/liquidity-projections", headers=auth_headers
     )
@@ -85,9 +85,9 @@ def test_liquidity_projections_endpoint_round_trips(client, auth_headers, outlet
 # --------------------------------------------------------------------------- #
 # Scenario B — unusual activity with evidence and benign context
 # --------------------------------------------------------------------------- #
-def test_scenario_b_flags_unusual_pattern_with_benign_context(client, auth_headers, outlet_id):
-    run_id = start_run(client, auth_headers, "scenario_b")
-    result = _run_anomalies(client, auth_headers, run_id, outlet_id)
+def test_scenario_b_flags_unusual_pattern_with_benign_context(client, auth_headers, admin_headers, outlet_id):
+    run_id = start_run(client, admin_headers, "scenario_b")
+    result = _run_anomalies(client, admin_headers, run_id, outlet_id)
 
     review_flags = [f for f in result["flags"] if f["disposition"] == "requires_review"]
     assert review_flags, "expected an evidence-backed anomaly flag"
@@ -103,9 +103,9 @@ def test_scenario_b_flags_unusual_pattern_with_benign_context(client, auth_heade
     assert result["candidates"]
 
 
-def test_anomaly_flag_detail_round_trips(client, auth_headers, outlet_id):
-    run_id = start_run(client, auth_headers, "scenario_b")
-    _run_anomalies(client, auth_headers, run_id, outlet_id)
+def test_anomaly_flag_detail_round_trips(client, auth_headers, admin_headers, outlet_id):
+    run_id = start_run(client, admin_headers, "scenario_b")
+    _run_anomalies(client, admin_headers, run_id, outlet_id)
     listing = client.get(
         f"/api/v1/outlets/{outlet_id}/anomaly-flags", headers=auth_headers
     ).json()
@@ -129,10 +129,10 @@ def test_unknown_anomaly_flag_returns_not_found(client, auth_headers):
 # --------------------------------------------------------------------------- #
 # Scenario C — degraded data lowers confidence and suppresses alerts
 # --------------------------------------------------------------------------- #
-def test_scenario_c_suppresses_and_lowers_confidence(client, auth_headers, outlet_id):
-    run_id = start_run(client, auth_headers, "scenario_c")
-    anomalies = _run_anomalies(client, auth_headers, run_id, outlet_id)
-    liquidity = _run_liquidity(client, auth_headers, run_id, outlet_id)
+def test_scenario_c_suppresses_and_lowers_confidence(client, auth_headers, admin_headers, outlet_id):
+    run_id = start_run(client, admin_headers, "scenario_c")
+    anomalies = _run_anomalies(client, admin_headers, run_id, outlet_id)
+    liquidity = _run_liquidity(client, admin_headers, run_id, outlet_id)
 
     # A cluster is present but suppressed due to degraded data quality.
     suppressed = [f for f in anomalies["flags"] if f["disposition"] == "suppressed_data_quality"]
@@ -153,9 +153,9 @@ def test_scenario_c_suppresses_and_lowers_confidence(client, auth_headers, outle
     assert conflicted, "expected reduced confidence under degraded quality"
 
 
-def test_data_quality_history_reflects_engine_output(client, auth_headers, outlet_id):
-    run_id = start_run(client, auth_headers, "scenario_c")
-    _run_anomalies(client, auth_headers, run_id, outlet_id)
+def test_data_quality_history_reflects_engine_output(client, auth_headers, admin_headers, outlet_id):
+    run_id = start_run(client, admin_headers, "scenario_c")
+    _run_anomalies(client, admin_headers, run_id, outlet_id)
     resp = client.get(
         f"/api/v1/outlets/{outlet_id}/data-quality/history", headers=auth_headers
     )
@@ -170,10 +170,10 @@ def test_data_quality_history_reflects_engine_output(client, auth_headers, outle
 # --------------------------------------------------------------------------- #
 # Reproducibility
 # --------------------------------------------------------------------------- #
-def test_repeated_runs_are_reproducible(client, auth_headers, outlet_id):
-    run_id = start_run(client, auth_headers, "scenario_a", seed=4242)
-    first = _run_liquidity(client, auth_headers, run_id, outlet_id)
-    second = _run_liquidity(client, auth_headers, run_id, outlet_id)
+def test_repeated_runs_are_reproducible(client, auth_headers, admin_headers, outlet_id):
+    run_id = start_run(client, admin_headers, "scenario_a", seed=4242)
+    first = _run_liquidity(client, admin_headers, run_id, outlet_id)
+    second = _run_liquidity(client, admin_headers, run_id, outlet_id)
 
     def _fingerprint(result):
         return sorted(
@@ -199,10 +199,10 @@ def test_run_requires_authentication(client, outlet_id):
     assert resp.status_code == 401
 
 
-def test_run_unknown_simulation_returns_not_found(client, auth_headers):
+def test_run_unknown_simulation_returns_not_found(client, admin_headers):
     resp = client.post(
         "/api/v1/internal/analytics/liquidity/run",
         json={"simulation_run_id": "00000000-0000-0000-0000-0000000000aa"},
-        headers=auth_headers,
+        headers=admin_headers,
     )
     assert resp.status_code == 404

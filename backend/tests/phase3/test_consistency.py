@@ -7,17 +7,17 @@ from uuid import uuid4
 from app.core.auth import OUTLET1, OUTLET2
 
 
-def test_mismatched_account_rejected(client, auth_headers):
+def test_mismatched_account_rejected(client, admin_headers):
     run = client.post(
         "/api/v1/simulations/runs",
-        headers=auth_headers,
+        headers=admin_headers,
         json={"scenario_code": "normal", "seed": 3333, "outlet_id": str(OUTLET1)},
     )
     run_id = run.json()["simulation_run_id"]
 
     response = client.post(
         "/api/v1/ingestion/batches",
-        headers=auth_headers,
+        headers=admin_headers,
         json={
             "simulation_run_id": run_id,
             "outlet_id": str(OUTLET2),

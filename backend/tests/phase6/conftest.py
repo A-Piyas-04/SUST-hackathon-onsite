@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.auth import (
+    ADMIN,
     AGENT1,
     AGENT2,
     BKASH,
@@ -70,8 +71,23 @@ def nagad_ops_headers() -> dict[str, str]:
 
 
 @pytest.fixture
+def bkash_ops_headers() -> dict[str, str]:
+    return token(BKASH_OPS)
+
+
+@pytest.fixture
 def risk_headers() -> dict[str, str]:
     return token(RISK_BK)
+
+
+@pytest.fixture
+def admin_headers() -> dict[str, str]:
+    return token(ADMIN)
+
+
+@pytest.fixture
+def management_headers() -> dict[str, str]:
+    return token(MGMT)
 
 
 @pytest.fixture

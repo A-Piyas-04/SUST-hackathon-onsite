@@ -7,7 +7,7 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.auth import AGENT1
+from app.core.auth import ADMIN, AGENT1
 from app.core.config import Settings, get_settings
 from app.main import create_app
 
@@ -41,3 +41,8 @@ def client(settings: Settings) -> TestClient:
 @pytest.fixture
 def auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer demo:{AGENT1}"}
+
+
+@pytest.fixture
+def admin_headers() -> dict[str, str]:
+    return {"Authorization": f"Bearer demo:{ADMIN}"}

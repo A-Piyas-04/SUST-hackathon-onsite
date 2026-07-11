@@ -5,10 +5,10 @@ from __future__ import annotations
 from app.core.auth import OUTLET1
 
 
-def test_dashboard_has_no_blended_total(client, auth_headers):
+def test_dashboard_has_no_blended_total(client, auth_headers, admin_headers):
     client.post(
         "/api/v1/simulations/runs",
-        headers=auth_headers,
+        headers=admin_headers,
         json={"scenario_code": "normal", "seed": 1111, "outlet_id": str(OUTLET1)},
     )
     response = client.get(

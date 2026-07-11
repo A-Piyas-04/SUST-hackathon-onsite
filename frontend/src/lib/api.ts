@@ -37,6 +37,7 @@ export function setToken(token: string | null): void {
 // --------------------------------------------------------------------------- //
 export type ApiErrorKind =
   | "unauthorized" // 401 — no/invalid session
+  | "forbidden" // 403 — authenticated but action denied
   | "notFound" // 404 — missing OR forbidden confidential resource (safe)
   | "validation" // 422
   | "notImplemented" // 501 (later-phase stub)
@@ -67,6 +68,7 @@ export class ApiError extends Error {
 
 function kindForStatus(status: number, code: string): ApiErrorKind {
   if (status === 401) return "unauthorized";
+  if (status === 403 || code === "forbidden") return "forbidden";
   if (status === 404 || code === "not_found") return "notFound";
   if (status === 422) return "validation";
   if (status === 501) return "notImplemented";
@@ -181,6 +183,7 @@ export type Principal = {
   preferred_locale: LocaleCode;
   roles: AppRole[];
   scopes: Scope[];
+  permissions: string[];
 };
 
 export type DemoLoginResponse = {
@@ -198,6 +201,7 @@ export const DEMO_USERS: { key: string; label: string; role: AppRole; note: stri
   { key: "rocket_ops", label: "Provider Ops — Rocket", role: "provider_ops", note: "Rocket confidential scope" },
   { key: "risk_analyst", label: "Risk Analyst", role: "risk_analyst", note: "bKash risk review" },
   { key: "management", label: "Management", role: "management", note: "Cross-provider oversight" },
+  { key: "admin", label: "Demo Admin", role: "admin", note: "Simulation, faults, and publish controls" },
 ];
 
 export function demoLogin(userKey: string): Promise<DemoLoginResponse> {

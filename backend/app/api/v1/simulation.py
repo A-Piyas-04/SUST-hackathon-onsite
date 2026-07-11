@@ -17,6 +17,7 @@ from app.contracts.v1.simulation import (
     ScenarioListResponse,
 )
 from app.core.auth import UserContext, require_authenticated
+from app.core.authz import require_admin, require_outlet_access
 from app.db.session import get_db_session
 from app.db.transaction import transaction
 from app.services.simulation import fault_service, run_service
@@ -27,8 +28,9 @@ router = APIRouter(prefix="/api/v1/simulations", tags=["simulation"])
 @router.get("/scenarios", response_model=ScenarioListResponse)
 async def list_scenarios(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _user: Annotated[UserContext, Depends(require_authenticated)],
+    user: Annotated[UserContext, Depends(require_authenticated)],
 ):
+    require_admin(user)
     return await run_service.list_scenarios(session)
 
 
@@ -38,6 +40,9 @@ async def start_simulation(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     user: Annotated[UserContext, Depends(require_authenticated)],
 ):
+    require_admin(user)
+    if request.outlet_id is not None:
+        await require_outlet_access(session, user, outlet_id=request.outlet_id)
     async with transaction(session):
         return await run_service.create_run(session, request, user)
 
@@ -46,8 +51,9 @@ async def start_simulation(
 async def get_simulation_run(
     run_id: UUID,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _user: Annotated[UserContext, Depends(require_authenticated)],
+    user: Annotated[UserContext, Depends(require_authenticated)],
 ):
+    require_admin(user)
     return await run_service.get_run(session, run_id)
 
 
@@ -55,8 +61,9 @@ async def get_simulation_run(
 async def reset_simulation_run(
     run_id: UUID,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _user: Annotated[UserContext, Depends(require_authenticated)],
+    user: Annotated[UserContext, Depends(require_authenticated)],
 ):
+    require_admin(user)
     async with transaction(session):
         return await run_service.reset_run(session, run_id)
 
@@ -68,6 +75,7 @@ async def create_fault(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     user: Annotated[UserContext, Depends(require_authenticated)],
 ):
+    require_admin(user)
     async with transaction(session):
         return await fault_service.create_fault(session, run_id, request, actor_user_id=user.user_id)
 
@@ -78,7 +86,8 @@ async def patch_fault(
     fault_id: UUID,
     request: PatchFaultRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _user: Annotated[UserContext, Depends(require_authenticated)],
+    user: Annotated[UserContext, Depends(require_authenticated)],
 ):
+    require_admin(user)
     async with transaction(session):
         return await fault_service.patch_fault(session, run_id, fault_id, request)

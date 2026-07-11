@@ -11,9 +11,11 @@ import {
   fetchCaseAudit,
   fetchCases,
   fetchCaseTimeline,
+  Principal,
   resolveCase,
   reviewCase,
 } from "@/lib/api";
+import { canPerformCaseAction, isReadOnlyCases } from "@/lib/authz";
 import { useAsync } from "@/lib/hooks";
 import {
   AsyncView,
@@ -27,9 +29,11 @@ import {
 
 function CaseActions({
   c,
+  user,
   onChanged,
 }: {
   c: Case;
+  user: Principal;
   onChanged: () => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
@@ -51,10 +55,20 @@ function CaseActions({
   }
 
   const resolved = c.status === "resolved";
+  const readOnly = isReadOnlyCases(user);
+
+  if (readOnly) {
+    return (
+      <p className="text-xs text-zinc-500">
+        Read-only case summary for your role. Operational actions require an assigned operations identity.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
+        {canPerformCaseAction(user, "acknowledge") && (
         <Button
           size="sm"
           disabled={resolved || c.status !== "open" || busy !== null}
@@ -62,6 +76,8 @@ function CaseActions({
         >
           Acknowledge
         </Button>
+        )}
+        {canPerformCaseAction(user, "escalate") && (
         <Button
           size="sm"
           disabled={resolved || busy !== null}
@@ -73,6 +89,8 @@ function CaseActions({
         >
           Escalate → risk analyst
         </Button>
+        )}
+        {canPerformCaseAction(user, "review") && (
         <Button
           size="sm"
           disabled={resolved || busy !== null}
@@ -88,6 +106,8 @@ function CaseActions({
         >
           Add review
         </Button>
+        )}
+        {canPerformCaseAction(user, "resolve") && (
         <Button
           size="sm"
           variant="primary"
@@ -102,8 +122,10 @@ function CaseActions({
         >
           Resolve
         </Button>
+        )}
       </div>
 
+      {canPerformCaseAction(user, "note") && (
       <div className="flex items-center gap-2">
         <input
           className="flex-1 rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
@@ -120,6 +142,7 @@ function CaseActions({
           Add note
         </Button>
       </div>
+      )}
 
       {msg && <p className={`text-xs ${msg.err ? "text-red-600" : "text-emerald-600"}`}>{msg.text}</p>}
       <p className="text-xs text-zinc-400">
@@ -167,7 +190,7 @@ function AuditView({ caseId, refreshKey }: { caseId: string; refreshKey: number 
   );
 }
 
-function CaseDetail({ caseId }: { caseId: string }) {
+function CaseDetail({ caseId, user }: { caseId: string; user: Principal }) {
   const [localKey, setLocalKey] = useState(0);
   const { state, reload } = useAsync(() => fetchCase(caseId), [caseId, localKey]);
   const changed = () => setLocalKey((k) => k + 1);
@@ -202,7 +225,7 @@ function CaseDetail({ caseId }: { caseId: string }) {
               )}
             </dl>
             <div className="mt-4">
-              <CaseActions c={c} onChanged={changed} />
+              <CaseActions c={c} user={user} onChanged={changed} />
             </div>
           </Card>
 
@@ -224,10 +247,12 @@ export default function CasePanel({
   refreshKey,
   selectedCaseId,
   onSelect,
+  user,
 }: {
   refreshKey: number;
   selectedCaseId: string | null;
   onSelect: (id: string) => void;
+  user: Principal;
 }) {
   const { state, reload } = useAsync(() => fetchCases(), [refreshKey]);
   // Selection is fully controlled by the parent so opening a case from an alert
@@ -278,7 +303,7 @@ export default function CasePanel({
         </div>
 
         <div>
-          {selected ? <CaseDetail caseId={selected} /> : <EmptyState>Select a case to manage its lifecycle.</EmptyState>}
+          {selected ? <CaseDetail caseId={selected} user={user} /> : <EmptyState>Select a case to manage its lifecycle.</EmptyState>}
         </div>
       </div>
     </div>

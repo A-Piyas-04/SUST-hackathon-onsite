@@ -1,0 +1,3 @@
+implement @docs/authorize-fix-checklist.md,
+without breaking current logical flow.
+frontend flow should not break, just gets restricted to certain user 

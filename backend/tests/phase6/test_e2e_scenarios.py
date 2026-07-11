@@ -18,14 +18,13 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from app.core.auth import BKASH, OUTLET1
 from tests.phase6.conftest import (
     anomaly_alert,
     publish,
     start_run,
     token,
 )
-from app.core.auth import NAGAD_OPS, RISK_BK
+from app.core.auth import BKASH, BKASH_OPS, NAGAD_OPS, OUTLET1, RISK_BK
 
 OUTLET = str(OUTLET1)
 
@@ -100,12 +99,12 @@ def test_unauthenticated_access_denied_on_confidential_endpoints(client):
 # --------------------------------------------------------------------------- #
 # Scenario A — hidden shared-cash shortage (dashboard + liquidity)
 # --------------------------------------------------------------------------- #
-def test_scenario_a_shared_cash_shortage_visible_no_blended_total(client, agent_headers):
-    run_id = start_run(client, agent_headers, "scenario_a")
+def test_scenario_a_shared_cash_shortage_visible_no_blended_total(client, agent_headers, admin_headers):
+    run_id = start_run(client, admin_headers, "scenario_a")
     liq = client.post(
         "/api/v1/internal/analytics/liquidity/run",
         json={"simulation_run_id": run_id, "outlet_id": OUTLET},
-        headers=agent_headers,
+        headers=admin_headers,
     )
     assert liq.status_code == 201, liq.text
 
@@ -137,12 +136,12 @@ def test_scenario_a_shared_cash_shortage_visible_no_blended_total(client, agent_
 # --------------------------------------------------------------------------- #
 # Scenario B — unusual activity with evidence + benign context; publishable
 # --------------------------------------------------------------------------- #
-def test_scenario_b_anomaly_evidence_benign_context_and_publish(client, agent_headers, risk_headers):
-    run_id = start_run(client, agent_headers, "scenario_b")
+def test_scenario_b_anomaly_evidence_benign_context_and_publish(client, admin_headers):
+    run_id = start_run(client, admin_headers, "scenario_b")
     anomalies = client.post(
         "/api/v1/internal/analytics/anomalies/run",
         json={"simulation_run_id": run_id, "outlet_id": OUTLET},
-        headers=agent_headers,
+        headers=admin_headers,
     ).json()
     review = [f for f in anomalies["flags"] if f["disposition"] == "requires_review"]
     assert review, "expected an evidence-backed anomaly"
@@ -152,7 +151,7 @@ def test_scenario_b_anomaly_evidence_benign_context_and_publish(client, agent_he
     evidence_types = {e["evidence_type"] for e in flag["evidence_items"]}
     assert {"count", "amount_cluster", "distinct_parties", "detection_window"} <= evidence_types
 
-    published = publish(client, risk_headers, run_id)
+    published = publish(client, admin_headers, run_id)
     alert = anomaly_alert(published)
     assert alert is not None, "anomaly alert should be publishable"
     # Immutable evidence is present on the published alert.
@@ -162,17 +161,17 @@ def test_scenario_b_anomaly_evidence_benign_context_and_publish(client, agent_he
 # --------------------------------------------------------------------------- #
 # Scenario C — degraded data lowers confidence and suppresses alerts
 # --------------------------------------------------------------------------- #
-def test_scenario_c_degraded_confidence_and_suppression(client, agent_headers):
-    run_id = start_run(client, agent_headers, "scenario_c")
+def test_scenario_c_degraded_confidence_and_suppression(client, admin_headers):
+    run_id = start_run(client, admin_headers, "scenario_c")
     anomalies = client.post(
         "/api/v1/internal/analytics/anomalies/run",
         json={"simulation_run_id": run_id, "outlet_id": OUTLET},
-        headers=agent_headers,
+        headers=admin_headers,
     ).json()
     liquidity = client.post(
         "/api/v1/internal/analytics/liquidity/run",
         json={"simulation_run_id": run_id, "outlet_id": OUTLET},
-        headers=agent_headers,
+        headers=admin_headers,
     ).json()
 
     suppressed = [f for f in anomalies["flags"] if f["disposition"] == "suppressed_data_quality"]
@@ -194,16 +193,16 @@ def test_scenario_c_degraded_confidence_and_suppression(client, agent_headers):
 # --------------------------------------------------------------------------- #
 # Scenario D — coordinated response and closure (full lifecycle, no DB edits)
 # --------------------------------------------------------------------------- #
-def test_scenario_d_full_case_lifecycle_and_immutable_evidence(client, agent_headers, risk_headers):
-    run_id = start_run(client, agent_headers, "scenario_b")
-    published = publish(client, risk_headers, run_id)
+def test_scenario_d_full_case_lifecycle_and_immutable_evidence(client, bkash_ops_headers, risk_headers, admin_headers):
+    run_id = start_run(client, admin_headers, "scenario_b")
+    published = publish(client, admin_headers, run_id)
     alert = anomaly_alert(published)
     assert alert is not None
     alert_id = alert["alert_id"]
     evidence_before = alert["structured_payload"]
 
     # Open case (idempotent) from the alert.
-    opened = client.post(f"/api/v1/alerts/{alert_id}/cases", json={}, headers=risk_headers)
+    opened = client.post(f"/api/v1/alerts/{alert_id}/cases", json={}, headers=bkash_ops_headers)
     assert opened.status_code in (200, 201), opened.text
     case = opened.json()
     case_id = case["case_id"]
@@ -212,28 +211,28 @@ def test_scenario_d_full_case_lifecycle_and_immutable_evidence(client, agent_hea
     assert case["recommended_next_step"]
 
     # Idempotency: re-opening returns the SAME case, not a duplicate.
-    reopened = client.post(f"/api/v1/alerts/{alert_id}/cases", json={}, headers=risk_headers)
+    reopened = client.post(f"/api/v1/alerts/{alert_id}/cases", json={}, headers=bkash_ops_headers)
     assert reopened.json()["case_id"] == case_id
 
     # acknowledge -> note -> escalate -> review -> resolve, driving optimistic versions.
     ack = client.post(
         f"/api/v1/cases/{case_id}/acknowledge",
         json={"expected_version": case["version"]},
-        headers=risk_headers,
+        headers=bkash_ops_headers,
     ).json()
     assert ack["status"] == "acknowledged" and ack["version"] == case["version"] + 1
 
     note = client.post(
         f"/api/v1/cases/{case_id}/notes",
         json={"note_text": "Contacted outlet; reviewing recent cluster.", "note_type": "contact_attempt"},
-        headers=risk_headers,
+        headers=bkash_ops_headers,
     )
     assert note.status_code == 201, note.text
 
     esc = client.post(
         f"/api/v1/cases/{case_id}/escalate",
         json={"expected_version": ack["version"], "target_role": "risk_analyst"},
-        headers=risk_headers,
+        headers=bkash_ops_headers,
     ).json()
     assert esc["status"] == "escalated"
 
@@ -247,13 +246,13 @@ def test_scenario_d_full_case_lifecycle_and_immutable_evidence(client, agent_hea
     resolved = client.post(
         f"/api/v1/cases/{case_id}/resolve",
         json={"expected_version": esc["version"], "resolution_summary": "Reviewed and coordinated; no further action needed."},
-        headers=risk_headers,
+        headers=bkash_ops_headers,
     ).json()
     assert resolved["status"] == "resolved"
 
     # Timeline + audit are complete and ordered.
-    timeline = client.get(f"/api/v1/cases/{case_id}/timeline", headers=risk_headers).json()["events"]
-    audit = client.get(f"/api/v1/cases/{case_id}/audit-events", headers=risk_headers).json()["events"]
+    timeline = client.get(f"/api/v1/cases/{case_id}/timeline", headers=bkash_ops_headers).json()["events"]
+    audit = client.get(f"/api/v1/cases/{case_id}/audit-events", headers=bkash_ops_headers).json()["events"]
     assert len(timeline) >= 5
     assert [e["occurred_at"] for e in audit] == sorted(e["occurred_at"] for e in audit)
     actions = {e["action"] for e in audit}
@@ -268,9 +267,9 @@ def test_scenario_d_full_case_lifecycle_and_immutable_evidence(client, agent_hea
 # --------------------------------------------------------------------------- #
 # Explanations — English + Bangla + Banglish
 # --------------------------------------------------------------------------- #
-def test_explanations_render_en_and_bangla(client, agent_headers, risk_headers):
-    run_id = start_run(client, agent_headers, "scenario_b")
-    published = publish(client, risk_headers, run_id)
+def test_explanations_render_en_and_bangla(client, risk_headers, admin_headers):
+    run_id = start_run(client, admin_headers, "scenario_b")
+    published = publish(client, admin_headers, run_id)
     alert = anomaly_alert(published) or published["published"][0]
     resp = client.get(f"/api/v1/alerts/{alert['alert_id']}/explanations", headers=risk_headers)
     assert resp.status_code == 200, resp.text
@@ -284,9 +283,9 @@ def test_explanations_render_en_and_bangla(client, agent_headers, risk_headers):
 # --------------------------------------------------------------------------- #
 # Provider isolation — safe not-found, no existence leak
 # --------------------------------------------------------------------------- #
-def test_provider_isolation_returns_safe_not_found(client, agent_headers, risk_headers):
-    run_id = start_run(client, agent_headers, "scenario_b")
-    published = publish(client, risk_headers, run_id)
+def test_provider_isolation_returns_safe_not_found(client, admin_headers):
+    run_id = start_run(client, admin_headers, "scenario_b")
+    published = publish(client, admin_headers, run_id)
     alert = anomaly_alert(published)
     assert alert is not None  # bKash-confidential anomaly alert
     alert_id = alert["alert_id"]
@@ -308,17 +307,17 @@ def test_provider_isolation_returns_safe_not_found(client, agent_headers, risk_h
 # --------------------------------------------------------------------------- #
 # Concurrency — stale version conflicts fail safely
 # --------------------------------------------------------------------------- #
-def test_stale_version_mutation_fails_safely(client, agent_headers, risk_headers):
-    run_id = start_run(client, agent_headers, "scenario_b")
-    published = publish(client, risk_headers, run_id)
+def test_stale_version_mutation_fails_safely(client, bkash_ops_headers, admin_headers):
+    run_id = start_run(client, admin_headers, "scenario_b")
+    published = publish(client, admin_headers, run_id)
     alert = anomaly_alert(published) or published["published"][0]
-    case = client.post(f"/api/v1/alerts/{alert['alert_id']}/cases", json={}, headers=risk_headers).json()
+    case = client.post(f"/api/v1/alerts/{alert['alert_id']}/cases", json={}, headers=bkash_ops_headers).json()
     case_id = case["case_id"]
 
     ack = client.post(
         f"/api/v1/cases/{case_id}/acknowledge",
         json={"expected_version": case["version"]},
-        headers=risk_headers,
+        headers=bkash_ops_headers,
     ).json()
     assert ack["version"] == case["version"] + 1
 
@@ -326,24 +325,24 @@ def test_stale_version_mutation_fails_safely(client, agent_headers, risk_headers
     stale = client.post(
         f"/api/v1/cases/{case_id}/escalate",
         json={"expected_version": case["version"], "target_role": "risk_analyst"},
-        headers=risk_headers,
+        headers=bkash_ops_headers,
     )
     assert stale.status_code >= 400
-    current = client.get(f"/api/v1/cases/{case_id}", headers=risk_headers).json()
+    current = client.get(f"/api/v1/cases/{case_id}", headers=bkash_ops_headers).json()
     assert current["version"] == ack["version"]  # unchanged by the stale attempt
 
 
 # --------------------------------------------------------------------------- #
 # Safe language — no definitive fraud claims in user-visible text
 # --------------------------------------------------------------------------- #
-def test_no_definitive_fraud_language_in_user_visible_text(client, agent_headers, risk_headers):
-    run_id = start_run(client, agent_headers, "scenario_b")
+def test_no_definitive_fraud_language_in_user_visible_text(client, risk_headers, admin_headers):
+    run_id = start_run(client, admin_headers, "scenario_b")
     anomalies = client.post(
         "/api/v1/internal/analytics/anomalies/run",
         json={"simulation_run_id": run_id, "outlet_id": OUTLET},
-        headers=agent_headers,
+        headers=admin_headers,
     ).json()
-    published = publish(client, risk_headers, run_id)
+    published = publish(client, admin_headers, run_id)
 
     texts: list[str] = []
     for f in anomalies["flags"]:

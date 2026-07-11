@@ -11,10 +11,10 @@ from tests.phase5.conftest import anomaly_alert, publish, start_run, token
 from app.core.auth import RISK_BK
 
 
-def test_scenario_d_full_lifecycle(client, bkash_ops_headers):
+def test_scenario_d_full_lifecycle(client, bkash_ops_headers, admin_headers):
     # 1) Analytical evidence -> immutable alert.
-    run_id = start_run(client, bkash_ops_headers, "scenario_b")
-    published = publish(client, bkash_ops_headers, run_id)
+    run_id = start_run(client, admin_headers, "scenario_b")
+    published = publish(client, admin_headers, run_id)
     alert = anomaly_alert(published)
     assert alert is not None, published
     alert_id = alert["alert_id"]
@@ -70,11 +70,11 @@ def test_scenario_d_full_lifecycle(client, bkash_ops_headers):
     )
     assert review.status_code == 201, review.text
 
-    # 8) Resolve with a summary.
+    # 8) Resolve with a summary (operations role — risk analyst may review only).
     resolved = client.post(
         f"/api/v1/cases/{cid}/resolve",
         json={"resolution_summary": "Confirmed unusual; operational review completed."},
-        headers=risk,
+        headers=bkash_ops_headers,
     )
     assert resolved.status_code == 200 and resolved.json()["status"] == "resolved"
 

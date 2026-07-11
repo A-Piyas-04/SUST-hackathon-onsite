@@ -45,6 +45,7 @@ class PrincipalResponse(ContractModel):
     preferred_locale: LocaleCode
     roles: list[AppRole] = Field(default_factory=list)
     scopes: list[ScopeOut] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
 
 
 class DemoLoginRequest(ContractModel):

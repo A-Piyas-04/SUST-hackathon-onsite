@@ -9,7 +9,9 @@ import {
   fetchAlerts,
   LocaleCode,
   openCase,
+  Principal,
 } from "@/lib/api";
+import { canOpenCase } from "@/lib/authz";
 import { useAsync } from "@/lib/hooks";
 import {
   AsyncView,
@@ -58,10 +60,12 @@ function AlertDetail({
   alertId,
   refreshKey,
   onOpenedCase,
+  user,
 }: {
   alertId: string;
   refreshKey: number;
   onOpenedCase: (caseId: string) => void;
+  user: Principal;
 }) {
   const alert = useAsync(() => fetchAlert(alertId), [alertId, refreshKey]);
   const explanations = useAsync(() => fetchAlertExplanations(alertId), [alertId, refreshKey]);
@@ -114,10 +118,12 @@ function AlertDetail({
                   <Button size="sm" onClick={() => onOpenedCase(a.case_id!)}>
                     View case
                   </Button>
-                ) : (
+                ) : canOpenCase(user) ? (
                   <Button size="sm" variant="primary" disabled={opening} onClick={handleOpenCase}>
                     {opening ? "Opening…" : "Open case"}
                   </Button>
+                ) : (
+                  <p className="text-xs text-zinc-500">Case creation requires an operations or risk identity.</p>
                 )}
               </div>
               {openErr && <p className="mt-2 text-xs text-red-600">{openErr}</p>}
@@ -155,10 +161,12 @@ export default function AlertsPanel({
   outletId,
   refreshKey,
   onOpenedCase,
+  user,
 }: {
   outletId: string;
   refreshKey: number;
   onOpenedCase: (caseId: string) => void;
+  user: Principal;
 }) {
   const { state, reload } = useAsync(() => fetchAlerts(outletId), [outletId, refreshKey]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -214,7 +222,7 @@ export default function AlertsPanel({
 
         <div>
           {selected ? (
-            <AlertDetail alertId={selected} refreshKey={refreshKey} onOpenedCase={onOpenedCase} />
+            <AlertDetail alertId={selected} refreshKey={refreshKey} onOpenedCase={onOpenedCase} user={user} />
           ) : (
             <EmptyState>Select an alert to view its evidence and localized explanation.</EmptyState>
           )}

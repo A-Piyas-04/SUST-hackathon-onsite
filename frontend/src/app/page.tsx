@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fetchMe,
   fetchOutlets,
@@ -10,6 +10,13 @@ import {
   setToken,
   updatePreferences,
 } from "@/lib/api";
+import {
+  canSeeTab,
+  defaultTab,
+  lockedOutletId,
+  TabId,
+  visibleTabs,
+} from "@/lib/authz";
 import { Badge, Button, LOCALE_LABELS, Spinner } from "@/lib/ui";
 import LoginPanel from "@/components/LoginPanel";
 import OutletDashboard from "@/components/OutletDashboard";
@@ -22,24 +29,15 @@ import NotificationsPanel from "@/components/NotificationsPanel";
 
 const DEFAULT_OUTLET = "0b000000-0000-0000-0000-000000000001";
 
-type Tab =
-  | "dashboard"
-  | "liquidity"
-  | "anomalies"
-  | "scenarios"
-  | "alerts"
-  | "cases"
-  | "notifications";
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "liquidity", label: "Liquidity" },
-  { id: "anomalies", label: "Anomalies" },
-  { id: "scenarios", label: "Scenarios & Faults" },
-  { id: "alerts", label: "Alerts" },
-  { id: "cases", label: "Cases" },
-  { id: "notifications", label: "Notifications" },
-];
+const TAB_LABELS: Record<TabId, string> = {
+  dashboard: "Dashboard",
+  liquidity: "Liquidity",
+  anomalies: "Anomalies",
+  scenarios: "Scenarios & Faults",
+  alerts: "Alerts",
+  cases: "Cases",
+  notifications: "Notifications",
+};
 
 function scopeLabel(p: Principal): string {
   const s = p.scopes[0];
@@ -55,7 +53,7 @@ function scopeLabel(p: Principal): string {
 export default function Home() {
   const [booting, setBooting] = useState(true);
   const [user, setUser] = useState<Principal | null>(null);
-  const [tab, setTab] = useState<Tab>("dashboard");
+  const [tab, setTab] = useState<TabId>("dashboard");
   const [outletId, setOutletId] = useState(DEFAULT_OUTLET);
   const [outlets, setOutlets] = useState<OutletListItem[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -63,13 +61,20 @@ export default function Home() {
 
   const bump = useCallback(() => setRefreshKey((k) => k + 1), []);
 
+  const allowedTabs = useMemo(() => (user ? visibleTabs(user) : []), [user]);
+
   // Restore session on load.
   useEffect(() => {
     let active = true;
     (async () => {
       try {
         const me = await fetchMe();
-        if (active) setUser(me);
+        if (active) {
+          setUser(me);
+          setTab(defaultTab(me));
+          const locked = lockedOutletId(me);
+          if (locked) setOutletId(locked);
+        }
       } catch {
         if (active) setUser(null);
       } finally {
@@ -84,9 +89,31 @@ export default function Home() {
   useEffect(() => {
     if (!user) return;
     fetchOutlets()
-      .then(setOutlets)
+      .then((list) => {
+        setOutlets(list);
+        const locked = lockedOutletId(user);
+        if (locked) {
+          setOutletId(locked);
+        } else if (list.length > 0 && !list.some((o) => o.outlet_id === outletId)) {
+          setOutletId(list[0].outlet_id);
+        }
+      })
       .catch(() => setOutlets([]));
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!canSeeTab(user, tab) && allowedTabs.length > 0) {
+      setTab(allowedTabs[0]);
+    }
+  }, [user, tab, allowedTabs]);
+
+  function handleLogin(me: Principal) {
+    setUser(me);
+    setTab(defaultTab(me));
+    const locked = lockedOutletId(me);
+    if (locked) setOutletId(locked);
+  }
 
   function logout() {
     setToken(null);
@@ -120,10 +147,12 @@ export default function Home() {
   if (!user) {
     return (
       <main className="min-h-screen px-4">
-        <LoginPanel onLogin={setUser} />
+        <LoginPanel onLogin={handleLogin} />
       </main>
     );
   }
+
+  const showOutletPicker = outlets.length > 0 && lockedOutletId(user) === null;
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
@@ -161,24 +190,24 @@ export default function Home() {
         </div>
 
         <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2">
-          {TABS.map((t) => (
+          {allowedTabs.map((t) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={t}
+              onClick={() => setTab(t)}
               className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm transition ${
-                tab === t.id
+                tab === t
                   ? "border-zinc-900 font-medium dark:border-white"
                   : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
               }`}
             >
-              {t.label}
+              {TAB_LABELS[t]}
             </button>
           ))}
         </nav>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
-        {outlets.length > 0 && (
+        {showOutletPicker && (
           <div className="mb-4 flex items-center gap-2 text-sm">
             <label className="text-xs text-zinc-500">Outlet</label>
             <select
@@ -196,14 +225,14 @@ export default function Home() {
         )}
 
         {tab === "dashboard" && <OutletDashboard outletId={outletId} refreshKey={refreshKey} />}
-        {tab === "liquidity" && <LiquidityPanel outletId={outletId} refreshKey={refreshKey} />}
-        {tab === "anomalies" && <AnomalyPanel outletId={outletId} refreshKey={refreshKey} />}
-        {tab === "scenarios" && <ScenarioPanel outletId={outletId} bump={bump} />}
+        {tab === "liquidity" && <LiquidityPanel outletId={outletId} refreshKey={refreshKey} user={user} />}
+        {tab === "anomalies" && <AnomalyPanel outletId={outletId} refreshKey={refreshKey} user={user} />}
+        {tab === "scenarios" && <ScenarioPanel outletId={outletId} bump={bump} user={user} />}
         {tab === "alerts" && (
-          <AlertsPanel outletId={outletId} refreshKey={refreshKey} onOpenedCase={openCaseFromAlert} />
+          <AlertsPanel outletId={outletId} refreshKey={refreshKey} onOpenedCase={openCaseFromAlert} user={user} />
         )}
         {tab === "cases" && (
-          <CasePanel refreshKey={refreshKey} selectedCaseId={selectedCase} onSelect={setSelectedCase} />
+          <CasePanel refreshKey={refreshKey} selectedCaseId={selectedCase} onSelect={setSelectedCase} user={user} />
         )}
         {tab === "notifications" && <NotificationsPanel refreshKey={refreshKey} />}
       </main>

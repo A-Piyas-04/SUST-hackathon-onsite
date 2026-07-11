@@ -21,6 +21,7 @@ from app.core.auth import (
     require_authenticated,
     resolve_demo_user,
 )
+from app.core.permissions import permissions_for_user
 from app.core.config import Settings, get_settings
 from app.core.errors import UnauthorizedError
 from app.db.session import get_db_session
@@ -50,6 +51,7 @@ async def _principal(session: AsyncSession, user: UserContext) -> PrincipalRespo
             )
             for s in user.scopes
         ],
+        permissions=list(permissions_for_user(user)),
     )
 
 

@@ -29,7 +29,7 @@ export default function LoginPanel({ onLogin }: { onLogin: (p: Principal) => voi
         Decision-support demo. Sign in as a representative role to explore its scope. Identities and data are synthetic.
       </p>
 
-      <Card title="Demo login / role switch" subtitle="Choose a seeded identity">
+      <Card title="Demo login / role switch" subtitle="Choose a seeded demo identity — permissions come from the server">
         <ul className="grid gap-2 sm:grid-cols-2">
           {DEMO_USERS.map((u) => (
             <li key={u.key}>

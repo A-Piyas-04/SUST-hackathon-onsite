@@ -7,6 +7,7 @@ import {
   fetchProviders,
   fetchScenarios,
   FaultSummary,
+  Principal,
   publishAlerts,
   ProviderRef,
   resetRun,
@@ -27,9 +28,11 @@ type LogEntry = { at: string; text: string; tone: "ok" | "err" };
 export default function ScenarioPanel({
   outletId,
   bump,
+  user: _user,
 }: {
   outletId: string;
   bump: () => void;
+  user: Principal;
 }) {
   const scenarios = useAsync(() => fetchScenarios(), []);
   const providers = useAsync(() => fetchProviders(), []);

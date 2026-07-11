@@ -15,13 +15,13 @@ def _start_run(client, headers):
     )
 
 
-def test_malformed_payload_rejected_with_reason(client, auth_headers):
-    run = _start_run(client, auth_headers)
+def test_malformed_payload_rejected_with_reason(client, admin_headers):
+    run = _start_run(client, admin_headers)
     run_id = run.json()["simulation_run_id"]
 
     response = client.post(
         "/api/v1/ingestion/batches",
-        headers=auth_headers,
+        headers=admin_headers,
         json={
             "simulation_run_id": run_id,
             "outlet_id": str(OUTLET1),
@@ -43,14 +43,14 @@ def test_malformed_payload_rejected_with_reason(client, auth_headers):
     assert body["events"][0]["rejection_code"] == "malformed_payload"
 
 
-def test_rejected_payload_zero_ledger_mutation(client, auth_headers):
-    run = _start_run(client, auth_headers)
+def test_rejected_payload_zero_ledger_mutation(client, admin_headers):
+    run = _start_run(client, admin_headers)
     run_id = run.json()["simulation_run_id"]
     before = run.json()["artifacts"]
 
     client.post(
         "/api/v1/ingestion/batches",
-        headers=auth_headers,
+        headers=admin_headers,
         json={
             "simulation_run_id": run_id,
             "outlet_id": str(OUTLET1),
@@ -66,7 +66,7 @@ def test_rejected_payload_zero_ledger_mutation(client, auth_headers):
         },
     )
 
-    status = client.get(f"/api/v1/simulations/runs/{run_id}", headers=auth_headers)
+    status = client.get(f"/api/v1/simulations/runs/{run_id}", headers=admin_headers)
     after = status.json()["artifacts"]
     assert after["transactions"] == before["transactions"]
     assert after["cash_snapshots"] == before["cash_snapshots"]
