@@ -45,10 +45,13 @@ from app.services.anomaly.engine import (
     BalanceAnomalyInput,
     BalanceRuleConfig,
     BalanceSnapshotRecord,
+    BehavioralAnomalyInput,
+    BehavioralRuleConfig,
     TransactionRecord,
     VelocityAnomalyInput,
     VelocityRuleConfig,
     detect_balance_inconsistency,
+    detect_behavioral_embedding,
     detect_near_identical_amounts,
     detect_velocity_spike,
 )
@@ -464,6 +467,7 @@ _PATTERN_TO_ENUM = {
     "near_identical_amounts": AnomalyPattern.NEAR_IDENTICAL_AMOUNTS,
     "velocity_spike": AnomalyPattern.VELOCITY_SPIKE,
     "balance_inconsistency": AnomalyPattern.BALANCE_INCONSISTENCY,
+    "behavioral_embedding": AnomalyPattern.BEHAVIORAL_EMBEDDING,
 }
 
 
@@ -516,6 +520,17 @@ def _run_anomaly_detector(
                 quality_modifier=quality_modifier,
                 as_of=as_of,
                 rule_config=BalanceRuleConfig.from_dict(configuration),
+            )
+        )
+    if pattern == "behavioral_embedding":
+        return detect_behavioral_embedding(
+            BehavioralAnomalyInput(
+                provider_code=provider_code,
+                transactions=transactions,
+                quality_status=quality_status,
+                quality_modifier=quality_modifier,
+                as_of=as_of,
+                rule_config=BehavioralRuleConfig.from_dict(configuration),
             )
         )
     raise AppError("configuration_error", f"Unsupported anomaly pattern: {pattern}", status_code=500)

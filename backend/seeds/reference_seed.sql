@@ -146,6 +146,11 @@ INSERT INTO anomaly_rules
      'Balance inconsistency / data conflict',
      'Flags when a provider balance feed disagrees with the transaction log or with itself at the same timestamp. Framed as a data-quality finding, not wallet integrity loss.',
      '{"min_discrepancy_amount": 100.0, "min_discrepancy_pct": 0.5, "staleness_soft_minutes": 120}'::jsonb,
+     true),
+  ('a9000000-0000-0000-0000-000000000004', 'behavioral_embedding_v1', 'behavioral_embedding', 'v1',
+     'Behavioral embedding / k-NN outlier',
+     'Flags a transaction whose feature vector sits unusually far from this outlet''s own historical neighborhood for human review. Evidence shows nearest historical neighbors for comparison. Being flagged is not a determination of wrongdoing.',
+     '{"k": 3, "distance_threshold": 2.5, "minimum_history_transactions": 10, "window_minutes": 60}'::jsonb,
      true)
 ON CONFLICT (code) DO NOTHING;
 

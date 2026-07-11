@@ -54,6 +54,8 @@ Critically, this stays fully explainable: a logistic regression's coefficients t
 
 ## Feature 2: Embedding-Based Behavioral Anomaly Detector
 
+**Status:** Implemented (2026-07-12) — see `backend/app/services/anomaly/engine.py` (`detect_behavioral_embedding`) and ADR 0007.
+
 **Module**: ANALYZE (Anomaly Engine)
 **Adds to**: The existing rule-based detectors (velocity spike, near-identical amounts, balance inconsistency) as a fourth, independent pattern
 **Type**: Unsupervised learning (vector similarity / nearest-neighbor distance, or a lightweight autoencoder)

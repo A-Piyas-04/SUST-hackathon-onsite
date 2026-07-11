@@ -78,6 +78,12 @@ BALANCE_INCONSISTENCY_DEFAULT_CONFIG = {
     "min_discrepancy_pct": 0.5,
     "staleness_soft_minutes": 120,
 }
+BEHAVIORAL_EMBEDDING_DEFAULT_CONFIG = {
+    "k": 3,
+    "distance_threshold": 2.5,
+    "minimum_history_transactions": 10,
+    "window_minutes": 60,
+}
 # Quality modifier at/below which an otherwise-detected pattern is suppressed.
 ANOMALY_SUPPRESSION_MODIFIER = 0.5
 
