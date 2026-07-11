@@ -157,7 +157,14 @@ export default function ScenarioPanel({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setSeeds((p) => ({ ...p, [s.code]: String(Math.floor(Math.random() * 1e9)) }))}
+                    onClick={() =>
+                      // crypto avoids Sonar S2245; demo seeds have no security need,
+                      // but getRandomValues is free and keeps the gate green.
+                      setSeeds((p) => ({
+                        ...p,
+                        [s.code]: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000_000),
+                      }))
+                    }
                     title="Randomize seed to avoid dedup on repeated runs"
                   >
                     🎲
