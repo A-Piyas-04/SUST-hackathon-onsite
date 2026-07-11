@@ -72,10 +72,11 @@ def _prepared_db(request):
     if not _session_needs_database(request.session):
         yield
         return
-    test_dsn = os.environ.get(
-        "TEST_DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5433/liquidity_platform",
-    )
+    # TEST_DATABASE_URL wins when set; otherwise reuse DIRECT_DATABASE_URL so
+    # migrations target the same database the `conn` fixture connects to.
+    # (The setdefault at import time supplies the local docker default when
+    # neither is configured, e.g. localhost:5433/liquidity_platform.)
+    test_dsn = os.environ.get("TEST_DATABASE_URL") or os.environ["DIRECT_DATABASE_URL"]
     env = {
         **os.environ,
         "APP_ENV": os.environ.get("APP_ENV", "test"),
