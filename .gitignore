@@ -15,3 +15,11 @@ env/
 
 # Local verification artifacts
 *.log
+# SonarQube and coverage artifacts
+.env.sonar
+.scannerwork/
+.sonar/
+coverage.xml
+coverage/
+htmlcov/
+.coverage
