@@ -1,0 +1,10 @@
+{
+  "simulation_run_id": "5c000000-0000-0000-0000-000000000000",
+  "outlet_id": "0b000000-0000-0000-0000-000000000001",
+  "status": "fresh",
+  "confidence_modifier": 1.5,
+  "sample_count": 12,
+  "assessed_at": "2026-07-11T08:01:00Z",
+  "engine_version": "1.0.0",
+  "summary": "bad modifier"
+}

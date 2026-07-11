@@ -1,0 +1,22 @@
+{
+  "validation_run_id": "b0000000-0000-0000-0000-000000000001",
+  "name": "held_out_anomaly_eval",
+  "dataset_split": "held_out",
+  "engine_version": "1.0.0",
+  "configuration": {"seed": 2002},
+  "status": "completed",
+  "started_at": "2026-07-11T09:00:00Z",
+  "completed_at": "2026-07-11T09:05:00Z",
+  "metrics": [
+    {
+      "metric_code": "anomaly_precision",
+      "category": "analytics",
+      "value": "0.7500",
+      "unit": "ratio",
+      "sample_size": 40,
+      "method": "held-out scenario labels",
+      "limitations": "Synthetic data only; not production evidence.",
+      "computed_at": "2026-07-11T09:05:00Z"
+    }
+  ]
+}

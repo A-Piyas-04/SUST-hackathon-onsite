@@ -1,0 +1,10 @@
+{
+  "synthetic_party_ref": "syn-party-1",
+  "outlet_id": "0b000000-0000-0000-0000-000000000001",
+  "provider_code": "bkash",
+  "transaction_type": "cash_out",
+  "status": "completed",
+  "amount": "500.00",
+  "occurred_at": "2026-07-11T08:00:00",
+  "received_at": "2026-07-11T08:00:05Z"
+}

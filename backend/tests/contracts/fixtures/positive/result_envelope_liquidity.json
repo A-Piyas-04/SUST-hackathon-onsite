@@ -1,0 +1,31 @@
+{
+  "engine": "liquidity",
+  "engine_version": "1.0.0",
+  "input_window_start": "2026-07-11T08:00:00Z",
+  "input_window_end": "2026-07-11T10:00:00Z",
+  "quality_assessment_ids": ["a8000000-0000-0000-0000-000000000001"],
+  "confidence": 0.82,
+  "confidence_level": "high",
+  "evidence": [
+    {
+      "signal_code": "recent_cashout_velocity",
+      "label": "Net outflow rate over window",
+      "numeric_value": 3000.0,
+      "unit": "currency_per_hour",
+      "direction": "increases_pressure"
+    }
+  ],
+  "generated_at": "2026-07-11T10:00:00Z",
+  "engine_specific": {
+    "reserve_type": "provider_e_money",
+    "provider_code": "bkash",
+    "current_balance": 9000.0,
+    "burn_rate_per_hour": 3000.0,
+    "projected_shortage_at": "2026-07-11T13:00:00Z",
+    "lower_bound_at": "2026-07-11T12:30:00Z",
+    "upper_bound_at": "2026-07-11T13:30:00Z",
+    "sample_count": 12,
+    "is_actionable": true,
+    "non_actionable_reason": null
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "engine": "anomaly",
+  "engine_version": "1.0.0",
+  "input_window_start": "2026-07-11T08:00:00Z",
+  "input_window_end": "2026-07-11T08:30:00Z",
+  "quality_assessment_ids": ["a8000000-0000-0000-0000-000000000001"],
+  "confidence": 0.74,
+  "confidence_level": "medium",
+  "evidence": [
+    {
+      "evidence_type": "count",
+      "label": "Transactions in cluster",
+      "value": 4,
+      "display_order": 0
+    }
+  ],
+  "generated_at": "2026-07-11T08:30:00Z",
+  "engine_specific": {
+    "pattern": "near_identical_amounts",
+    "provider_code": "bkash",
+    "window_start": "2026-07-11T08:00:00Z",
+    "window_end": "2026-07-11T08:30:00Z",
+    "disposition": "requires_review",
+    "reason_code": "near_identical_amounts_cluster",
+    "evidence_summary": "4 cash-outs of approximately 987.50 occurred from 3 distinct account(s); this is unusual and may warrant review.",
+    "plausible_benign_explanation": "This pattern may reflect normal, event-driven demand rather than an issue requiring escalation.",
+    "suppression_disposition": "NOT_SUPPRESSED",
+    "account_refs": ["syn-party-0", "syn-party-1", "syn-party-2"]
+  }
+}
