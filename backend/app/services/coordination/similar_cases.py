@@ -6,6 +6,7 @@ Indexing runs best-effort on resolve; retrieval enriches GET case detail only.
 from __future__ import annotations
 
 import logging
+import math
 from typing import Any
 from uuid import UUID
 
@@ -48,7 +49,10 @@ def cosine_similarity(query: list[float], candidate: list[float]) -> float:
     a = np.asarray(query, dtype=np.float64)
     b = np.asarray(candidate, dtype=np.float64)
     denom = float(np.linalg.norm(a) * np.linalg.norm(b))
-    if denom == 0.0:
+    # Tolerance-based guard rather than exact float equality: denom is a norm
+    # product (always >= 0), so anything within float epsilon of zero is a
+    # degenerate (zero) vector and must skip the division.
+    if math.isclose(denom, 0.0, abs_tol=1e-12):
         return 0.0
     return float(np.dot(a, b) / denom)
 
