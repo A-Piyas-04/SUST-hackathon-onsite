@@ -1,0 +1,7 @@
+case_review_id,case_id,reviewed_by_user_id,disposition,was_false_positive,review_summary,reviewed_at
+aebd0653-7948-5863-86c5-46b46fe095f5,657e45d5-986a-59d3-be9a-d4f219d764b4,d0000000-0000-0000-0000-000000000b01,benign_operational,true,Evidence reviewed without making a final wrongdoing determination.,2026-07-05T12:00:00Z
+6de2cb47-d5c7-5326-80af-f2866c2d167c,c8575f75-3d95-564f-b290-5568ddca4d79,d0000000-0000-0000-0000-000000000b02,confirmed_unusual,false,Evidence reviewed without making a final wrongdoing determination.,2026-07-05T13:00:00Z
+ff639758-c21e-526d-9c99-9bdfdd5a661b,ebee3a97-b5fc-5953-97b5-c43c64021bbd,d0000000-0000-0000-0000-000000000b03,benign_operational,true,Evidence reviewed without making a final wrongdoing determination.,2026-07-05T14:00:00Z
+00445bd1-94a4-5490-80b3-e09cbbd85b99,ae5ec58f-1407-5a99-aa50-508f390389d9,d0000000-0000-0000-0000-000000000b01,confirmed_unusual,false,Evidence reviewed without making a final wrongdoing determination.,2026-07-05T15:00:00Z
+263d892a-4628-5672-814a-5d873db86327,46e5f054-fb6d-5eb7-b253-bd2888b04b37,d0000000-0000-0000-0000-000000000b02,benign_operational,true,Evidence reviewed without making a final wrongdoing determination.,2026-07-05T16:00:00Z
+d739fc91-ff72-570a-a702-832fd7344e5d,ad631262-4c3b-5515-ab2a-abec80d8f027,d0000000-0000-0000-0000-000000000b03,confirmed_unusual,false,Evidence reviewed without making a final wrongdoing determination.,2026-07-05T17:00:00Z

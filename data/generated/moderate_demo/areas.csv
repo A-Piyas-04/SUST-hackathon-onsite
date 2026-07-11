@@ -1,0 +1,5 @@
+area_id,parent_area_id,code,name,level,is_active,created_at
+86105d1d-16fa-5510-9685-c88e367e7289,,DHAKA-NORTH-SYN,Dhaka North,area,true,2026-06-25T00:00:00Z
+57376d75-7f46-5450-a6c8-4492c6dfb871,,DHAKA-SOUTH-SYN,Dhaka South,area,true,2026-06-25T00:00:00Z
+0d1f37c9-0fe7-5432-988f-ab8e3c23e8ff,,CHATTOGRAM-CENTRAL-SYN,Chattogram Central,area,true,2026-06-25T00:00:00Z
+eefe71ea-9906-52f5-bac6-eb66baf32f91,,SYLHET-CENTRAL-SYN,Sylhet Central,area,true,2026-06-25T00:00:00Z
