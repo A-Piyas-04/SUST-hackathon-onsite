@@ -12,7 +12,8 @@ export type TabId =
   | "scenarios"
   | "alerts"
   | "cases"
-  | "notifications";
+  | "notifications"
+  | "validation";
 
 export type CaseActionId =
   | "open"
@@ -31,6 +32,7 @@ const TAB_PERMISSION: Record<TabId, string> = {
   alerts: "tab:alerts",
   cases: "tab:cases",
   notifications: "tab:notifications",
+  validation: "tab:validation",
 };
 
 const CASE_ACTION_PERMISSION: Record<CaseActionId, string> = {
@@ -53,9 +55,14 @@ function fallbackPermission(roles: AppRole[], permission: string): boolean {
   if (isAdmin) return true;
   if (permission === "tab:notifications") return true;
   if (roles.includes("management")) {
-    return ["tab:dashboard", "tab:liquidity", "tab:alerts", "tab:cases", "tab:notifications"].includes(
-      permission,
-    );
+    return [
+      "tab:dashboard",
+      "tab:liquidity",
+      "tab:alerts",
+      "tab:cases",
+      "tab:notifications",
+      "tab:validation",
+    ].includes(permission);
   }
   if (roles.includes("agent")) {
     return [
@@ -69,9 +76,11 @@ function fallbackPermission(roles: AppRole[], permission: string): boolean {
     ].includes(permission);
   }
   if (roles.includes("risk_analyst")) {
+    if (permission === "tab:validation") return false;
     return !permission.startsWith("simulation:") && !permission.startsWith("tab:scenarios");
   }
   if (roles.some((r) => r === "field_officer" || r === "area_manager" || r === "provider_ops")) {
+    if (permission === "tab:validation") return false;
     return !permission.startsWith("simulation:") && !permission.startsWith("tab:scenarios");
   }
   return false;
@@ -89,9 +98,14 @@ export function visibleTabs(user: Principal): TabId[] {
     "scenarios",
     "alerts",
     "cases",
+    "validation",
     "notifications",
   ];
   return order.filter((tab) => canSeeTab(user, tab));
+}
+
+export function canSeeValidation(user: Principal): boolean {
+  return canSeeTab(user, "validation");
 }
 
 export function canPerformCaseAction(user: Principal, action: CaseActionId): boolean {

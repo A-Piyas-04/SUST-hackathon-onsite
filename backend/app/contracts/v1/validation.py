@@ -13,6 +13,38 @@ from app.contracts.v1.common import ContractModel, ensure_utc
 from app.contracts.v1.enums import MetricCategory, ValidationSplit
 
 
+class ValidationResultsResponse(ContractModel):
+    """List envelope for GET /api/v1/validation/results."""
+
+    runs: list["ValidationMetricPayload"] = Field(default_factory=list)
+    generated_at: datetime
+
+    @field_validator("generated_at")
+    @classmethod
+    def _utc(cls, value: datetime) -> datetime:
+        return ensure_utc(value)
+
+
+class ProcessCounters(ContractModel):
+    request_count: int
+    error_count: int
+
+
+class MetricsSummaryResponse(ContractModel):
+    """Protected JSON summary for GET /metrics (admin/management only)."""
+
+    contract_version: str
+    release_candidate: dict[str, Any]
+    process: ProcessCounters
+    validation_metrics: list[dict[str, Any]] = Field(default_factory=list)
+    generated_at: datetime
+
+    @field_validator("generated_at")
+    @classmethod
+    def _utc_summary(cls, value: datetime) -> datetime:
+        return ensure_utc(value)
+
+
 class MetricResultDetail(ContractModel):
     metric_code: str
     category: MetricCategory
@@ -47,3 +79,7 @@ class ValidationMetricPayload(ContractModel):
         if value is None:
             return None
         return ensure_utc(value)
+
+
+# Resolve the forward reference in ValidationResultsResponse.runs.
+ValidationResultsResponse.model_rebuild()

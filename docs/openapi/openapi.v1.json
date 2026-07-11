@@ -28,6 +28,32 @@
         }
       }
     },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "summary": "Metrics",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsSummaryResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/auth/demo-login": {
       "post": {
         "tags": [
@@ -1335,7 +1361,6 @@
           "alerts"
         ],
         "summary": "Publish Alerts",
-        "description": "Run analytics for a simulation run and publish alertable candidates.\n\nThin internal control so Scenario D is executable through the API only.",
         "operationId": "publish_alerts_api_v1_internal_alerts_publish_post",
         "requestBody": {
           "content": {
@@ -2057,25 +2082,89 @@
     "/api/v1/validation/results": {
       "get": {
         "tags": [
-          "stubs-phase7+"
+          "validation"
         ],
         "summary": "Validation Results",
+        "description": "Persisted held-out validation runs with nested metric results.\n\nReads from ``validation_runs`` + ``metric_results`` (never hard-coded JSON).\nAgent/ops/provider/risk roles receive 403.",
         "operationId": "validation_results_api_v1_validation_results_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "validation_run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Validation Run Id"
+            }
+          },
+          {
+            "name": "dataset_split",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dataset Split"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationResultsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
+        }
       }
     }
   },
@@ -4495,6 +4584,114 @@
         ],
         "title": "LocaleCode"
       },
+      "MetricCategory": {
+        "type": "string",
+        "enum": [
+          "analytics",
+          "performance",
+          "reliability",
+          "explainability"
+        ],
+        "title": "MetricCategory"
+      },
+      "MetricResultDetail": {
+        "properties": {
+          "metric_code": {
+            "type": "string",
+            "title": "Metric Code"
+          },
+          "category": {
+            "$ref": "#/components/schemas/MetricCategory"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "sample_size": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Sample Size"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "limitations": {
+            "type": "string",
+            "title": "Limitations"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metric_code",
+          "category",
+          "value",
+          "unit",
+          "sample_size",
+          "method",
+          "limitations",
+          "computed_at"
+        ],
+        "title": "MetricResultDetail"
+      },
+      "MetricsSummaryResponse": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "title": "Contract Version"
+          },
+          "release_candidate": {
+            "type": "object",
+            "title": "Release Candidate"
+          },
+          "process": {
+            "$ref": "#/components/schemas/ProcessCounters"
+          },
+          "validation_metrics": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Validation Metrics"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "contract_version",
+          "release_candidate",
+          "process",
+          "generated_at"
+        ],
+        "title": "MetricsSummaryResponse",
+        "description": "Protected JSON summary for GET /metrics (admin/management only)."
+      },
       "NormalizationStatus": {
         "type": "string",
         "enum": [
@@ -4859,6 +5056,13 @@
             },
             "type": "array",
             "title": "Scopes"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions"
           }
         },
         "additionalProperties": false,
@@ -4869,6 +5073,25 @@
           "preferred_locale"
         ],
         "title": "PrincipalResponse"
+      },
+      "ProcessCounters": {
+        "properties": {
+          "request_count": {
+            "type": "integer",
+            "title": "Request Count"
+          },
+          "error_count": {
+            "type": "integer",
+            "title": "Error Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_count",
+          "error_count"
+        ],
+        "title": "ProcessCounters"
       },
       "ProjectionSummary": {
         "properties": {
@@ -5856,6 +6079,95 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "ValidationMetricPayload": {
+        "properties": {
+          "validation_run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Validation Run Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "dataset_split": {
+            "$ref": "#/components/schemas/ValidationSplit"
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "configuration": {
+            "type": "object",
+            "title": "Configuration"
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^(running|completed|failed)$",
+            "title": "Status"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricResultDetail"
+            },
+            "type": "array",
+            "title": "Metrics"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "validation_run_id",
+          "name",
+          "dataset_split",
+          "engine_version",
+          "configuration",
+          "status",
+          "started_at",
+          "metrics"
+        ],
+        "title": "ValidationMetricPayload"
+      },
+      "ValidationResultsResponse": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationMetricPayload"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generated_at"
+        ],
+        "title": "ValidationResultsResponse",
+        "description": "List envelope for GET /api/v1/validation/results."
       },
       "ValidationSplit": {
         "type": "string",

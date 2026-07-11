@@ -10,6 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.core import observability
 from app.core.request_context import request_id_var
 
 logger = logging.getLogger("app.request")
@@ -28,6 +29,7 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
         except Exception:
+            observability.record_error()
             duration_ms = round((time.perf_counter() - start) * 1000, 2)
             logger.exception(
                 "request_failed",
@@ -40,6 +42,7 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
             )
             raise
         else:
+            observability.record_request(response.status_code)
             duration_ms = round((time.perf_counter() - start) * 1000, 2)
             logger.info(
                 "request_completed",

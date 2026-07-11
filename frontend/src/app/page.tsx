@@ -26,6 +26,7 @@ import ScenarioPanel from "@/components/ScenarioPanel";
 import AlertsPanel from "@/components/AlertsPanel";
 import CasePanel from "@/components/CasePanel";
 import NotificationsPanel from "@/components/NotificationsPanel";
+import ValidationPanel from "@/components/ValidationPanel";
 
 const DEFAULT_OUTLET = "0b000000-0000-0000-0000-000000000001";
 
@@ -36,6 +37,7 @@ const TAB_LABELS: Record<TabId, string> = {
   scenarios: "Scenarios & Faults",
   alerts: "Alerts",
   cases: "Cases",
+  validation: "Validation Evidence",
   notifications: "Notifications",
 };
 
@@ -234,6 +236,7 @@ export default function Home() {
         {tab === "cases" && (
           <CasePanel refreshKey={refreshKey} selectedCaseId={selectedCase} onSelect={setSelectedCase} user={user} />
         )}
+        {tab === "validation" && <ValidationPanel refreshKey={refreshKey} />}
         {tab === "notifications" && <NotificationsPanel refreshKey={refreshKey} />}
       </main>
     </div>

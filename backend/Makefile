@@ -9,6 +9,7 @@ API_PORT ?= 8000
 
 .PHONY: migrate reset seed verify dump status db-up help server test test-contracts openapi
 .PHONY: sim-run sim-status sim-reset sim-fault-add sim-fault-toggle sim-demo
+.PHONY: validate safety-scan
 
 SCENARIO ?= normal
 SEED ?=
@@ -56,6 +57,12 @@ test-contracts:     ## Run contract validation tests only
 
 openapi:            ## Generate docs/openapi/openapi.v1.json from registered routes
 	$(PY) -m app.scripts.generate_openapi
+
+validate:           ## Run held-out validation harness; persist metrics + write docs/evidence/*
+	$(PY) -m app.scripts.validation_cli run
+
+safety-scan:        ## Run secrets/unsafe-endpoint/prohibited-language scans; write evidence
+	$(PY) -m app.scripts.safety_scan
 
 sim-run:            ## Start deterministic simulation run (SCENARIO, SEED, OUTLET_ID)
 	$(PY) -m app.scripts.simulation_cli run --scenario $(SCENARIO) $(if $(SEED),--seed $(SEED),) --outlet-id $(OUTLET_ID)
