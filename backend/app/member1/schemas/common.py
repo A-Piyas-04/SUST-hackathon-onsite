@@ -42,6 +42,20 @@ def decimal_to_str(value: Decimal | float | int | None) -> str | None:
     return format(Decimal(str(value)), "f")
 
 
+def money_to_str(value: Decimal | float | int | None) -> str | None:
+    """Like `decimal_to_str`, quantized to 2dp. Needed specifically for
+    numeric(18,2) money fields that round-tripped through a Postgres jsonb
+    aggregate (schema.md's `v_outlet_dashboard.providers` array) — asyncpg
+    decodes jsonb numbers as Python float, which silently drops the fixed
+    scale (e.g. `12000.00` -> `12000.0`). Fields read directly from a numeric
+    column (never through jsonb) stay exact `Decimal`s and this is a no-op
+    for them."""
+    if value is None:
+        return None
+    d = value if isinstance(value, Decimal) else Decimal(str(value))
+    return format(d.quantize(Decimal("0.01")), "f")
+
+
 class MoneyMixin(BaseModel):
     """Mixin adding a `@field_serializer` that renders every `Decimal` field
     as a plain decimal string (never scientific notation, never a float)."""

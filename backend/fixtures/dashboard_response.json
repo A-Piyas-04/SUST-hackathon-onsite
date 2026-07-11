@@ -1,0 +1,37 @@
+{
+  "outlet": { "outlet_id": "e6ad2c78-d2ef-4693-ad0e-276d3f1a3267", "synthetic_code": "OUTLET-001", "area": "Market Area" },
+  "shared_cash": {
+    "balance": "85000.00",
+    "currency": "BDT",
+    "observed_at": "2026-07-11T08:00:00Z",
+    "projection": { "shortage_at": null, "confidence_score": 0.82, "confidence_level": "high" }
+  },
+  "providers": [
+    {
+      "provider": { "code": "bkash", "display_name": "bKash" },
+      "balance": "42000.00",
+      "observed_at": "2026-07-11T08:00:00Z",
+      "is_conflicted": false,
+      "feed_health": { "status": "fresh", "confidence_modifier": 1.0 },
+      "projection": { "shortage_at": "2026-07-11T10:10:00Z", "confidence_score": 0.78, "confidence_level": "medium" }
+    },
+    {
+      "provider": { "code": "nagad", "display_name": "Nagad" },
+      "balance": "38000.00",
+      "observed_at": "2026-07-11T08:00:00Z",
+      "is_conflicted": false,
+      "feed_health": { "status": "fresh", "confidence_modifier": 1.0 },
+      "projection": { "shortage_at": null, "confidence_score": 0.85, "confidence_level": "high" }
+    },
+    {
+      "provider": { "code": "rocket", "display_name": "Rocket" },
+      "balance": "21000.00",
+      "observed_at": "2026-07-11T07:40:00Z",
+      "is_conflicted": false,
+      "feed_health": { "status": "stale", "confidence_modifier": 0.6 },
+      "projection": { "shortage_at": null, "confidence_score": 0.4, "confidence_level": "low" }
+    }
+  ],
+  "alerts": [],
+  "generated_at": "2026-07-11T08:01:00Z"
+}

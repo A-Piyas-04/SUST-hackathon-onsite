@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.member1.repositories import dashboard as dashboard_repo
-from app.member1.schemas.common import decimal_to_str
+from app.member1.schemas.common import decimal_to_str, money_to_str
 from app.member1.schemas.dashboard import (
     BalanceHistoryEntryOut,
     DashboardResponse,
@@ -28,7 +28,7 @@ async def get_dashboard(session: AsyncSession, outlet_id: UUID) -> DashboardResp
     providers_out = [
         ProviderBalanceEntryOut(
             provider=ProviderRefOut(code=p["provider_code"], display_name=p["provider_display_name"]),
-            balance=decimal_to_str(p.get("balance")),
+            balance=money_to_str(p.get("balance")),
             observed_at=p.get("observed_at"),
             is_conflicted=bool(p.get("is_conflicted") or False),
             feed_health=FeedHealthOut(
@@ -47,7 +47,7 @@ async def get_dashboard(session: AsyncSession, outlet_id: UUID) -> DashboardResp
     return DashboardResponse(
         outlet=OutletRefOut(outlet_id=row["outlet_id"], synthetic_code=row["synthetic_code"], area=row.get("area_name")),
         shared_cash=SharedCashOut(
-            balance=decimal_to_str(row.get("shared_cash_balance")),
+            balance=money_to_str(row.get("shared_cash_balance")),
             currency=row.get("shared_cash_currency_code") or "BDT",
             observed_at=row.get("shared_cash_observed_at"),
             projection=ProjectionOut(
