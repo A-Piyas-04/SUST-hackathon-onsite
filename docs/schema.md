@@ -1,29 +1,26 @@
 # Canonical Database and API Schema
 
-**Schema version:** 1.0.0  
-**Status:** Authoritative implementation baseline  
+**Schema version:** 1.1.0  
+**Status:** Authoritative repository-head contract  
 **Target:** PostgreSQL 15+ / Supabase PostgreSQL  
 **Architecture:** Single modular-monolith backend  
 **Data classification:** Synthetic/mock data only
 
-> **Phase 1 implementation status (physical schema built and verified).** The
-> `001`–`006` migration chain, reference seeds, checksum-tracked runner, and
-> schema/RLS/view tests are implemented under `backend/migrations`,
-> `backend/seeds`, and `backend/tests`. The chain applies cleanly and idempotently
-> and passes 53 constraint/append-only/RLS/view tests on PostgreSQL 17.5 (see
-> `docs/verification/`). Enumerations are implemented as CHECK-constrained
-> `DOMAIN`s (the "constrained text" option in §4). Five controlled deviations are
-> recorded in `docs/adr/0001`–`0005` (enum domains; guarded `auth.users`/role
-> shims for non-Supabase verification; seeds kept out of checksummed DDL;
-> RLS identity/claims shim; deferred "≥1 alert source link" enforcement). None
-> change the table/column contract below. Supabase deployment verification is
-> pending project credentials.
+> **Implementation status.** The repository contains forward-only migrations
+> `001`–`011`, idempotent reference/RAG seeds, a checksum-tracked runner, and
+> constraint, append-only, RLS, view, analytics, coordination, and scenario tests.
+> Enumerations use CHECK-constrained `DOMAIN`s. ADRs `0001`–`0008` record the
+> current enum, auth-shim, seed, RLS, alert-source, anomaly, and retrieval
+> decisions. A secret-free audit of the configured Supabase target on 2026-07-12
+> found migrations `001`–`010` applied; repository migration `011` was pending on
+> that target. Repository head remains the setup authority: run `apply` before
+> `seed` or demonstrating similar-case retrieval.
 
 ## 1. Purpose
 
-This document defines the authoritative data model and REST API contract for the Multi-Provider Agent Liquidity & Coordination Platform. It is derived from the problem statement, system design, implementation checklist, demonstration scenarios, validation deliverables and responsible-design guardrails.
+This document defines the authoritative data model and database invariants for the Multi-Provider Agent Liquidity & Coordination Platform. The generated OpenAPI file is the detailed HTTP contract; §16 is a human-readable endpoint map.
 
-The schema is designed from a clean database baseline for PostgreSQL on Supabase. **No backend code, migration, model, repository, route, test, seed or UI implementation is assumed to exist.** It supports the committed MVP while leaving narrow extension points for recommended and optional features. **Phase 1 must translate this document into the complete numbered migration set and verify it on a fresh database before Phase 2 application work proceeds.**
+The schema is implemented for PostgreSQL/Supabase and supports the current repository-head prototype. Historical phase gates are retained only where they explain the original migration groups; they are not statements that later functionality remains unimplemented.
 
 The authority order is:
 
@@ -121,7 +118,7 @@ These should be PostgreSQL enums or constrained text columns. Constrained text i
 | `reserve_type` | `shared_cash`, `provider_e_money` |
 | `confidence_level` | `high`, `medium`, `low`, `unavailable` |
 | `analytics_engine` | `liquidity`, `anomaly`, `data_quality` |
-| `anomaly_pattern` | `near_identical_amounts`, `velocity_spike`, `transaction_splitting`, `circular_activity`, `balance_inconsistency`, `time_anomaly`, `failure_rate` |
+| `anomaly_pattern` | `near_identical_amounts`, `velocity_spike`, `transaction_splitting`, `circular_activity`, `balance_inconsistency`, `time_anomaly`, `failure_rate`, `behavioral_embedding` |
 | `anomaly_disposition` | `requires_review`, `suppressed_data_quality`, `dismissed_benign`, `confirmed_unusual`, `inconclusive` |
 | `review_outcome` | `benign_operational`, `requires_follow_up`, `data_quality_issue`, `confirmed_unusual`, `inconclusive` |
 | `alert_type` | `liquidity`, `anomaly`, `combined`, `data_quality` |
@@ -184,6 +181,7 @@ erDiagram
     CASES ||--o{ CASE_STATUS_HISTORY : transitions
     CASES ||--o{ NOTIFICATIONS : notifies
     CASES ||--o| CASE_REVIEWS : concludes
+    CASES ||--o| CASE_EMBEDDINGS : indexes_resolved_context
     CASES ||--o{ AUDIT_EVENTS : audits
 
     VALIDATION_RUNS ||--o{ GROUND_TRUTH_LABELS : evaluates
@@ -530,7 +528,7 @@ Join table with PK `(liquidity_projection_id, data_quality_assessment_id)`. It r
 | `is_active` | boolean | default true |
 | `created_at`, `updated_at` | timestamptz | required |
 
-MVP activates only `near_identical_amounts`; other enum values are extension points.
+The current seed activates `near_identical_amounts`, `velocity_spike`, `balance_inconsistency`, and `behavioral_embedding`. Other domain values remain extension points. Each active detector runs independently within one outlet/provider account; no combined risk score is persisted.
 
 ### 9.8 `anomaly_flags` — MVP foundation, append-only
 
@@ -763,6 +761,23 @@ The recipient is the role/user in the initial assignment. The current owner is t
 
 Database permissions must deny update/delete to the application role. Audit writes should occur in the same transaction as the workflow mutation.
 
+### 10.13 `case_embeddings` — provider-scoped similar-case retrieval
+
+Added by forward migration `011`. The table stores deterministic text embeddings for resolved provider cases; it is retrieval context, not analytical evidence or a generated decision.
+
+| Column | Type | Rules |
+|---|---|---|
+| `case_id` | uuid | PK and FK → `cases`; one embedding per resolved case |
+| `provider_id` | uuid | required denormalized provider scope |
+| `outlet_id` | uuid | required denormalized outlet scope |
+| `source_text` | text | alert evidence plus human notes/review/resolution used for indexing |
+| `embedding` | double precision[] | deterministic 512-feature hashing vector |
+| `embedding_dim` | integer | positive; must describe the stored vector dimension |
+| `corpus_origin` | text | `seeded_demo` or `live_resolved` |
+| `indexed_at` | timestamptz | required |
+
+Retrieval must filter by `provider_id` in SQL before similarity is calculated and must also pass `app.has_case_access(case_id)` under RLS. Shared-cash cases with no provider are not indexed. A small corpus returns an explicit unavailable/insufficient state. Migration `011` was pending on the configured audited Supabase target at documentation time.
+
 ## 11. Validation and observability tables
 
 ### 11.1 `validation_runs` — MVP deliverable support
@@ -963,12 +978,12 @@ Suggested RLS predicate for provider-confidential rows: allow when the row's `pr
 
 ## 16. Proposed REST API
 
-All mutation endpoints require JWT authentication, validate RLS-equivalent scope in the application service, use a request/correlation ID, and write audit events where applicable. Pagination uses `cursor` and `limit`; time filters use `from` and `to`.
+Confidential mutation endpoints require bearer authentication, validate RLS-equivalent scope in the application service, use a request/correlation ID, and write audit events where applicable. Implemented transaction and balance-history reads use a bounded `limit`; cursor pagination is not implemented.
 
-- `POST` mutations accept an `Idempotency-Key`; repeated requests return the original result.
-- Case mutations also require the current `version` or `If-Match` value and return `409 Conflict` on a stale update.
+- Case mutation request bodies may carry `idempotency_key`; repeated exact actions return the original result.
+- Versioned case mutation bodies may carry `expected_version` and return `409 Conflict` on a stale update. `If-Match` is not implemented.
 - Errors use `{ "error": { "code", "message", "request_id", "details" } }` and never reveal another provider's record existence; unauthorized cross-provider lookup returns the same `404` shape as a missing record.
-- `locale` or `Accept-Language` selects a saved explanation render; the API falls back to English.
+- Alert explanation endpoints return saved locale renders; the client selects `en`, `bn`, or `bn_latn`. `Accept-Language` negotiation is not implemented.
 - Money is serialized as a decimal string, never binary floating point.
 
 ### 16.1 Authentication and current user
@@ -1026,7 +1041,7 @@ The internal run endpoints calculate decision-support output only. They cannot m
 | `GET` | `/api/v1/alerts/{alertId}/explanations` | Available EN/Bangla/Banglish render snapshots |
 | `POST` | `/api/v1/alerts/{alertId}/cases` | Open a case if `requires_case`; normally routing engine/service only |
 | `GET` | `/api/v1/cases` | Authorized work queue by provider, area, owner, status, severity |
-| `GET` | `/api/v1/cases/{caseId}` | Case, source alert, owner, recommended next step, status |
+| `GET` | `/api/v1/cases/{caseId}` | Case, source alert, owner, next step, status, and optional provider-scoped similar-case panel |
 | `GET` | `/api/v1/cases/{caseId}/timeline` | Evidence, assignments, statuses, notes, notification and audit history |
 | `POST` | `/api/v1/cases/{caseId}/assignments` | Assign/reassign within authorized provider boundary |
 | `POST` | `/api/v1/cases/{caseId}/acknowledge` | Legal `open → acknowledged` transition |
@@ -1166,9 +1181,9 @@ Allowed statuses should be `suggested`, `contact_requested`, `authorized_outside
 
 Area/provider/time aggregates can be derived from existing outlets, transactions, alerts, and cases. Use provider-scoped materialized views only if demonstrated volume requires them; do not persist a second conflicting source of truth.
 
-## 20. Required Phase 1 physical implementation
+## 20. Physical migration implementation
 
-All six groups are completed and applied during Phase 1. The numbering defines dependency order, not separate feature phases.
+Migrations `001–006` establish the original schema gate. Later forward migrations are part of the current repository-head contract and must never be folded back into an applied file.
 
 1. **Migration 001 — foundation and identity**
    - Extensions, constrained enums/text domains, providers, areas, outlets and outlet-provider accounts.
@@ -1190,6 +1205,16 @@ All six groups are completed and applied during Phase 1. The numbering defines d
 6. **Migration 006 — security and immutability**
    - Grants, RLS policies, append-only protections, legal transition checks, scope consistency and audit protections.
    - Application/service roles receive only the minimum permissions required by their endpoints.
+7. **Migration 007 — coordination idempotency**
+   - Stores scoped case-mutation replay results without changing immutable alert evidence.
+8. **Migration 008 — conflicted last-trusted dashboard state**
+   - Corrects provider-balance read models so conflicting candidates do not silently become current truth.
+9. **Migration 009 — velocity and balance rules**
+   - Activates independent `velocity_spike` and `balance_inconsistency` rule configurations.
+10. **Migration 010 — behavioral embedding pattern**
+    - Extends the anomaly domain and activates provider/outlet-scoped behavioral k-NN distance.
+11. **Migration 011 — case similar embeddings**
+    - Adds provider-scoped resolved-case embeddings, index, RLS policy, and grants for retrieval-only similar-case context.
 
 ### 20.1 Phase 1 verification artifacts
 
@@ -1205,4 +1230,4 @@ Produce and retain:
 
 ### 20.2 Deferred schema scope
 
-The optional tables in §19, optional notification channels, extra anomaly rules, coordinates and advanced scenario behavior may be deferred. Deferral must not leave placeholder objects in the required `001`–`006` chain.
+The optional what-if, nearby-support, relationship, hotspot/materialized-view, and production notification capabilities in §19 remain deferred. Transaction-splitting, circular-activity, time-anomaly, and failure-rate values remain domain extension points without active detectors. Deferral must not be represented as implemented functionality.

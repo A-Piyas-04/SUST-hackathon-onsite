@@ -1,102 +1,44 @@
-# Backend — Phase 1 Schema + Phase 2 Application Foundation
+# Backend
 
-Authoritative PostgreSQL / Supabase schema and a runnable FastAPI modular monolith for the **Multi-Provider Agent Liquidity & Coordination Platform**.
+FastAPI modular monolith for ingestion, separated ledger reads, data quality, liquidity forecasting, unusual-activity analysis, alerts, provider-aware cases, notifications, audit, and validation.
 
-The authoritative contract is [`docs/schema.md`](../docs/schema.md). Phase plan: [`docs/16-hour-hackathon-phase-distribution.md`](../docs/16-hour-hackathon-phase-distribution.md).
+Project-wide setup and demo instructions are in the [root README](../README.md). Database invariants are defined in [docs/schema.md](../docs/schema.md); the generated HTTP contract is [docs/openapi/openapi.v1.json](../docs/openapi/openapi.v1.json).
 
-## Layout
+## Setup
 
-```
-backend/
-  app/
-    main.py                 # Application factory + uvicorn entry
-    core/                   # config, logging, errors, auth, middleware
-    db/                     # async engine, sessions, health checks
-    contracts/v1/           # Frozen Pydantic seam contracts
-    services/               # AlertCandidate adapter (Phase 2); stubs for Phase 3+
-    api/                    # /health + versioned stub routers
-    scripts/generate_openapi.py
-  migrations/               # Phase 1 SQL chain + run_migrations.py
-  seeds/reference_seed.sql
-  tests/
-    contracts/              # Contract fixture validation
-    app/                    # Health + auth boundary tests
-    (schema tests)          # Phase 1 constraints, RLS, views
-  Makefile  .env.example  requirements.txt  pytest.ini
+With the repository Python environment active:
+
+```powershell
+Copy-Item .env.example .env
+pip install -r requirements.txt
+python migrations\run_migrations.py status
+python migrations\run_migrations.py apply
+python migrations\run_migrations.py seed
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-## Configuration
+Configure `DIRECT_DATABASE_URL` or `DATABASE_URL` in `.env`. Never expose database passwords or `SUPABASE_SERVICE_ROLE_KEY` to the frontend.
 
-Copy `backend/.env.example` to `backend/.env`. Required:
+## Verification and generated artifacts
 
-- `DIRECT_DATABASE_URL` (preferred) or `DATABASE_URL`
-- Phase 2 app vars: `LOG_LEVEL`, `CORS_ORIGINS`, `DEMO_AUTH_ENABLED`, etc.
-
-Never commit secrets. `SUPABASE_SERVICE_ROLE_KEY` must not reach the frontend.
-
-**Local Postgres example:**
-
-```
-DIRECT_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/liquidity_platform
+```powershell
+python -m pytest tests -q
+python -m app.scripts.validate_moderate_dataset
+python -m app.scripts.safety_scan
+python -m app.scripts.generate_openapi
+python -m app.scripts.audit_database
 ```
 
-Start local DB: `make db-up` (docker-compose on port 5433).
+The moderate-data loader defaults to a rolled-back dry run:
 
-## Commands
-
-Prerequisite: `pip install -r requirements.txt`
-
-| Purpose | `make` | Direct command |
-|---|---|---|
-| Apply migrations | `make migrate` | `python migrations/run_migrations.py apply` |
-| Apply seeds | `make seed` | `python migrations/run_migrations.py seed` |
-| Run schema tests | `make verify` | `python migrations/run_migrations.py verify` |
-| Run all tests | `make test` | `pytest tests -q` |
-| Contract tests only | `make test-contracts` | `pytest tests/contracts -q` |
-| Run API server | `make server` | `uvicorn app.main:app --reload` |
-| Generate OpenAPI | `make openapi` | `python -m app.scripts.generate_openapi` |
-| DB status | `make status` | `python migrations/run_migrations.py status` |
-
-Fresh setup: `make db-up && make migrate && make seed && make server`
-
-## Phase 3 workflow (synthetic ecosystem + ledger)
-
-| Purpose | Command |
-|---|---|
-| Start simulation run | `make sim-run SCENARIO=normal SEED=1001` |
-| Run status | `make sim-status RUN_ID=<uuid>` |
-| Reset run | `make sim-reset RUN_ID=<uuid>` |
-| Add fault | `make sim-fault-add RUN_ID=<uuid> FAULT_TYPE=conflicting_balance PROVIDER=nagad` |
-| Toggle fault | `make sim-fault-toggle RUN_ID=<uuid> FAULT_ID=<uuid> ENABLED=false` |
-| Demo path | `make sim-demo` |
-
-Example API calls (after `make server`):
-
-```bash
-AUTH="Authorization: Bearer demo:d0000000-0000-0000-0000-000000000a01"
-curl -X POST http://localhost:8000/api/v1/simulations/runs -H "$AUTH" -H "Content-Type: application/json" \
-  -d '{"scenario_code":"normal","seed":1001,"outlet_id":"0b000000-0000-0000-0000-000000000001"}'
-curl http://localhost:8000/api/v1/outlets/0b000000-0000-0000-0000-000000000001/dashboard -H "$AUTH"
+```powershell
+python -m app.scripts.generate_moderate_dataset
+python -m app.scripts.validate_moderate_dataset
+python -m app.scripts.load_moderate_dataset
 ```
 
-## Phase 2 deliverables
+Commit it only to an explicitly development-classified database with `--apply --confirm-development`.
 
-- `GET /health` — liveness + database readiness (no confidential data)
-- Versioned `/api/v1/*` stub routes — contract placeholders returning `501`; confidential routes require `Authorization: Bearer demo:<user_uuid>`
-- Frozen v1 contracts in `app/contracts/v1/` with positive/negative fixture tests
-- `envelope_to_alert_candidate()` adapter in `app/services/alert_candidate_adapter.py`
-- OpenAPI baseline at `docs/openapi/openapi.v1.json`
+## Safety boundary
 
-Demo auth tokens map to seeded users in `seeds/reference_seed.sql`, e.g.:
-
-```
-Authorization: Bearer demo:d0000000-0000-0000-0000-000000000a01
-```
-
-## RLS context (for Phase 5+)
-
-Policies resolve the caller via `app.current_user_id()` — see Phase 1 README section and migration `006`.
-
-## Safety
-
-No financial-action endpoints. Anomaly language is advisory only ("unusual", "requires review"). Provider reserves are never blended with shared cash.
+The backend uses synthetic data and advisory output only. It has no transfer, settlement, refill, reversal, blocking, freezing, accusation, or final fraud-decision endpoint.

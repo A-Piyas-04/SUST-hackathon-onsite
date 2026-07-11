@@ -51,7 +51,6 @@ _PROHIBITED_WORDS = [
 _LANGUAGE_ALLOW_SUBSTR = (
     "tests/", "safety_scan.py", "test_e2e_scenarios.py",
     "alert_candidate_unsafe_language.json", "docs/evidence",
-    "prompts/", "docs/checklist.md", "authorize-fix-checklist",
 )
 
 _UNSAFE_ROUTE_TOKENS = [

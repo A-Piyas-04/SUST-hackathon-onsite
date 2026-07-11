@@ -1,6 +1,6 @@
 {
   "audit_version": "1.0.0",
-  "audited_at": "2026-07-11T20:29:24.137966+00:00",
+  "audited_at": "2026-07-11T22:55:06.069688+00:00",
   "target": "aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres",
   "connection_source": "SUPABASE_DB_PASSWORD(session-pooler)",
   "postgres_version": "PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
@@ -54,6 +54,18 @@
       "name": "008_dashboard_conflicted_last_trusted.sql",
       "checksum": "96cc285b265680301b6cd37992f1b4e18ad82031b14880411b9440699c195b7c",
       "applied_at": "2026-07-11T20:08:10.452973+00:00"
+    },
+    {
+      "version": "009",
+      "name": "009_anomaly_velocity_balance_rules.sql",
+      "checksum": "cc5b1591df9b480eb441a25ef4879573c04e1c4af3d508793d8b8ede025cf594",
+      "applied_at": "2026-07-11T21:04:03.398565+00:00"
+    },
+    {
+      "version": "010",
+      "name": "010_behavioral_embedding_anomaly.sql",
+      "checksum": "c1dd940d337f15609baebbbe6c5b61dedc429f2ad41ec6310c1022bdd62fc885",
+      "applied_at": "2026-07-11T22:32:03.104349+00:00"
     }
   ],
   "tables_and_views": [
@@ -16651,75 +16663,75 @@
     }
   ],
   "row_counts": {
-    "alert_anomaly_flags": 0,
-    "alert_explanations": 0,
-    "alert_liquidity_projections": 0,
-    "alert_quality_assessments": 0,
-    "alerts": 0,
-    "analytics_runs": 0,
-    "anomaly_evidence_items": 0,
-    "anomaly_flag_transactions": 0,
-    "anomaly_flags": 0,
-    "anomaly_rules": 1,
+    "alert_anomaly_flags": 12,
+    "alert_explanations": 32,
+    "alert_liquidity_projections": 12,
+    "alert_quality_assessments": 6,
+    "alerts": 24,
+    "analytics_runs": 12,
+    "anomaly_evidence_items": 24,
+    "anomaly_flag_transactions": 144,
+    "anomaly_flags": 24,
+    "anomaly_rules": 4,
     "app_users": 9,
-    "areas": 4,
-    "audit_events": 0,
-    "case_assignments": 0,
-    "case_notes": 0,
-    "case_reviews": 0,
-    "case_status_history": 0,
-    "cases": 0,
-    "cash_balance_snapshots": 0,
+    "areas": 8,
+    "audit_events": 57,
+    "case_assignments": 15,
+    "case_notes": 30,
+    "case_reviews": 6,
+    "case_status_history": 42,
+    "cases": 15,
+    "cash_balance_snapshots": 900,
     "coordination_idempotency_keys": 0,
-    "data_quality_assessments": 0,
-    "data_quality_issues": 0,
+    "data_quality_assessments": 40,
+    "data_quality_issues": 18,
     "explanation_templates": 10,
-    "fault_injections": 0,
-    "ground_truth_labels": 0,
-    "ingestion_batches": 0,
-    "ingestion_events": 0,
-    "liquidity_projection_quality_assessments": 0,
-    "liquidity_projections": 0,
-    "liquidity_signals": 0,
-    "metric_results": 0,
-    "notifications": 0,
-    "outlet_provider_accounts": 4,
-    "outlets": 2,
-    "provider_balance_snapshots": 0,
+    "fault_injections": 10,
+    "ground_truth_labels": 60,
+    "ingestion_batches": 135,
+    "ingestion_events": 3645,
+    "liquidity_projection_quality_assessments": 60,
+    "liquidity_projections": 60,
+    "liquidity_signals": 60,
+    "metric_results": 16,
+    "notifications": 15,
+    "outlet_provider_accounts": 19,
+    "outlets": 7,
+    "provider_balance_snapshots": 2701,
     "providers": 3,
     "routing_rules": 5,
-    "schema_migrations": 8,
-    "simulation_runs": 0,
+    "schema_migrations": 10,
+    "simulation_runs": 10,
     "simulation_scenarios": 5,
-    "transactions": 0,
+    "transactions": 3645,
     "user_access_scopes": 9,
-    "validation_runs": 0
+    "validation_runs": 2
   },
   "date_ranges": {
     "alerts": {
       "column": "created_at",
-      "min": null,
-      "max": null
+      "min": "2026-07-05T00:00:00+00:00",
+      "max": "2026-07-05T23:00:00+00:00"
     },
     "analytics_runs": {
       "column": "started_at",
-      "min": null,
-      "max": null
+      "min": "2026-07-05T00:00:00+00:00",
+      "max": "2026-07-05T00:11:00+00:00"
     },
     "anomaly_evidence_items": {
       "column": "created_at",
-      "min": null,
-      "max": null
+      "min": "2026-07-05T00:00:00+00:00",
+      "max": "2026-07-05T00:23:00+00:00"
     },
     "anomaly_flags": {
       "column": "created_at",
-      "min": null,
-      "max": null
+      "min": "2026-07-05T00:00:00+00:00",
+      "max": "2026-07-05T00:23:00+00:00"
     },
     "anomaly_rules": {
       "column": "created_at",
       "min": "2026-07-11T09:31:44.186624+00:00",
-      "max": "2026-07-11T09:31:44.186624+00:00"
+      "max": "2026-07-11T22:32:03.104349+00:00"
     },
     "app_users": {
       "column": "created_at",
@@ -16728,23 +16740,23 @@
     },
     "areas": {
       "column": "created_at",
-      "min": "2026-07-11T09:31:44.186624+00:00",
+      "min": "2026-06-25T00:00:00+00:00",
       "max": "2026-07-11T09:31:44.186624+00:00"
     },
     "audit_events": {
       "column": "occurred_at",
-      "min": null,
-      "max": null
+      "min": "2026-07-05T00:00:00+00:00",
+      "max": "2026-07-05T14:40:00+00:00"
     },
     "case_notes": {
       "column": "created_at",
-      "min": null,
-      "max": null
+      "min": "2026-07-05T00:30:00+00:00",
+      "max": "2026-07-05T14:50:00+00:00"
     },
     "cash_balance_snapshots": {
       "column": "observed_at",
-      "min": null,
-      "max": null
+      "min": "2026-06-26T01:00:00+00:00",
+      "max": "2026-07-04T20:00:00+00:00"
     },
     "coordination_idempotency_keys": {
       "column": "created_at",
@@ -16753,13 +16765,13 @@
     },
     "data_quality_assessments": {
       "column": "assessed_at",
-      "min": null,
-      "max": null
+      "min": "2026-06-26T20:00:00+00:00",
+      "max": "2026-07-04T20:00:00+00:00"
     },
     "data_quality_issues": {
       "column": "created_at",
-      "min": null,
-      "max": null
+      "min": "2026-06-26T20:00:00+00:00",
+      "max": "2026-07-04T20:00:00+00:00"
     },
     "explanation_templates": {
       "column": "created_at",
@@ -16768,38 +16780,38 @@
     },
     "ground_truth_labels": {
       "column": "created_at",
-      "min": null,
-      "max": null
+      "min": "2026-07-07T00:00:00+00:00",
+      "max": "2026-07-08T00:00:00+00:00"
     },
     "ingestion_batches": {
       "column": "created_at",
-      "min": null,
-      "max": null
+      "min": "2026-06-26T18:00:00+00:00",
+      "max": "2026-07-04T18:00:00+00:00"
     },
     "ingestion_events": {
       "column": "created_at",
-      "min": null,
-      "max": null
+      "min": "2026-06-26T01:02:00+00:00",
+      "max": "2026-07-04T16:01:00+00:00"
     },
     "liquidity_projections": {
       "column": "created_at",
-      "min": null,
-      "max": null
+      "min": "2026-07-04T01:00:00+00:00",
+      "max": "2026-07-05T00:00:00+00:00"
     },
     "outlet_provider_accounts": {
       "column": "created_at",
-      "min": "2026-07-11T09:31:44.186624+00:00",
+      "min": "2026-06-25T00:00:00+00:00",
       "max": "2026-07-11T09:31:44.186624+00:00"
     },
     "outlets": {
       "column": "created_at",
-      "min": "2026-07-11T09:31:44.186624+00:00",
+      "min": "2026-06-25T00:00:00+00:00",
       "max": "2026-07-11T09:31:44.186624+00:00"
     },
     "provider_balance_snapshots": {
       "column": "observed_at",
-      "min": null,
-      "max": null
+      "min": "2026-06-26T01:00:00+00:00",
+      "max": "2026-07-04T20:00:00+00:00"
     },
     "providers": {
       "column": "created_at",
@@ -16813,8 +16825,8 @@
     },
     "simulation_runs": {
       "column": "started_at",
-      "min": null,
-      "max": null
+      "min": "2026-06-26T00:00:00+00:00",
+      "max": "2026-06-26T00:01:00+00:00"
     },
     "simulation_scenarios": {
       "column": "created_at",
@@ -16823,8 +16835,8 @@
     },
     "transactions": {
       "column": "occurred_at",
-      "min": null,
-      "max": null
+      "min": "2026-06-26T01:00:00+00:00",
+      "max": "2026-07-04T15:59:00+00:00"
     },
     "user_access_scopes": {
       "column": "created_at",
@@ -16833,8 +16845,8 @@
     },
     "validation_runs": {
       "column": "started_at",
-      "min": null,
-      "max": null
+      "min": "2026-07-07T00:00:00+00:00",
+      "max": "2026-07-08T00:00:00+00:00"
     }
   }
 }

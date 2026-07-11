@@ -44,8 +44,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="Multi-Provider Agent Liquidity & Coordination Platform",
         version=settings.contract_version,
         description=(
-            "Decision-support prototype API. Phase 2 foundation — business "
-            "features are stubbed until later phases."
+            "Synthetic-data decision-support API for separated liquidity, "
+            "quality-aware unusual-activity evidence, provider-aware cases, "
+            "audit, and validation. It performs no financial action or final "
+            "fraud determination."
         ),
         lifespan=lifespan,
     )

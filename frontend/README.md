@@ -1,14 +1,26 @@
-# Frontend shell (Phase 2)
+# Frontend
 
-Minimal Next.js scaffold for the Multi-Provider Agent Liquidity Platform. Feature UI is deferred to Phase 6.
+Next.js role-aware web interface for the Multi-Provider Agent Liquidity & Coordination Platform.
 
-## Setup
+Project-wide setup and the judged walkthrough are in the [root README](../README.md) and [demo guide](../docs/demo-guide.md).
 
-```bash
+## Run locally
+
+```powershell
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — API calls are same-origin and proxied by the Next server to the backend (`API_PROXY_TARGET`, default `http://localhost:8000` in dev). Set `NEXT_PUBLIC_API_BASE_URL` only when browsers should call a separately exposed backend origin directly.
+Open <http://localhost:3000>. The Next.js server proxies `/api/*` and `/health` to `API_PROXY_TARGET`, which defaults to `http://localhost:8000` during local development.
 
-Ensure the backend is running (`cd ../backend && make server`) and migrations/seeds are applied.
+## Checks
+
+```powershell
+npm run lint
+npx tsc --noEmit
+npx playwright test
+```
+
+The Playwright demo spec requires a migrated, seeded backend. Its current scenario selectors/navigation must be re-verified against the latest UI before it is used as submission evidence.
+
+The frontend never receives database service credentials. Hiding actions in the UI is for clarity; backend authorization and PostgreSQL RLS remain authoritative.
