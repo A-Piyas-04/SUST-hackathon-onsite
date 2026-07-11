@@ -14,6 +14,33 @@ Authoritative data contract: [`docs/schema.md`](docs/schema.md).
 
 ## Quick start (local)
 
+### Docker (whole project)
+
+Build and start PostgreSQL, apply migrations and demo seeds, then run the API
+and frontend:
+
+```bash
+docker compose up --build -d
+docker compose ps
+```
+
+Open http://localhost:3000. The API health endpoint is available at
+http://localhost:8000/health and PostgreSQL is exposed on host port `5433`.
+
+To stop the stack, run `docker compose down`. Add `--volumes` only when you
+also want to delete the local database data.
+
+To build and run only the frontend image (the backend must be reachable at the
+URL compiled into the browser bundle):
+
+```bash
+docker build -t liquidity-frontend ./frontend
+docker run --rm -p 3000:3000 liquidity-frontend
+```
+
+For a backend hosted somewhere other than `http://localhost:8000`, set
+`NEXT_PUBLIC_API_BASE_URL` before building the Compose stack.
+
 ### 1. Database
 
 ```bash
