@@ -15,14 +15,20 @@ export function ConfidenceBar({
   className?: string;
 }) {
   const pct = confidencePct(score);
-  const color =
-    level === "high" ? "bg-success" : level === "medium" ? "bg-warning" : level === "low" ? "bg-danger" : "bg-muted";
+  const fill =
+    pct >= 75 ? "bg-success" : pct >= 50 ? "bg-warning" : "bg-danger";
+
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-subtle">
-        <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
+    <div className={cn("w-full", className)}>
+      {showLabel && (
+        <div className="mb-1 flex items-center justify-between text-[11px] text-muted">
+          <span>Confidence</span>
+          <span className="tabular-nums">{pct}%</span>
+        </div>
+      )}
+      <div className="h-1 overflow-hidden rounded-sm bg-surface-raised">
+        <div className={cn("h-full rounded-sm transition-all", fill)} style={{ width: `${pct}%` }} />
       </div>
-      {showLabel && <span className="text-xs text-secondary tabular-nums">{pct}%</span>}
     </div>
   );
 }

@@ -2,25 +2,34 @@
 @import "../styles/tokens.css";
 
 @theme inline {
-  --color-background: var(--color-bg-base);
-  --color-foreground: var(--color-text-primary);
-  --color-surface: var(--color-bg-surface);
-  --color-elevated: var(--color-bg-elevated);
-  --color-subtle: var(--color-bg-subtle);
-  --color-border: var(--color-border);
-  --color-muted: var(--color-text-muted);
-  --color-secondary: var(--color-text-secondary);
-  --color-accent: var(--color-accent);
-  --color-success: var(--color-success);
-  --color-warning: var(--color-warning);
-  --color-danger: var(--color-danger);
+  --color-background: var(--canvas);
+  --color-foreground: var(--text-primary);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-elevated: var(--surface);
+  --color-subtle: var(--surface-raised);
+  --color-border: var(--border);
+  --color-muted: var(--text-muted);
+  --color-secondary: var(--text-body);
+  --color-accent: var(--maroon);
+  --color-maroon: var(--maroon);
+  --color-maroon-light: var(--maroon-light);
+  --color-maroon-border: var(--maroon-border);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-cash: var(--color-cash);
+  --color-bkash: var(--color-bkash);
+  --color-nagad: var(--color-nagad);
+  --color-rocket: var(--color-rocket);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains);
 }
 
 body {
-  background: var(--color-bg-base);
-  color: var(--color-text-primary);
+  background: var(--canvas);
+  color: var(--text-primary);
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -52,11 +61,68 @@ body {
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--color-bg-subtle) 25%,
-    var(--color-border-muted) 50%,
-    var(--color-bg-subtle) 75%
+    var(--surface-raised) 25%,
+    var(--border) 50%,
+    var(--surface-raised) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.2s ease-in-out infinite;
   border-radius: var(--radius-sm);
+}
+
+.section-heading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.link-maroon {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--maroon);
+}
+
+.link-maroon:hover {
+  color: var(--maroon-text);
+  text-decoration: underline;
+}
+
+.app-table {
+  width: 100%;
+  font-size: 14px;
+  border-collapse: collapse;
+}
+
+.app-table thead {
+  background: var(--surface);
+  text-align: left;
+}
+
+.app-table thead th {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.app-table tbody tr {
+  border-top: 1px solid var(--border);
+}
+
+.app-table tbody tr:nth-child(odd) {
+  background: var(--canvas);
+}
+
+.app-table tbody tr:nth-child(even) {
+  background: var(--surface);
+}
+
+.app-table tbody tr:hover {
+  background: var(--surface-raised);
+}
+
+.app-table td {
+  padding: 10px 12px;
 }

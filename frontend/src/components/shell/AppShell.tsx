@@ -8,13 +8,14 @@ import { useSession } from "@/lib/session";
 import { canAccessRoute } from "@/lib/authz";
 import { useDataQuality } from "@/lib/queries";
 import { DEFAULT_OUTLET, lockedOutletId } from "@/lib/authz";
+import { resolvePageTitle } from "@/lib/page-titles";
 import { cn } from "@/lib/cn";
 import { Skeleton } from "@/components/ui/primitives";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, booting, bootstrap, logout } = useSession();
+  const { user, booting, bootstrap } = useSession();
   const [collapsed, setCollapsed] = useState(false);
   const outletId = user ? (lockedOutletId(user) ?? DEFAULT_OUTLET) : DEFAULT_OUTLET;
   const { data: dq } = useDataQuality(outletId);
@@ -59,8 +60,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         status: p.assessment.status,
       })) ?? [];
 
-  const pageTitle = pathname.split("/").filter(Boolean)[0]?.replace(/-/g, " ") ?? "Dashboard";
-
   return (
     <div className="min-h-screen bg-background">
       <DemoBanner />
@@ -68,21 +67,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div
         className={cn("transition-[margin]", collapsed ? "ml-[var(--sidebar-collapsed)]" : "ml-[var(--sidebar-width)]")}
       >
-        <TopBar title={pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1)} />
+        <TopBar title={resolvePageTitle(pathname)} />
         <HealthBanner issues={healthIssues} />
-        <main className="p-6">{children}</main>
-      </div>
-      <div className="fixed bottom-4 right-4">
-        <button
-          type="button"
-          onClick={() => {
-            logout();
-            router.replace("/login");
-          }}
-          className="rounded-md border border-border bg-elevated px-3 py-1.5 text-xs text-secondary shadow-[var(--shadow-card)] hover:text-foreground"
-        >
-          Sign out
-        </button>
+        <main className="space-y-6 px-7 py-6">{children}</main>
       </div>
     </div>
   );

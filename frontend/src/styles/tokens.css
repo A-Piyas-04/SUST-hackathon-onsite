@@ -1,30 +1,55 @@
 :root {
-  --color-bg-base: #f4f6f8;
-  --color-bg-surface: #fafbfc;
-  --color-bg-elevated: #ffffff;
-  --color-bg-subtle: #eaeef2;
+  /* White-maroon design system */
+  --canvas: #faf8f6;
+  --surface: #f3f0ed;
+  --surface-raised: #ede9e5;
+  --border: #ddd8d2;
+  --border-strong: #c8c2bb;
 
-  --color-border: #d0d7de;
-  --color-border-muted: #e8ecf0;
+  --text-primary: #1c1412;
+  --text-body: #3d3530;
+  --text-muted: #7a6f68;
+  --text-faint: #b0a8a0;
 
-  --color-text-primary: #1f2328;
-  --color-text-secondary: #656d76;
-  --color-text-muted: #8c959f;
+  --maroon: #8b1a2f;
+  --maroon-light: #f5e8eb;
+  --maroon-text: #6b1224;
+  --maroon-border: #d4a0aa;
 
-  --color-success: #3fb950;
-  --color-warning: #d29922;
-  --color-danger: #f85149;
-  --color-info: #388bfd;
-  --color-accent: #0969da;
+  --color-cash: #1a6b3c;
+  --color-bkash: #b01058;
+  --color-nagad: #c84a10;
+  --color-rocket: #6b2578;
 
-  --color-bkash: #e2136e;
-  --color-nagad: #f26522;
-  --color-rocket: #8c3494;
+  --success: #166534;
+  --success-bg: #f0fdf4;
+  --warning: #92400e;
+  --warning-bg: #fffbeb;
+  --danger: #991b1b;
+  --danger-bg: #fef2f2;
+  --info: #1e40af;
+  --info-bg: #eff6ff;
 
-  --color-confidence-high: #3fb950;
-  --color-confidence-medium: #d29922;
-  --color-confidence-low: #f85149;
-  --color-confidence-unknown: #8c959f;
+  /* Legacy aliases (Tailwind @theme) */
+  --color-bg-base: var(--canvas);
+  --color-bg-surface: var(--surface);
+  --color-bg-elevated: var(--surface);
+  --color-bg-subtle: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-muted: var(--border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-body);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-accent: var(--maroon);
+
+  --color-confidence-high: var(--success);
+  --color-confidence-medium: var(--warning);
+  --color-confidence-low: var(--danger);
+  --color-confidence-unknown: var(--text-faint);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -41,11 +66,11 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  --shadow-card: 0 1px 2px rgba(31, 35, 40, 0.06), 0 0 0 1px var(--color-border);
-  --shadow-elevated: 0 8px 24px rgba(31, 35, 40, 0.12);
+  --shadow-card: none;
+  --shadow-elevated: none;
 
   --sidebar-width: 240px;
   --sidebar-collapsed: 56px;
   --topbar-height: 56px;
-  --health-banner-height: 32px;
+  --health-banner-height: 28px;
 }

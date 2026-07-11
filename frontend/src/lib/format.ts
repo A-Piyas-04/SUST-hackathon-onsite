@@ -52,6 +52,29 @@ export const PROVIDER_COLORS: Record<string, string> = {
   rocket: "var(--color-rocket)",
 };
 
+const PROVIDER_NAMES: Record<string, string> = {
+  bkash: "bKash",
+  nagad: "Nagad",
+  rocket: "Rocket",
+  cash: "Shared Cash",
+};
+
+export function providerDisplayName(code: string): string {
+  return PROVIDER_NAMES[code.toLowerCase()] ?? code;
+}
+
+export function parseEventStats(summary: string): { accepted: number; rejected: number } | null {
+  const m = summary.match(/(\d+)\/(\d+)\s+events?\s+accepted[^0-9]*(\d+)\s+rejected/i);
+  if (!m) return null;
+  return { accepted: Number(m[1]), rejected: Number(m[3]) };
+}
+
+export function shortageLabel(shortageAt: string | null | undefined): string {
+  if (!shortageAt) return "No shortage";
+  const rel = relativeToNow(shortageAt);
+  return rel.startsWith("~") ? `Shortage in ${rel}` : `Shortage ${rel}`;
+}
+
 export const LOCALE_LABELS: Record<string, string> = {
   en: "EN",
   bn: "বাং",

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
@@ -21,7 +21,6 @@ import { roleLabel, scopeLabel, visibleNavItems } from "@/lib/authz";
 import { useSession } from "@/lib/session";
 import { useNotifications } from "@/lib/queries";
 import { cn } from "@/lib/cn";
-import { Badge } from "@/components/ui/primitives";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard,
@@ -38,9 +37,25 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   ScrollText,
 };
 
+function formatRoleName(user: Principal): string {
+  const raw = roleLabel(user);
+  return raw
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function formatScope(user: Principal): string {
+  const scope = scopeLabel(user);
+  if (!scope) return "Aggregate";
+  return scope.charAt(0).toUpperCase() + scope.slice(1);
+}
+
 export function Sidebar({ collapsed }: { collapsed?: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
   const user = useSession((s) => s.user);
+  const logout = useSession((s) => s.logout);
   const { data: notifData } = useNotifications();
   if (!user) return null;
   const unread = notifData?.notifications.filter((n) => n.status !== "read").length ?? 0;
@@ -49,16 +64,15 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-border bg-surface transition-[width]",
+        "fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-border bg-background transition-[width]",
         collapsed ? "w-[var(--sidebar-collapsed)]" : "w-[var(--sidebar-width)]",
       )}
     >
-      <div className="border-b border-border px-3 py-4">
+      <div className="border-b border-border px-4 py-4">
         {!collapsed && (
           <>
-            <p className="text-sm font-semibold">Liquidity</p>
-            <Badge tone="info">{roleLabel(user)}</Badge>
-            <p className="mt-1 text-xs text-muted capitalize">{scopeLabel(user)}</p>
+            <p className="text-[13px] font-semibold text-maroon">{formatRoleName(user)}</p>
+            <p className="mt-0.5 text-xs text-muted">{formatScope(user)}</p>
           </>
         )}
       </div>
@@ -68,29 +82,52 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
           const active =
             pathname === item.href ||
             pathname.startsWith(item.href + "/") ||
-            (item.id === "dashboard" && pathname.startsWith("/outlets/") && !pathname.includes("/liquidity") && !pathname.includes("/anomalies") && !pathname.includes("/transactions") && !pathname.includes("/data-quality"));
+            (item.id === "dashboard" &&
+              pathname.startsWith("/outlets/") &&
+              !pathname.includes("/liquidity") &&
+              !pathname.includes("/anomalies") &&
+              !pathname.includes("/transactions") &&
+              !pathname.includes("/data-quality"));
           return (
             <Link
               key={item.id}
               href={item.href}
               className={cn(
-                "mb-0.5 flex items-center gap-2 rounded-md px-2 py-2 text-sm transition",
-                active ? "bg-accent/10 text-accent font-medium" : "text-secondary hover:bg-subtle hover:text-foreground",
+                "mb-0.5 flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition",
+                active
+                  ? "border-l-[3px] border-maroon bg-maroon-light font-semibold text-maroon"
+                  : "border-l-[3px] border-transparent text-secondary hover:bg-surface hover:text-foreground",
                 collapsed && "justify-center px-0",
               )}
               title={item.label}
             >
-              {Icon && <Icon className="h-4 w-4 shrink-0" />}
+              {Icon && <Icon className={cn("h-4 w-4 shrink-0", active && "text-maroon")} />}
               {!collapsed && <span className="flex-1">{item.label}</span>}
               {!collapsed && item.id === "notifications" && unread > 0 && (
-                <span className="rounded-full bg-danger px-1.5 text-[10px] text-white">{unread > 99 ? "99+" : unread}</span>
+                <span className="rounded-full bg-danger px-1.5 text-[10px] text-white">
+                  {unread > 99 ? "99+" : unread}
+                </span>
               )}
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-border p-2">
-        {!collapsed && <p className="truncate px-2 text-xs text-muted">{user.display_name}</p>}
+      <div className="border-t border-border p-3">
+        {!collapsed && (
+          <>
+            <p className="truncate px-1 text-[13px] text-muted">{user.display_name}</p>
+            <button
+              type="button"
+              onClick={() => {
+                logout();
+                router.replace("/login");
+              }}
+              className="mt-1 px-1 text-xs text-muted hover:text-maroon"
+            >
+              Sign out
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );
@@ -98,7 +135,7 @@ export function Sidebar({ collapsed }: { collapsed?: boolean }) {
 
 export function DemoBanner() {
   return (
-    <div className="bg-warning/10 px-4 py-1 text-center text-xs text-warning">
+    <div className="flex h-[var(--health-banner-height)] items-center justify-center bg-maroon-light text-xs font-medium text-maroon">
       Demo · Synthetic data
     </div>
   );
