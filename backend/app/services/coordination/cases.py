@@ -33,6 +33,7 @@ from app.contracts.v1.coordination import (
     ResolveRequest,
     ReviewOutput,
     ReviewRequest,
+    SimilarCasesPanel,
     TimelineEvent,
 )
 from app.core.auth import UserContext
@@ -45,7 +46,7 @@ from app.core.authz import (
 from app.core.permissions import CaseAction, require_role_action
 from app.db.transaction import transaction
 from app.services.coordination import alerts as alerts_service
-from app.services.coordination import audit, notifications, routing
+from app.services.coordination import audit, notifications, routing, similar_cases
 
 # Legal case-status transitions (mirror of enforce_case_transition in 004).
 _LEGAL_TRANSITIONS: set[tuple[str, str]] = {
@@ -466,6 +467,10 @@ async def resolve(
             session, request.idempotency_key, scope_key, "resolve", user, 200,
             out.model_dump(mode="json"),
         )
+        try:
+            await similar_cases.index_resolved_case(session, case_id)
+        except Exception:
+            pass
         return out
 
 
@@ -678,7 +683,17 @@ async def add_review(
 # --------------------------------------------------------------------------- #
 async def get_case(session: AsyncSession, user: UserContext, case_id: UUID) -> CaseOutput:
     row = await _require_case(session, user, case_id)
-    return _to_output(row)
+    out = _to_output(row)
+    try:
+        out.similar_cases = await similar_cases.retrieve_similar_cases(
+            session,
+            case_id=row["case_id"],
+            alert_id=row["alert_id"],
+            provider_id=row["provider_id"],
+        )
+    except Exception:
+        out.similar_cases = SimilarCasesPanel(status="unavailable", matches=[], message=None)
+    return out
 
 
 async def list_cases(

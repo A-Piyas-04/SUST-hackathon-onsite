@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import random
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,6 +25,8 @@ from app.core.auth import (
 )
 from app.core.config import Settings, get_settings
 from app.main import create_app
+from app.services.analytics import config as analytics_cfg
+from app.services.quality.calibration import reset_calibration_cache
 
 os.environ.setdefault(
     "TEST_DATABASE_URL",
@@ -33,6 +36,16 @@ os.environ["APP_ENV"] = "test"
 os.environ["DIRECT_DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 os.environ.pop("DATABASE_URL", None)
 os.environ.pop("SUPABASE_DB_PASSWORD", None)
+
+
+@pytest.fixture(autouse=True)
+def _quality_calibration_fixed_formula_for_phase5(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Phase 5 publish flows expect stable alert generation (fixed-formula quality)."""
+    reset_calibration_cache()
+    missing = tmp_path / "missing-calibration-artifact.json"
+    monkeypatch.setattr(analytics_cfg, "CONFIDENCE_CALIBRATION_ARTIFACT_PATH", missing)
 
 
 @pytest.fixture

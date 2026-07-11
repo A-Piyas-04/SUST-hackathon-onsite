@@ -664,6 +664,22 @@ export function publishAlerts(simulationRunId: string, outletId: string): Promis
 // --------------------------------------------------------------------------- //
 // Cases (Phase 5)
 // --------------------------------------------------------------------------- //
+export type SimilarCaseMatch = {
+  case_id: string;
+  case_number: string;
+  disposition: string | null;
+  was_false_positive: boolean | null;
+  resolution_summary: string;
+  review_summary: string | null;
+  similarity: number;
+  corpus_origin: "seeded_demo" | "live_resolved";
+};
+export type SimilarCasesPanel = {
+  status: "ready" | "insufficient_corpus" | "unavailable";
+  matches: SimilarCaseMatch[];
+  message: string | null;
+};
+
 export type Case = {
   case_id: string;
   case_number: string;
@@ -681,6 +697,7 @@ export type Case = {
   resolution_summary: string | null;
   version: number;
   updated_at: string;
+  similar_cases?: SimilarCasesPanel | null;
 };
 export type CaseListResponse = { cases: Case[]; generated_at: string };
 

@@ -8,7 +8,7 @@ payloads, explicit actor/scope identity in audit events, and a concurrency
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import Field, field_validator
@@ -154,6 +154,23 @@ class PublishResponse(ContractModel):
 # --------------------------------------------------------------------------- #
 # Cases
 # --------------------------------------------------------------------------- #
+class SimilarCaseMatch(ContractModel):
+    case_id: UUID
+    case_number: str
+    disposition: ReviewOutcome | None = None
+    was_false_positive: bool | None = None
+    resolution_summary: str
+    review_summary: str | None = None
+    similarity: float
+    corpus_origin: Literal["seeded_demo", "live_resolved"]
+
+
+class SimilarCasesPanel(ContractModel):
+    status: Literal["ready", "insufficient_corpus", "unavailable"]
+    matches: list[SimilarCaseMatch] = Field(default_factory=list)
+    message: str | None = None
+
+
 class CaseOutput(ContractModel):
     case_id: UUID
     case_number: str
@@ -172,6 +189,7 @@ class CaseOutput(ContractModel):
     resolution_summary: str | None = None
     version: int
     updated_at: datetime
+    similar_cases: SimilarCasesPanel | None = None
 
     @field_validator("opened_at", "updated_at")
     @classmethod

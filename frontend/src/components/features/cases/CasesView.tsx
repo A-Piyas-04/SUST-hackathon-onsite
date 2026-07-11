@@ -173,6 +173,49 @@ export function CaseDetailView({ caseId }: { caseId: string }) {
         <p className="text-sm">{c.recommended_next_step}</p>
       </Card>
 
+      {c.similar_cases && (
+        <div>
+          <h3 className="mb-2 text-sm font-medium">Similar past cases</h3>
+          {c.similar_cases.status === "ready" && c.similar_cases.matches.length > 0 ? (
+            <div className="space-y-3">
+              {c.similar_cases.matches.map((m) => (
+                <div key={m.case_id} className="border-l-2 border-accent/40 pl-3 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{m.case_number}</span>
+                    <span className="font-mono text-xs text-muted">
+                      {(m.similarity * 100).toFixed(0)}% similar
+                    </span>
+                    <span
+                      className={
+                        m.corpus_origin === "seeded_demo"
+                          ? "text-xs text-amber-700"
+                          : "text-xs text-emerald-700"
+                      }
+                    >
+                      {m.corpus_origin === "seeded_demo" ? "Demo seed" : "Live resolution"}
+                    </span>
+                  </div>
+                  {m.disposition && (
+                    <p className="mt-1 text-xs text-muted">
+                      Outcome: {m.disposition.replace(/_/g, " ")}
+                      {m.was_false_positive === true ? " (false positive)" : ""}
+                    </p>
+                  )}
+                  <p className="mt-1">{m.resolution_summary}</p>
+                  {m.review_summary && (
+                    <p className="mt-1 text-xs text-muted">{m.review_summary}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">
+              {c.similar_cases.message ?? "No comparable cases yet"}
+            </p>
+          )}
+        </div>
+      )}
+
       <Link href={`/alerts/${c.alert_id}`} className="text-sm text-accent hover:underline">Source alert →</Link>
 
       <CaseActions c={c} />

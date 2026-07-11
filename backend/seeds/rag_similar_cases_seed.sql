@@ -1,0 +1,7 @@
+-- =============================================================================
+-- RAG similar-case demo corpus (CASE-SEED-RAG-*)
+-- Synthetic seed data only — corpus_origin = seeded_demo.
+-- Applied idempotently via backend/app/scripts/seed_rag_similar_cases.py
+-- after reference_seed.sql (ADR 0003: seeds separated from migrations).
+-- Does not modify moderate_demo cases.
+-- =============================================================================

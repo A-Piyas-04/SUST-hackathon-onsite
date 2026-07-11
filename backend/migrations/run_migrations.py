@@ -36,6 +36,7 @@ BACKEND_DIR = pathlib.Path(__file__).resolve().parents[1]
 REPO_ROOT = BACKEND_DIR.parent
 MIGRATIONS_DIR = BACKEND_DIR / "migrations"
 SEED_FILE = BACKEND_DIR / "seeds" / "reference_seed.sql"
+RAG_SEED_SCRIPT = BACKEND_DIR / "app" / "scripts" / "seed_rag_similar_cases.py"
 DUMP_FILE = REPO_ROOT / "docs" / "verification" / "schema.sql"
 
 MIGRATION_GLOB = "0*.sql"
@@ -330,6 +331,21 @@ def cmd_seed(conn) -> int:
         conn.rollback()
         raise SystemExit(f"ERROR: seed failed and was rolled back:\n{exc}")
     print("  reference/demo seed applied (idempotent).")
+    if RAG_SEED_SCRIPT.exists():
+        env = {**os.environ}
+        proc = subprocess.run(
+            [sys.executable, str(RAG_SEED_SCRIPT)],
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd=str(BACKEND_DIR),
+        )
+        if proc.returncode != 0:
+            raise SystemExit(
+                f"ERROR: RAG seed failed:\n{proc.stdout}\n{proc.stderr}"
+            )
+        if proc.stdout.strip():
+            print(proc.stdout.strip())
     return 0
 
 
