@@ -156,12 +156,13 @@ python -m app.scripts.audit_database
 - Dataset validation: [`data/generated/moderate_demo/validation-report.json`](../data/generated/moderate_demo/validation-report.json)
 - Loader report: [`data/generated/moderate_demo/apply-report.json`](../data/generated/moderate_demo/apply-report.json)
 - Current database audit: [`docs/data/database-audit.json`](data/database-audit.json)
-- Metric interpretation: [`validation-evidence.md`](validation-evidence.md)
+- Judge-facing measured metrics: [`validation-evidence.md`](validation-evidence.md) (held-out harness output in [`evidence/`](evidence/))
+- Held-out harness artifacts: [`evidence/validation-summary.json`](evidence/validation-summary.json)
 
 Limitations:
 
 - All distributions, behaviors, balances, labels, and outcomes are authored simulation assumptions.
 - The date window, outlet count, and provider count are small compared with production networks.
-- Stored moderate metrics are deterministic fixture evidence, not an independent field evaluation.
+- Stored moderate metrics are **fixture consistency checks**, not independent field evaluation; cite harness artifacts for measured precision/recall/latency.
 - The configured database contains repository data through migration `010`; migration `011` and the similar-case seed corpus were not present at audit time.
 - No real provider interface, customer identity, geographic behavior, regulatory rule, or production baseline is represented.
