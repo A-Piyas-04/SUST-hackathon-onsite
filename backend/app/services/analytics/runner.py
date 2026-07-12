@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -204,6 +204,34 @@ async def _validate_run(session: AsyncSession, run_id: UUID) -> None:
         raise AppError("not_found", f"Simulation run {run_id} not found.", status_code=404)
 
 
+async def _existing_analytics_run(
+    session: AsyncSession, simulation_run_id: UUID, engine: AnalyticsEngine
+) -> UUID | None:
+    """Return the earliest analytics run of this engine already persisted for the
+    simulation run, if any.
+
+    Analytics on a completed simulation run is deterministic and append-only, so
+    re-running the same engine for the same run would only duplicate flags,
+    evidence, quality assessments and projections (identical values at identical
+    timestamps). Callers use this to recompute the response in-memory while
+    skipping the redundant writes — one analytics cycle per run, idempotently.
+    """
+    result = await session.execute(
+        text(
+            """
+            SELECT analytics_run_id
+            FROM analytics_runs
+            WHERE simulation_run_id = :run_id AND engine = :engine
+            ORDER BY started_at
+            LIMIT 1
+            """
+        ),
+        {"run_id": simulation_run_id, "engine": engine.value},
+    )
+    row = result.first()
+    return row[0] if row else None
+
+
 # --------------------------------------------------------------------------- #
 # Envelope builders (seam)
 # --------------------------------------------------------------------------- #
@@ -308,21 +336,29 @@ async def run_liquidity(
     window_start, window_end = await _compute_window(session, simulation_run_id, outlet_id)
     as_of = window_end
 
-    analytics_run_id = await persistence.create_analytics_run(
-        session,
-        simulation_run_id=simulation_run_id,
-        engine=AnalyticsEngine.LIQUIDITY,
-        engine_version=cfg.LIQUIDITY_ENGINE_VERSION,
-        configuration={
-            "burn_window_minutes": cfg.LIQUIDITY_BURN_WINDOW_MINUTES,
-            "min_samples": cfg.LIQUIDITY_MIN_SAMPLES,
-            "target_samples": cfg.LIQUIDITY_TARGET_SAMPLES,
-            "bound_factor": cfg.LIQUIDITY_BOUND_FACTOR,
-            "outlet_id": str(outlet_id),
-        },
-        input_window_start=window_start,
-        input_window_end=window_end,
+    # Idempotent re-run guard: if liquidity analytics already ran for this
+    # simulation run, recompute the (deterministic) response but skip the writes
+    # so evidence/projections/quality are not duplicated on repeat invocation.
+    analytics_run_id = await _existing_analytics_run(
+        session, simulation_run_id, AnalyticsEngine.LIQUIDITY
     )
+    persist = analytics_run_id is None
+    if persist:
+        analytics_run_id = await persistence.create_analytics_run(
+            session,
+            simulation_run_id=simulation_run_id,
+            engine=AnalyticsEngine.LIQUIDITY,
+            engine_version=cfg.LIQUIDITY_ENGINE_VERSION,
+            configuration={
+                "burn_window_minutes": cfg.LIQUIDITY_BURN_WINDOW_MINUTES,
+                "min_samples": cfg.LIQUIDITY_MIN_SAMPLES,
+                "target_samples": cfg.LIQUIDITY_TARGET_SAMPLES,
+                "bound_factor": cfg.LIQUIDITY_BOUND_FACTOR,
+                "outlet_id": str(outlet_id),
+            },
+            input_window_start=window_start,
+            input_window_end=window_end,
+        )
 
     projections: list[LiquidityProjectionOutput] = []
     candidates = []
@@ -350,9 +386,12 @@ async def run_liquidity(
         )
     )
     cash_projection = _forecast_to_projection(cash_forecast, outlet_id=outlet_id)
-    cash_pid = await persistence.insert_liquidity_projection(
-        session, cash_projection, analytics_run_id=analytics_run_id, primary_assessment_id=None
-    )
+    if persist:
+        cash_pid = await persistence.insert_liquidity_projection(
+            session, cash_projection, analytics_run_id=analytics_run_id, primary_assessment_id=None
+        )
+    else:
+        cash_pid = cash_projection.liquidity_projection_id or uuid4()
     cash_projection.liquidity_projection_id = cash_pid
     cash_projection.analytics_run_id = analytics_run_id
     projections.append(cash_projection)
@@ -383,15 +422,18 @@ async def run_liquidity(
                 as_of=as_of,
             )
         )
-        assessment_id = await persistence.insert_quality_assessment(
-            session,
-            _quality_to_input(
-                quality,
-                simulation_run_id=simulation_run_id,
-                outlet_id=outlet_id,
-                provider_id=acct["provider_id"],
-            ),
-        )
+        if persist:
+            assessment_id = await persistence.insert_quality_assessment(
+                session,
+                _quality_to_input(
+                    quality,
+                    simulation_run_id=simulation_run_id,
+                    outlet_id=outlet_id,
+                    provider_id=acct["provider_id"],
+                ),
+            )
+        else:
+            assessment_id = uuid4()
         forecast = forecast_reserve(
             LiquidityReserveInput(
                 reserve_type=ReserveType.PROVIDER_E_MONEY,
@@ -408,13 +450,16 @@ async def run_liquidity(
             provider_id=acct["provider_id"],
             account_id=acct["outlet_provider_account_id"],
         )
-        pid = await persistence.insert_liquidity_projection(
-            session,
-            projection,
-            analytics_run_id=analytics_run_id,
-            primary_assessment_id=assessment_id,
-            linked_assessment_ids=(assessment_id,),
-        )
+        if persist:
+            pid = await persistence.insert_liquidity_projection(
+                session,
+                projection,
+                analytics_run_id=analytics_run_id,
+                primary_assessment_id=assessment_id,
+                linked_assessment_ids=(assessment_id,),
+            )
+        else:
+            pid = projection.liquidity_projection_id or uuid4()
         projection.liquidity_projection_id = pid
         projection.analytics_run_id = analytics_run_id
         projections.append(projection)
@@ -431,7 +476,8 @@ async def run_liquidity(
         if cand is not None:
             candidates.append(cand)
 
-    await persistence.complete_analytics_run(session, analytics_run_id)
+    if persist:
+        await persistence.complete_analytics_run(session, analytics_run_id)
     return LiquidityRunResponse(
         analytics_run_id=analytics_run_id,
         simulation_run_id=simulation_run_id,
@@ -582,25 +628,33 @@ async def run_anomalies(
     as_of = window_end
     rules = await _active_rules(session)
 
-    analytics_run_id = await persistence.create_analytics_run(
-        session,
-        simulation_run_id=simulation_run_id,
-        engine=AnalyticsEngine.ANOMALY,
-        engine_version=cfg.ANOMALY_ENGINE_VERSION,
-        configuration={
-            "rules": [
-                {
-                    "anomaly_rule_id": str(r["anomaly_rule_id"]),
-                    "pattern": r["pattern"],
-                    "configuration": r["configuration"],
-                }
-                for r in rules
-            ],
-            "outlet_id": str(outlet_id),
-        },
-        input_window_start=window_start,
-        input_window_end=window_end,
+    # Idempotent re-run guard: if anomaly analytics already ran for this
+    # simulation run, recompute the (deterministic) response but skip the writes
+    # so flags/evidence/quality are not duplicated on repeat invocation.
+    analytics_run_id = await _existing_analytics_run(
+        session, simulation_run_id, AnalyticsEngine.ANOMALY
     )
+    persist = analytics_run_id is None
+    if persist:
+        analytics_run_id = await persistence.create_analytics_run(
+            session,
+            simulation_run_id=simulation_run_id,
+            engine=AnalyticsEngine.ANOMALY,
+            engine_version=cfg.ANOMALY_ENGINE_VERSION,
+            configuration={
+                "rules": [
+                    {
+                        "anomaly_rule_id": str(r["anomaly_rule_id"]),
+                        "pattern": r["pattern"],
+                        "configuration": r["configuration"],
+                    }
+                    for r in rules
+                ],
+                "outlet_id": str(outlet_id),
+            },
+            input_window_start=window_start,
+            input_window_end=window_end,
+        )
 
     flags: list[AnomalyFlagOutput] = []
     candidates = []
@@ -621,15 +675,18 @@ async def run_anomalies(
                 as_of=as_of,
             )
         )
-        assessment_id = await persistence.insert_quality_assessment(
-            session,
-            _quality_to_input(
-                quality,
-                simulation_run_id=simulation_run_id,
-                outlet_id=outlet_id,
-                provider_id=acct["provider_id"],
-            ),
-        )
+        if persist:
+            assessment_id = await persistence.insert_quality_assessment(
+                session,
+                _quality_to_input(
+                    quality,
+                    simulation_run_id=simulation_run_id,
+                    outlet_id=outlet_id,
+                    provider_id=acct["provider_id"],
+                ),
+            )
+        else:
+            assessment_id = uuid4()
         for rule in rules:
             pattern = rule["pattern"]
             pattern_enum = _PATTERN_TO_ENUM.get(pattern)
@@ -656,9 +713,12 @@ async def run_anomalies(
                 assessment_id=assessment_id,
                 pattern=pattern_enum,
             )
-            flag_id = await persistence.insert_anomaly_flag(
-                session, flag, analytics_run_id=analytics_run_id, anomaly_rule_id=rule["anomaly_rule_id"]
-            )
+            if persist:
+                flag_id = await persistence.insert_anomaly_flag(
+                    session, flag, analytics_run_id=analytics_run_id, anomaly_rule_id=rule["anomaly_rule_id"]
+                )
+            else:
+                flag_id = flag.anomaly_flag_id or uuid4()
             flag.anomaly_flag_id = flag_id
             flag.analytics_run_id = analytics_run_id
             flag.anomaly_rule_id = rule["anomaly_rule_id"]
@@ -676,7 +736,8 @@ async def run_anomalies(
             if cand is not None:
                 candidates.append(cand)
 
-    await persistence.complete_analytics_run(session, analytics_run_id)
+    if persist:
+        await persistence.complete_analytics_run(session, analytics_run_id)
     return AnomalyRunResponse(
         analytics_run_id=analytics_run_id,
         simulation_run_id=simulation_run_id,
