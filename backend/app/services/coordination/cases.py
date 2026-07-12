@@ -699,12 +699,15 @@ async def get_case(session: AsyncSession, user: UserContext, case_id: UUID) -> C
 async def list_cases(
     session: AsyncSession, user: UserContext, *, status: str | None = None
 ) -> CaseListResponse:
-    clauses = []
+    # RAG similar-case seed corpus (CASE-SEED-RAG-*) is reference data that powers
+    # the similar-case retrieval feature via case_embeddings; it is not a live,
+    # reviewer-actionable case, so keep it out of the reviewer-facing case list.
+    clauses = ["case_number NOT LIKE 'CASE-SEED-RAG-%'"]
     params: dict[str, Any] = {}
     if status is not None:
         clauses.append("status = :status")
         params["status"] = status
-    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    where = " WHERE " + " AND ".join(clauses)
     result = await session.execute(
         text(f"SELECT * FROM cases{where} ORDER BY updated_at DESC"), params
     )

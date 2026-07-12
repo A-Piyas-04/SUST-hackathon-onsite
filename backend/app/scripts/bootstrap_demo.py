@@ -270,7 +270,12 @@ async def _apply_scenario(
 
 async def _ensure_demo_case(*, outlet_id: UUID) -> bool:
     async def _has_case(session):
-        result = await session.execute(text("SELECT 1 FROM cases LIMIT 1"))
+        # Ignore the RAG similar-case seed corpus (CASE-SEED-RAG-*): it is
+        # reference data and is filtered out of the reviewer-facing case list,
+        # so it must not satisfy the "a demo case already exists" check.
+        result = await session.execute(
+            text("SELECT 1 FROM cases WHERE case_number NOT LIKE 'CASE-SEED-RAG-%' LIMIT 1")
+        )
         return result.first() is not None
 
     if await _with_session(_has_case):
@@ -281,13 +286,17 @@ async def _ensure_demo_case(*, outlet_id: UUID) -> bool:
         result = await session.execute(
             text(
                 """
-                SELECT alert_id
-                FROM alerts
-                WHERE outlet_id = :outlet_id
-                  AND provider_id = :provider_id
-                  AND state = 'active'
-                  AND alert_type IN ('anomaly', 'combined', 'liquidity')
-                ORDER BY detected_at
+                SELECT a.alert_id
+                FROM alerts a
+                JOIN simulation_runs sr ON sr.simulation_run_id = a.simulation_run_id
+                WHERE a.outlet_id = :outlet_id
+                  AND a.provider_id = :provider_id
+                  AND a.state = 'active'
+                  AND a.alert_type IN ('anomaly', 'combined', 'liquidity')
+                  -- Open the live demo case on a freshly generated alert, not on
+                  -- the RAG similar-case seed corpus (reference data).
+                  AND coalesce(sr.config_snapshot->>'dataset', '') <> 'rag_seed'
+                ORDER BY a.detected_at
                 LIMIT 1
                 """
             ),
