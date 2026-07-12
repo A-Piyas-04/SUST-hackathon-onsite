@@ -51,6 +51,13 @@ const SCENARIO_STYLES: Record<string, { letter: string; border: string; badge: s
   },
 };
 
+type PipelineResult = {
+  transactions: number;
+  projections: number;
+  flags: number;
+  alerts: number;
+};
+
 export function ScenariosView({ outletId }: { outletId: string }) {
   const router = useRouter();
   const qc = useQueryClient();
@@ -59,20 +66,52 @@ export function ScenariosView({ outletId }: { outletId: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [faults, setFaults] = useState<Record<string, boolean>>({});
+  const [result, setResult] = useState<PipelineResult | null>(null);
 
   function push(msg: string) {
-    setLog((l) => [msg, ...l].slice(0, 10));
+    setLog((l) => [msg, ...l].slice(0, 12));
   }
 
+  // Running a scenario is a 4-stage pipeline: generate synthetic data → compute
+  // liquidity projections → detect unusual activity → publish alerts (which may
+  // open cases). The backend does NOT chain these automatically, so we
+  // orchestrate them here and stream progress. Previously this only ran stage 1
+  // and immediately navigated to the dashboard, so no alerts/projections were
+  // ever produced and it looked like nothing happened.
   async function doRun(s: Scenario) {
     setBusy(s.code);
+    setResult(null);
+    setLog([]);
     try {
+      push(`Starting "${s.name}"…`);
       const r = await startRun(s.code, outletId);
       setRun(r);
-      push(`Started ${s.name}`);
-      router.push("/dashboard");
+      push(`Generated ${r.artifacts.transactions} transactions and ${r.artifacts.provider_snapshots} balance snapshots`);
+
+      push("Computing liquidity projections…");
+      const liq = await runLiquidityAnalytics(r.simulation_run_id, outletId);
+      push(`→ ${liq.projections.length} liquidity projection(s)`);
+
+      push("Detecting unusual activity…");
+      const anom = await runAnomalyAnalytics(r.simulation_run_id, outletId);
+      push(`→ ${anom.flags.length} anomaly flag(s)`);
+
+      push("Publishing alerts…");
+      const pub = await publishAlerts(r.simulation_run_id, outletId);
+      push(`→ ${pub.published.length} alert(s) published`);
+
+      setResult({
+        transactions: r.artifacts.transactions,
+        projections: liq.projections.length,
+        flags: anom.flags.length,
+        alerts: pub.published.length,
+      });
+      push(`Done — "${s.name}" is ready. Open the dashboard or alerts to see the outcome.`);
+
+      // Refresh downstream views so the new run is visible immediately.
+      qc.invalidateQueries();
     } catch (e) {
-      push(e instanceof Error ? e.message : "Failed");
+      push(`Failed: ${e instanceof Error ? e.message : "run error"}`);
     } finally {
       setBusy(null);
     }
@@ -141,51 +180,60 @@ export function ScenariosView({ outletId }: { outletId: string }) {
 
       {run && (
         <Card>
-          <p className="section-heading">Active run</p>
-          <p className="mt-1 text-xs text-muted">
-            {run.scenario_code} · {run.status} · {run.artifacts.transactions} txns
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              onClick={async () => {
-                const res = await runLiquidityAnalytics(run.simulation_run_id, outletId);
-                push(`Liquidity: ${res.projections.length} projections`);
-              }}
-            >
-              Liquidity analytics
-            </Button>
-            <Button
-              size="sm"
-              onClick={async () => {
-                const res = await runAnomalyAnalytics(run.simulation_run_id, outletId);
-                push(`Anomaly: ${res.flags.length} flags`);
-              }}
-            >
-              Anomaly analytics
-            </Button>
-            <Button
-              size="sm"
-              onClick={async () => {
-                const res = await publishAlerts(run.simulation_run_id, outletId);
-                push(`Published ${res.published.length} alerts`);
-              }}
-            >
-              Publish alerts
-            </Button>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="section-heading">Active run</p>
+              <p className="mt-1 text-xs text-muted">
+                {run.scenario_code} · {busy ? "running…" : "completed"}
+              </p>
+            </div>
             <Button
               size="sm"
               variant="danger"
+              disabled={busy !== null}
               onClick={async () => {
                 await resetRun(run.simulation_run_id);
                 setRun(null);
+                setResult(null);
                 setFaults({});
-                push("Reset");
+                push("Reset run — data cleared");
+                qc.invalidateQueries();
               }}
             >
               Reset
             </Button>
           </div>
+
+          {result && (
+            <>
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { label: "Transactions", value: result.transactions },
+                  { label: "Projections", value: result.projections },
+                  { label: "Anomaly flags", value: result.flags },
+                  { label: "Alerts", value: result.alerts },
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-lg border border-border bg-surface px-3 py-2">
+                    <p className="text-lg font-semibold tabular-nums text-foreground">{stat.value}</p>
+                    <p className="text-xs text-muted">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button size="sm" variant="primary" onClick={() => router.push("/dashboard")}>
+                  View dashboard
+                </Button>
+                <Button size="sm" onClick={() => router.push("/alerts")}>
+                  View alerts{result.alerts > 0 ? ` (${result.alerts})` : ""}
+                </Button>
+                {result.alerts > 0 && (
+                  <Button size="sm" onClick={() => router.push("/cases")}>
+                    View cases
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </Card>
       )}
 
