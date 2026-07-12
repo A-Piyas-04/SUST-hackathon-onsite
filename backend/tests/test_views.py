@@ -1,4 +1,6 @@
 """Read-model / view behaviour (docs/schema.md §12)."""
+from datetime import timedelta
+
 from helpers import (
     ACCT_O1_BK, BKASH, OUTLET1, TS, TS2, new_alert, new_analytics_run, new_assessment,
     new_cash, new_case, new_pbs, new_projection, new_run,
@@ -28,13 +30,15 @@ def test_latest_cash_balance_is_deterministic(cur):
 def test_latest_cash_balance_prefers_newer_run_over_later_synthetic_time(cur):
     older_run = new_run(cur, seed=7001)
     newer_run = new_run(cur, seed=7002)
+    cur.execute("SELECT max(started_at) FROM simulation_runs")
+    latest_existing_start = cur.fetchone()[0]
     cur.execute(
         "UPDATE simulation_runs SET started_at=%s WHERE simulation_run_id=%s",
-        (TS, older_run),
+        (latest_existing_start + timedelta(minutes=1), older_run),
     )
     cur.execute(
         "UPDATE simulation_runs SET started_at=%s WHERE simulation_run_id=%s",
-        (TS2, newer_run),
+        (latest_existing_start + timedelta(minutes=2), newer_run),
     )
 
     # The older scenario has a longer synthetic timeline, but the scenario run

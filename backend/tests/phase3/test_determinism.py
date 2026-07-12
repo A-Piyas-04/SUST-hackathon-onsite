@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 from app.core.auth import OUTLET1
 
 
@@ -13,8 +15,8 @@ def _start_run(client, headers, seed: int = 1001):
     )
 
 
-def _txn_set(client, headers):
-    """(ref, amount) pairs currently in the outlet's ledger.
+def _txn_set_for_run(conn, run_id: str):
+    """Return (ref, amount) pairs persisted for exactly one simulation run.
 
     occurred_at is deliberately excluded: each run's synthetic timeline is
     anchored to real "now" at generation time (app/services/synthetic/clock.py)
@@ -24,32 +26,29 @@ def _txn_set(client, headers):
     different real moments, on purpose — only ref+amount are seed-controlled
     and expected to match.
     """
-    txns = client.get(
-        f"/api/v1/outlets/{OUTLET1}/transactions",
-        headers=headers,
-        params={"limit": 500},
-    ).json()["transactions"]
-    return {(t["synthetic_transaction_ref"], t["amount"]) for t in txns}
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT synthetic_transaction_ref, amount FROM transactions "
+            "WHERE simulation_run_id=%s",
+            (run_id,),
+        )
+        return {(ref, str(amount)) for ref, amount in cur.fetchall()}
 
 
-def test_same_seed_produces_equal_semantic_outputs(client, auth_headers, admin_headers):
-    # The transaction ledger is append-only (see app/services/simulation/reset.py)
-    # and this fixture does not roll back between calls within a test, so both
-    # runs' rows accumulate in the same outlet. Diff against the running total
-    # (rather than comparing two full-ledger snapshots) so the comparison is
-    # correct regardless of what else has already been ingested and regardless
-    # of whether the ingestion pipeline dedupes an identical ref outright.
-    before = _txn_set(client, auth_headers)
+def test_same_seed_produces_equal_semantic_outputs(client, conn, admin_headers):
+    # Use a per-test seed so an earlier suite test cannot already own the global
+    # provider/ref uniqueness keys generated from this seed.
+    seed = uuid4().int % 2_000_000_000 or 1
 
-    r1 = _start_run(client, admin_headers, seed=4242)
+    r1 = _start_run(client, admin_headers, seed=seed)
     assert r1.status_code == 201
-    after_r1 = _txn_set(client, auth_headers)
-    added_by_r1 = after_r1 - before
+    run1_id = r1.json()["simulation_run_id"]
+    added_by_r1 = _txn_set_for_run(conn, run1_id)
 
-    r2 = _start_run(client, admin_headers, seed=4242)
+    r2 = _start_run(client, admin_headers, seed=seed)
     assert r2.status_code == 201
-    after_r2 = _txn_set(client, auth_headers)
-    added_by_r2 = after_r2 - after_r1
+    run2_id = r2.json()["simulation_run_id"]
+    added_by_r2 = _txn_set_for_run(conn, run2_id)
 
     assert added_by_r1, "first run should ingest at least one transaction"
     # Same seed must produce the same (ref, amount) transactions. If the
