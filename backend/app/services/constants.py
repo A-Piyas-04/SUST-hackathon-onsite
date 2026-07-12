@@ -26,6 +26,10 @@ ACCOUNT_IDS: dict[ProviderCode, UUID] = {
 
 DEFAULT_OUTLET_ID = OUTLET1
 
+# Superseded: app/services/synthetic/clock.py now anchors its timeline to
+# process-start time instead of this fixed date, so projected shortage times
+# stay in the future relative to "now" instead of drifting into the past as
+# real time passes this hardcoded value. Kept only for any external reference.
 BASE_TIMESTAMP_ISO = "2026-07-11T06:00:00+00:00"
 
 INTERIM_PROJECTION = {

@@ -66,3 +66,24 @@ def test_scenario_a_cash_out_pressure_depletes_shared_cash():
 
     assert closing_cash < opening_cash
     assert closing_bkash > opening_bkash
+
+
+def test_scenario_c_keeps_a_recent_trusted_provider_balance_before_the_conflict():
+    result = generate_dataset(
+        scenario_code=ScenarioCode.SCENARIO_C,
+        seed=2003,
+        config={"cluster_provider": "bkash", "cluster_count": 6},
+    )
+
+    bkash_snapshots = [
+        event
+        for batch in result.batches
+        for event in batch.events
+        if event.event_type.value == "provider_balance"
+        and event.provider_code == ProviderCode.BKASH
+    ]
+
+    opening = Decimal(bkash_snapshots[0].payload["balance"])
+    transaction_snapshots = [event for event in bkash_snapshots if "-TXN-" in event.source_event_ref]
+    assert transaction_snapshots
+    assert Decimal(transaction_snapshots[-1].payload["balance"]) > opening

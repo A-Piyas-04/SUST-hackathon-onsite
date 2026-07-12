@@ -108,7 +108,7 @@ def _apply_event_fault(
         payload = copy.deepcopy(event.payload)
         key_map = {
             "amount": ["trx_amount", "amount", "value"],
-            "balance": ["wallet_balance", "availableBalance", "current_value", "physical_cash"],
+            "balance": ["balance", "wallet_balance", "availableBalance", "current_value", "physical_cash"],
         }
         for key in key_map.get(omit, [omit]):
             payload.pop(key, None)
@@ -122,12 +122,15 @@ def _apply_event_fault(
         return event, []
 
     if fault.fault_type == FaultType.CONFLICTING_BALANCE.value:
-        if event.event_type.value == "provider_balance":
+        # Conflict the closing observation only. Earlier per-transaction
+        # snapshots remain trusted, so the dashboard can show a meaningful
+        # last-known balance while still marking the feed as conflicting.
+        if event.event_type.value == "provider_balance" and event.source_event_ref.endswith("-1"):
             delta = Decimal(str(fault.parameters.get("conflict_delta", "500.00")))
             conflict = copy.deepcopy(event)
             conflict.source_event_ref = event.source_event_ref + "-CONFLICT"
             payload = copy.deepcopy(event.payload)
-            for key in ("wallet_balance", "availableBalance", "current_value"):
+            for key in ("balance", "wallet_balance", "availableBalance", "current_value"):
                 if key in payload:
                     payload[key] = str(Decimal(str(payload[key])) + delta)
             conflict.payload = payload

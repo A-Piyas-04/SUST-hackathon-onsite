@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createFault,
+  fetchDashboard,
   publishAlerts,
   resetRun,
   runAnomalyAnalytics,
@@ -21,7 +22,7 @@ import { cn } from "@/lib/cn";
 const FAULT_TYPES = [
   { id: "delay", label: "Delay", desc: "Adds latency to provider feed delivery" },
   { id: "missing_feed", label: "Missing Feed", desc: "Stops incoming balance updates for a provider" },
-  { id: "conflicting_balance", label: "Conflicting Balance", desc: "Injects mismatched balance snapshots" },
+  { id: "conflicting_balance", label: "Conflicting Balance", desc: "Injects a mismatched bKash balance snapshot" },
 ] as const;
 
 const SCENARIO_STYLES: Record<string, { letter: string; border: string; badge: string; text: string }> = {
@@ -72,6 +73,17 @@ export function ScenariosView({ outletId }: { outletId: string }) {
     setLog((l) => [msg, ...l].slice(0, 12));
   }
 
+  async function refreshScenarioState() {
+    // Refresh all derived views and eagerly replace the stable dashboard
+    // snapshot so navigation cannot briefly show balances from the prior run.
+    await qc.invalidateQueries({
+      predicate: (query) => query.queryKey[0] !== "dashboard",
+    });
+    await qc.invalidateQueries({ queryKey: queryKeys.dashboard(outletId) });
+    const dashboard = await fetchDashboard(outletId);
+    qc.setQueryData(queryKeys.dashboard(outletId), dashboard);
+  }
+
   // Running a scenario is a 4-stage pipeline: generate synthetic data → compute
   // liquidity projections → detect unusual activity → publish alerts (which may
   // open cases). The backend does NOT chain these automatically, so we
@@ -100,6 +112,8 @@ export function ScenariosView({ outletId }: { outletId: string }) {
       const pub = await publishAlerts(r.simulation_run_id, outletId);
       push(`→ ${pub.published.length} alert(s) published`);
 
+      await refreshScenarioState();
+
       setResult({
         transactions: r.artifacts.transactions,
         projections: liq.projections.length,
@@ -108,8 +122,6 @@ export function ScenariosView({ outletId }: { outletId: string }) {
       });
       push(`Done — "${s.name}" is ready. Open the dashboard or alerts to see the outcome.`);
 
-      // Refresh downstream views so the new run is visible immediately.
-      qc.invalidateQueries();
     } catch (e) {
       push(`Failed: ${e instanceof Error ? e.message : "run error"}`);
     } finally {
@@ -197,7 +209,7 @@ export function ScenariosView({ outletId }: { outletId: string }) {
                 setResult(null);
                 setFaults({});
                 push("Reset run — data cleared");
-                qc.invalidateQueries();
+                await refreshScenarioState();
               }}
             >
               Reset
@@ -270,6 +282,10 @@ export function ScenariosView({ outletId }: { outletId: string }) {
                     const f = await createFault(run.simulation_run_id, {
                       fault_type: ft.id,
                       outlet_id: outletId,
+                      // The compact demo control has no provider selector.
+                      // Scope balance conflicts to one provider so the other
+                      // cards continue to demonstrate normal balance movement.
+                      parameters: ft.id === "conflicting_balance" ? { target_provider: "bkash" } : undefined,
                     });
                     await toggleFault(run.simulation_run_id, f.fault_injection_id, true);
                     push(`Enabled ${ft.label}`);

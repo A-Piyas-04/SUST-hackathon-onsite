@@ -52,7 +52,9 @@ export function useDashboard(outletId: string) {
     queryKey: queryKeys.dashboard(outletId),
     queryFn: () => fetchDashboard(outletId),
     enabled: !!outletId,
-    refetchInterval: 30_000,
+    // A completed scenario is a stable demo snapshot. Keep showing it until
+    // the scenario runner explicitly replaces this query for the next run.
+    staleTime: Infinity,
   });
 }
 

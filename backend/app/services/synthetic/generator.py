@@ -11,7 +11,7 @@ from uuid import UUID
 
 from app.contracts.v1.enums import FeedEventType, ProviderCode, ScenarioCode, TransactionStatus, TransactionType
 from app.services.constants import ACCOUNT_IDS, DEFAULT_OUTLET_ID, PROVIDER_IDS
-from app.services.synthetic.clock import batch_time, event_time
+from app.services.synthetic.clock import batch_time, event_time, new_anchor
 
 
 @dataclass
@@ -80,6 +80,9 @@ def generate_dataset(
     outlet_id: UUID = DEFAULT_OUTLET_ID,
 ) -> GenerationResult:
     rng = random.Random(seed)
+    # Fresh per-run anchor (real "now" at generation time) — see clock.py for
+    # why this must NOT be a fixed date or a process-wide singleton.
+    base = new_anchor()
     txn_count = int(config.get("transaction_count", 12))
     batches: list[GeneratedBatch] = []
     fingerprint: list[dict[str, Any]] = []
@@ -99,10 +102,10 @@ def generate_dataset(
     cash_batch = GeneratedBatch(
         provider_code=ProviderCode.BKASH,
         source_batch_ref=f"CASH-{seed}-B0",
-        source_generated_at=batch_time(batch_idx),
+        source_generated_at=batch_time(base, batch_idx),
         is_cash_batch=True,
     )
-    obs = event_time(event_idx)
+    obs = event_time(base, event_idx)
     cash_batch.events.append(
         GeneratedEvent(
             event_type=FeedEventType.CASH_BALANCE,
@@ -131,13 +134,13 @@ def generate_dataset(
     # additionally injects a conflicting balance snapshot so data quality degrades
     # and the (still-detected) cluster is safely suppressed rather than alerted.
     scenarios_with_cluster = {ScenarioCode.SCENARIO_B, ScenarioCode.SCENARIO_C}
-    cluster_anchor = event_time(2)
+    cluster_anchor = event_time(base, 2)
 
     for provider in (ProviderCode.BKASH, ProviderCode.NAGAD, ProviderCode.ROCKET):
         batch = GeneratedBatch(
             provider_code=provider,
             source_batch_ref=f"{provider.value.upper()}-{seed}-B{batch_idx}",
-            source_generated_at=batch_time(batch_idx),
+            source_generated_at=batch_time(base, batch_idx),
         )
         batch_idx += 1
         is_cluster_provider = (
@@ -145,7 +148,7 @@ def generate_dataset(
         )
 
         # Opening provider balance snapshot
-        bal_obs = event_time(event_idx)
+        bal_obs = event_time(base, event_idx)
         batch.events.append(
             GeneratedEvent(
                 event_type=FeedEventType.PROVIDER_BALANCE,
@@ -175,7 +178,7 @@ def generate_dataset(
         if is_cluster_provider:
             per_provider_txns = max(per_provider_txns, cluster_count)
         for t in range(per_provider_txns):
-            txn_obs = event_time(event_idx)
+            txn_obs = event_time(base, event_idx)
             event_idx += 1
 
             # Directional balance effect (double-entry, 1:1):
@@ -254,8 +257,36 @@ def generate_dataset(
                 }
             )
 
+            # Publish a trusted balance observation alongside each completed
+            # transaction.  A deliberately conflicted *closing* feed must not
+            # make the dashboard fall all the way back to the opening balance;
+            # it can safely show this most recent, transaction-driven value as
+            # the last trusted observation instead.
+            batch.events.append(
+                GeneratedEvent(
+                    event_type=FeedEventType.PROVIDER_BALANCE,
+                    provider_code=provider,
+                    source_event_ref=f"{provider.value.upper()}-BAL-{seed}-TXN-{t:03d}",
+                    source_observed_at=txn_obs,
+                    payload={
+                        "account_ref": f"ACCT-O1-{provider.value.upper()}",
+                        "balance": str(_q2(provider_balances[provider])),
+                        "currency": "BDT",
+                        "observed_at": txn_obs.isoformat(),
+                    },
+                )
+            )
+            fingerprint.append(
+                {
+                    "type": "provider_balance",
+                    "provider": provider.value,
+                    "balance": str(_q2(provider_balances[provider])),
+                    "observed_at": txn_obs.isoformat(),
+                }
+            )
+
         # Closing balance snapshot
-        close_obs = event_time(event_idx)
+        close_obs = event_time(base, event_idx)
         event_idx += 1
         batch.events.append(
             GeneratedEvent(
@@ -309,11 +340,11 @@ def generate_dataset(
         batches.append(batch)
 
     # Final cash snapshot
-    final_obs = event_time(event_idx)
+    final_obs = event_time(base, event_idx)
     cash_final = GeneratedBatch(
         provider_code=ProviderCode.BKASH,
         source_batch_ref=f"CASH-{seed}-B{batch_idx}",
-        source_generated_at=batch_time(batch_idx),
+        source_generated_at=batch_time(base, batch_idx),
         is_cash_batch=True,
     )
     cash_final.events.append(
