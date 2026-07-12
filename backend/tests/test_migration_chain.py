@@ -98,7 +98,7 @@ def test_migration_history_recorded(cur):
     cur.execute("SELECT version, checksum FROM schema_migrations ORDER BY version")
     rows = cur.fetchall()
     versions = [r[0] for r in rows]
-    assert versions == ["001", "002", "003", "004", "005", "006", "007", "008", "009", "010", "011"], versions
+    assert versions == ["001", "002", "003", "004", "005", "006", "007", "008", "009", "010", "011", "012"], versions
     assert all(len(r[1]) == 64 for r in rows), "checksums must be sha256 hex"
 
 
@@ -113,4 +113,4 @@ def test_reapply_is_idempotent(cur):
     assert proc.returncode == 0, proc.stderr
     assert "nothing to apply" in proc.stdout.lower()
     cur.execute("SELECT count(*) FROM schema_migrations")
-    assert cur.fetchone()[0] == before == 11
+    assert cur.fetchone()[0] == before == 12

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.core.auth import OUTLET1
 from tests.phase5.conftest import anomaly_alert, publish, start_run
 
 
@@ -14,6 +15,29 @@ def test_publish_creates_alert_with_sources(client, bkash_ops_headers, admin_hea
     assert alert["source_links"]["anomaly_flag_ids"], alert["source_links"]
     assert alert["requires_case"] is True
     assert alert["structured_payload"]["evidence_summary"]
+
+
+def test_publish_after_ui_analytics_pipeline_reuses_persisted_source_ids(
+    client, admin_headers
+):
+    """The frontend runs both engines before calling the publish endpoint."""
+    run_id = start_run(client, admin_headers, "scenario_b")
+    for endpoint in ("liquidity", "anomalies"):
+        response = client.post(
+            f"/api/v1/internal/analytics/{endpoint}/run",
+            json={"simulation_run_id": run_id, "outlet_id": str(OUTLET1)},
+            headers=admin_headers,
+        )
+        assert response.status_code == 201, response.text
+
+    published = publish(client, admin_headers, run_id)
+    assert published["published"], published
+    for alert in published["published"]:
+        links = alert["source_links"]
+        if alert["alert_type"] == "liquidity":
+            assert links["liquidity_projection_ids"]
+        if alert["alert_type"] == "anomaly":
+            assert links["anomaly_flag_ids"]
 
 
 def test_deduplicates_active_equivalent_alerts(client, bkash_ops_headers, admin_headers):

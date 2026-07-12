@@ -25,6 +25,32 @@ def test_latest_cash_balance_is_deterministic(cur):
     assert str(cur.fetchone()[0]) == "90000.00"
 
 
+def test_latest_cash_balance_prefers_newer_run_over_later_synthetic_time(cur):
+    older_run = new_run(cur, seed=7001)
+    newer_run = new_run(cur, seed=7002)
+    cur.execute(
+        "UPDATE simulation_runs SET started_at=%s WHERE simulation_run_id=%s",
+        (TS, older_run),
+    )
+    cur.execute(
+        "UPDATE simulation_runs SET started_at=%s WHERE simulation_run_id=%s",
+        (TS2, newer_run),
+    )
+
+    # The older scenario has a longer synthetic timeline, but the scenario run
+    # afterward must own the dashboard's current state.
+    new_cash(cur, older_run, OUTLET1, balance="76000.00", observed_at=TS2)
+    new_cash(cur, newer_run, OUTLET1, balance="52000.00", observed_at=TS)
+
+    cur.execute(
+        "SELECT balance, simulation_run_id FROM v_latest_cash_balance WHERE outlet_id=%s",
+        (OUTLET1,),
+    )
+    balance, run_id = cur.fetchone()
+    assert str(balance) == "52000.00"
+    assert run_id == newer_run
+
+
 def test_provider_balances_view_never_sums(cur):
     cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='v_latest_provider_balances'")
     cols = {r[0] for r in cur.fetchall()}

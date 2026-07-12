@@ -232,6 +232,76 @@ async def _existing_analytics_run(
     return row[0] if row else None
 
 
+async def _existing_liquidity_artifact(
+    session: AsyncSession,
+    *,
+    analytics_run_id: UUID,
+    reserve_type: ReserveType,
+    account_id: UUID | None,
+) -> tuple[UUID, UUID | None]:
+    """Return persisted identities when an idempotent liquidity run is replayed."""
+    result = await session.execute(
+        text(
+            """
+            SELECT liquidity_projection_id, primary_data_quality_assessment_id
+            FROM liquidity_projections
+            WHERE analytics_run_id = :analytics_run_id
+              AND reserve_type = :reserve_type
+              AND outlet_provider_account_id IS NOT DISTINCT FROM :account_id
+            LIMIT 1
+            """
+        ),
+        {
+            "analytics_run_id": analytics_run_id,
+            "reserve_type": reserve_type.value,
+            "account_id": account_id,
+        },
+    )
+    row = result.first()
+    if row is None:
+        raise AppError(
+            "analytics_state_error",
+            "Persisted liquidity analytics are incomplete for this run.",
+            status_code=500,
+        )
+    return row[0], row[1]
+
+
+async def _existing_anomaly_artifact(
+    session: AsyncSession,
+    *,
+    analytics_run_id: UUID,
+    provider_id: UUID,
+    anomaly_rule_id: UUID,
+) -> tuple[UUID, UUID]:
+    """Return persisted flag/quality identities for an idempotent replay."""
+    result = await session.execute(
+        text(
+            """
+            SELECT anomaly_flag_id, data_quality_assessment_id
+            FROM anomaly_flags
+            WHERE analytics_run_id = :analytics_run_id
+              AND provider_id = :provider_id
+              AND anomaly_rule_id = :anomaly_rule_id
+            LIMIT 1
+            """
+        ),
+        {
+            "analytics_run_id": analytics_run_id,
+            "provider_id": provider_id,
+            "anomaly_rule_id": anomaly_rule_id,
+        },
+    )
+    row = result.first()
+    if row is None:
+        raise AppError(
+            "analytics_state_error",
+            "Persisted anomaly analytics are incomplete for this run.",
+            status_code=500,
+        )
+    return row[0], row[1]
+
+
 # --------------------------------------------------------------------------- #
 # Envelope builders (seam)
 # --------------------------------------------------------------------------- #
@@ -391,7 +461,12 @@ async def run_liquidity(
             session, cash_projection, analytics_run_id=analytics_run_id, primary_assessment_id=None
         )
     else:
-        cash_pid = cash_projection.liquidity_projection_id or uuid4()
+        cash_pid, _ = await _existing_liquidity_artifact(
+            session,
+            analytics_run_id=analytics_run_id,
+            reserve_type=ReserveType.SHARED_CASH,
+            account_id=None,
+        )
     cash_projection.liquidity_projection_id = cash_pid
     cash_projection.analytics_run_id = analytics_run_id
     projections.append(cash_projection)
@@ -404,6 +479,8 @@ async def run_liquidity(
     )
     cand = envelope_to_alert_candidate(cash_envelope, outlet_id=outlet_id, provider_id=None)
     if cand is not None:
+        cand.source_links.analytics_run_id = analytics_run_id
+        cand.source_links.liquidity_projection_id = cash_pid
         candidates.append(cand)
 
     # --- Each provider e-money reserve (independent) ---------------------------
@@ -433,6 +510,7 @@ async def run_liquidity(
                 ),
             )
         else:
+            # Resolved together with the persisted projection below.
             assessment_id = uuid4()
         forecast = forecast_reserve(
             LiquidityReserveInput(
@@ -459,7 +537,19 @@ async def run_liquidity(
                 linked_assessment_ids=(assessment_id,),
             )
         else:
-            pid = projection.liquidity_projection_id or uuid4()
+            pid, persisted_assessment_id = await _existing_liquidity_artifact(
+                session,
+                analytics_run_id=analytics_run_id,
+                reserve_type=ReserveType.PROVIDER_E_MONEY,
+                account_id=acct["outlet_provider_account_id"],
+            )
+            if persisted_assessment_id is None:
+                raise AppError(
+                    "analytics_state_error",
+                    "Persisted provider projection has no quality assessment.",
+                    status_code=500,
+                )
+            assessment_id = persisted_assessment_id
         projection.liquidity_projection_id = pid
         projection.analytics_run_id = analytics_run_id
         projections.append(projection)
@@ -474,6 +564,8 @@ async def run_liquidity(
             envelope, outlet_id=outlet_id, provider_id=acct["provider_id"]
         )
         if cand is not None:
+            cand.source_links.analytics_run_id = analytics_run_id
+            cand.source_links.liquidity_projection_id = pid
             candidates.append(cand)
 
     if persist:
@@ -718,7 +810,13 @@ async def run_anomalies(
                     session, flag, analytics_run_id=analytics_run_id, anomaly_rule_id=rule["anomaly_rule_id"]
                 )
             else:
-                flag_id = flag.anomaly_flag_id or uuid4()
+                flag_id, assessment_id = await _existing_anomaly_artifact(
+                    session,
+                    analytics_run_id=analytics_run_id,
+                    provider_id=acct["provider_id"],
+                    anomaly_rule_id=rule["anomaly_rule_id"],
+                )
+                flag.data_quality_assessment_id = assessment_id
             flag.anomaly_flag_id = flag_id
             flag.analytics_run_id = analytics_run_id
             flag.anomaly_rule_id = rule["anomaly_rule_id"]
@@ -734,6 +832,8 @@ async def run_anomalies(
             )
             cand = envelope_to_alert_candidate(envelope, outlet_id=outlet_id)
             if cand is not None:
+                cand.source_links.analytics_run_id = analytics_run_id
+                cand.source_links.anomaly_flag_id = flag_id
                 candidates.append(cand)
 
     if persist:

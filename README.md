@@ -31,6 +31,76 @@ Main capabilities:
 - Application authorization plus PostgreSQL Row Level Security (RLS).
 - Deterministic moderate synthetic dataset and measured validation evidence.
 
+### Working prototype: live demo flow
+
+1. Run `docker compose up --build -d`, open `http://localhost:3000`, and sign in as `agent`.
+2. Open the dashboard to view one shared physical cash reserve alongside separate bKash, Nagad, and Rocket e-money balances. The system never presents a blended total.
+3. Run Scenario B, then open **Alerts** to inspect a liquidity/unusual-activity alert, its evidence, confidence, uncertainty, plausible benign explanation, and suggested human next step.
+4. Open the linked **Case**. An authorized provider user such as `bkash_ops` can assign, acknowledge, escalate, add a review/note, and resolve the case. The case status history, notifications, and append-only audit trail show coordinated human escalation rather than automated enforcement.
+
+Scenario A demonstrates hidden shared-cash shortage; Scenario C demonstrates stale, missing, malformed, and conflicting feed handling that reduces confidence and suppresses unsafe alerting; Scenario D demonstrates coordinated closure.
+
+### Source repository and setup
+
+The repository includes a Next.js frontend, FastAPI backend, PostgreSQL migrations and seeds, deterministic sample data, automated tests, Docker configuration, and `backend/.env.example` for environment configuration. The quick-start and manual setup instructions in this README are sufficient to run the prototype; the synthetic dataset is stored under `data/generated/moderate_demo`.
+
+### Architecture diagram
+
+```mermaid
+flowchart LR
+    UI["Role-aware Next.js interface"] --> API["FastAPI API boundary\nAuth, authorization, request logging"]
+    FEEDS["Synthetic bKash / Nagad / Rocket feeds"] --> INGEST["Ingestion, validation, normalization\nand fault injection"]
+    INGEST --> LEDGER["PostgreSQL separated ledger\nshared cash + provider e-money"]
+    LEDGER --> QUALITY["Data-quality assessment\nfresh / stale / missing / conflicting"]
+    QUALITY --> LIQ["Liquidity projection\ntransparent burn-rate model"]
+    QUALITY --> ANOM["Unusual-activity detectors\namount, velocity, balance, behavior"]
+    LIQ --> ALERT["Immutable explainable alert"]
+    ANOM --> ALERT
+    ALERT --> CASE["Provider-aware case workflow\nassign, acknowledge, escalate, review, resolve"]
+    CASE --> AUDIT["Notifications and append-only audit"]
+    API --> LEDGER
+    API --> ALERT
+    API --> CASE
+    LEDGER --> METRICS["Validation results, protected metrics\nhealth and monitoring"]
+    QUALITY --> METRICS
+    LIQ --> METRICS
+    ANOM --> METRICS
+```
+
+Provider boundaries are enforced in the API and PostgreSQL Row Level Security. Shared physical cash is kept distinct from each provider's e-money account in tables, views, contracts, and analytics. The analytics layer is deterministic by default; an optional confidence calibrator is used only when a valid, sufficiently supported artifact is available.
+
+### Data and simulation note
+
+All provider, outlet, party, account, transaction, balance, alert, case, and audit records are synthetic and deterministic. The generator creates provider-labelled transactions, shared-cash snapshots, separate provider e-money snapshots, ground-truth labels, and case/audit records for a fixed moderate demonstration dataset. Re-running the generator with its fixed scenario configuration produces the same dataset for repeatable judging.
+
+The simulations model four situations: hidden shared-cash depletion (A), falling cash with unusual repeated amounts (B), degraded data feeds (C), and an escalated case that receives human closure (D). Fault injection can simulate delayed feeds, missing feeds/fields, malformed payloads, and conflicting balance observations. Invalid input is retained as ingestion evidence but does not create trusted ledger rows.
+
+Assumptions and limitations: this is not a real provider integration; demand is represented by a transparent recent-window burn-rate model, not a production forecast; labels and cases are synthetic; the provider/outlet population is intentionally small; and results do not establish real-world fraud accuracy, fairness, regulatory compliance, or production capacity.
+
+### Validation evidence
+
+The Phase 7 held-out validation harness measured frozen synthetic Scenario A/B/C runs (seeds `2001`, `2002`, and `2003`) using engine version `validation-v1`. These are measured results, not the authored fixture-consistency values embedded in the sample dataset.
+
+| Measured metric | Result | Sample and method | Interpretation / limit |
+|---|---:|---|---|
+| Anomaly precision | 100% | 1 predicted-positive scenario-provider cell; `TP / (TP + FP)` | The one alertable Scenario B cell was correct; sample is too small for a production claim. |
+| Anomaly recall | 100% | 1 labelled-positive cell; `TP / (TP + FN)` | Detects the held-out repeated-amount anomaly only; it does not establish recall for every detector. |
+| False-positive rate | 0% | 8 labelled-negative cells; `FP / (FP + TN)` | Includes the safely suppressed degraded-data Scenario C path. |
+| Shortage detection lead time | 534.34 minutes | 1 Scenario A shared-cash projection; projected shortage time minus observation time | Demonstrates lead time on a frozen synthetic depletion slope, not demand-forecast accuracy. |
+| Data-quality incident rate | 11.11% | 1 degraded assessment out of 9 provider assessments | Scenario C injection only; not a field reliability rate. |
+| API average / p95 latency | 318.67 ms / 1040.88 ms | 90 in-process handler calls: 30 iterations across 3 read endpoints | Excludes network/TLS/transport and is not a load test. |
+
+Validation also confirmed complete English explanation sections for 2 of 2 published high-impact alerts. Reproduce the checks with `python -m app.scripts.validation_cli run`, `python -m app.scripts.validate_moderate_dataset`, `python -m pytest tests\phase7 -q`, and `python -m app.scripts.safety_scan` from `backend`.
+
+### Responsible design
+
+This prototype is advisory decision support, not an automated decision-maker. It uses synthetic data only; contains no real customer identities, PINs, OTPs, passwords, private keys, or provider credentials; and does not expose one provider's confidential data to another. Users receive evidence, confidence, data-quality context, a plausible benign explanation, and a suggested review step. A flag means an unusual pattern requires review; it is not proof of fraud or misconduct.
+
+Human review is required for case outcomes. Missing, stale, conflicting, or insufficient data reduces confidence; liquidity projections can become non-actionable, and unusual-activity results can be suppressed rather than published. Benign demand spikes, repeated round amounts, delayed feeds, and synchronization failures can resemble suspicious activity, so reviewers must consider context and provider procedures before taking any external action.
+
+The prototype intentionally cannot transfer, convert, settle, refill, recover, reverse, block, or freeze funds; access real provider APIs or customer accounts; accuse an agent or customer; make a final fraud determination; or automatically execute a recommendation or case outcome. It is not production-, regulatory-, security-, privacy-, or fairness-assessed.
+
+
 ## Technology
 
 | Layer | Current implementation |
@@ -48,7 +118,7 @@ Main capabilities:
 backend/                     FastAPI application, migrations, seeds, analytics, tests
 frontend/                    Next.js role-aware web interface and Playwright demo spec
 data/generated/moderate_demo Deterministic synthetic dataset and validation manifest
-docs/                        Final documentation, contracts, evidence, diagram, presentation
+docs/                        Documentation, contracts, evidence, and architecture diagram
 ```
 
 ## Quick start with Docker
@@ -184,7 +254,7 @@ The login screen requests a seeded synthetic identity; there are no real passwor
 | C — degraded/conflicting data | Delay, missing data, malformed input, and conflicting balances reduce confidence and suppress unsafe alerting. |
 | D — coordinated closure | A provider-aware case is assigned, acknowledged, escalated/reviewed, resolved, and audited. |
 
-See [Demo guide](docs/demo-guide.md) for the connected walkthrough and recovery procedure.
+The judge demo flow above is the connected walkthrough. It can be reset with the supported simulation reset command shown in the dataset section.
 
 ## Verification commands
 
@@ -210,16 +280,13 @@ The generated API contract is [docs/openapi/openapi.v1.json](docs/openapi/openap
 
 ## Documentation
 
-- [Documentation index](docs/README.md)
 - [Architecture](docs/architecture.md)
 - [Data and simulation](docs/data-and-simulation.md)
 - [Validation evidence](docs/validation-evidence.md)
 - [Responsible design](docs/responsible-design.md)
-- [Demo guide](docs/demo-guide.md)
 - [API reference](docs/api-reference.md)
 - [Canonical schema](docs/schema.md)
 - [Official problem statement](docs/Problem_Statement.md)
-- [Final presentation](docs/presentation/final-presentation.pptx)
 
 ## Responsible-use boundary and limitations
 

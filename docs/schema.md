@@ -7,7 +7,7 @@
 **Data classification:** Synthetic/mock data only
 
 > **Implementation status.** The repository contains forward-only migrations
-> `001`–`011`, idempotent reference/RAG seeds, a checksum-tracked runner, and
+> `001`–`012`, idempotent reference/RAG seeds, a checksum-tracked runner, and
 > constraint, append-only, RLS, view, analytics, coordination, and scenario tests.
 > Enumerations use CHECK-constrained `DOMAIN`s. ADRs `0001`–`0008` record the
 > current enum, auth-shim, seed, RLS, alert-source, anomaly, and retrieval

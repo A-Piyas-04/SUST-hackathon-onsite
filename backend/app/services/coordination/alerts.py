@@ -227,12 +227,15 @@ async def publish_from_run(
         )
         for cand in liq.candidates:
             proj = _match_liquidity_projection(liq.projections, cand)
+            projection_id = cand.source_links.liquidity_projection_id
+            if projection_id is None and proj is not None:
+                projection_id = proj.liquidity_projection_id
             status, aid = await _publish_one(
                 session,
                 actor,
                 cand,
                 simulation_run_id=simulation_run_id,
-                liquidity_projection_id=proj.liquidity_projection_id if proj else None,
+                liquidity_projection_id=projection_id,
                 anomaly_flag_id=None,
                 quality_ids=cand.source_links.quality_assessment_ids,
             )
@@ -248,7 +251,10 @@ async def publish_from_run(
                 cand,
                 simulation_run_id=simulation_run_id,
                 liquidity_projection_id=None,
-                anomaly_flag_id=flag.anomaly_flag_id if flag else None,
+                anomaly_flag_id=(
+                    cand.source_links.anomaly_flag_id
+                    or (flag.anomaly_flag_id if flag else None)
+                ),
                 quality_ids=quality_ids,
             )
             (published if status == "published" else deduplicated).append(aid)
